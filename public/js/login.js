@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Enviar datos al servidor
-        fetch('/subs/login', {
+        fetch(window.BASE_URL + 'login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

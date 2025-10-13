@@ -5,7 +5,7 @@
 <p>Estado Actual: <?php echo htmlspecialchars($product['estado_proceso']); ?></p>
 
 <h3>Actualizar Estado</h3>
-<form action="/subs/moderator/manage-product/<?php echo $product['id']; ?>" method="POST">
+<form action="<?= BASE_URL ?>moderator/manage-product/<?php echo $product['id']; ?>" method="POST">
     <input type="hidden" name="action" value="update_status">
     <select name="new_status">
         <option value="Preguntas y Respuestas">Preguntas y Respuestas</option>
@@ -38,7 +38,7 @@
             <td><?php echo htmlspecialchars($participant['nombre_completo']); ?></td>
             <td><?php echo htmlspecialchars($participant['estado']); ?></td>
             <td>
-                <form action="/subs/moderator/manage-product/<?php echo $product['id']; ?>" method="POST">
+                <form action="<?= BASE_URL ?>moderator/manage-product/<?php echo $product['id']; ?>" method="POST">
                     <input type="hidden" name="action" value="evaluate_participant">
                     <input type="hidden" name="participant_id" value="<?php echo $participant['id']; ?>">
                     <select name="status">

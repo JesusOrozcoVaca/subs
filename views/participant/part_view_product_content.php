@@ -21,7 +21,7 @@
 
 <?php if ($product['estado_proceso'] === 'Preguntas y Respuestas'): ?>
 <h3>Hacer Pregunta</h3>
-<form action="/subs/participant/view-product/<?php echo $product['id']; ?>" method="POST">
+<form action="<?= BASE_URL ?>participant/view-product/<?php echo $product['id']; ?>" method="POST">
     <input type="hidden" name="action" value="ask_question">
     <textarea name="question" required></textarea>
     <button type="submit" class="btn">Enviar Pregunta</button>
@@ -30,7 +30,7 @@
 
 <?php if ($product['estado_proceso'] === 'Oferta Inicial' && $userStatus === 'Cumple'): ?>
 <h3>Enviar Oferta Inicial</h3>
-<form action="/subs/participant/view-product/<?php echo $product['id']; ?>" method="POST">
+<form action="<?= BASE_URL ?>participant/view-product/<?php echo $product['id']; ?>" method="POST">
     <input type="hidden" name="action" value="submit_offer">
     <input type="number" name="offer" step="0.01" required>
     <button type="submit" class="btn">Enviar Oferta</button>
@@ -39,7 +39,7 @@
 
 <?php if ($product['estado_proceso'] === 'Puja' && $userStatus === 'Cumple'): ?>
 <h3>Enviar Puja</h3>
-<form action="/subs/participant/view-product/<?php echo $product['id']; ?>" method="POST">
+<form action="<?= BASE_URL ?>participant/view-product/<?php echo $product['id']; ?>" method="POST">
     <input type="hidden" name="action" value="submit_bid">
     <input type="number" name="bid" step="0.01" required>
     <button type="submit" class="btn">Enviar Puja</button>

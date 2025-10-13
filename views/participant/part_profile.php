@@ -2,7 +2,7 @@
     <h2>Mi Perfil</h2>
 
     <h3>Información Personal</h3>
-    <form id="update-profile-form" class="ajax-form" action="/subs/participant/profile" method="POST">
+    <form id="update-profile-form" class="ajax-form" action="<?= BASE_URL ?>participant/profile" method="POST">
         <input type="hidden" name="action" value="update_profile">
         <div class="form-group">
             <label for="cedula">Cédula:</label>
@@ -28,7 +28,7 @@
         <?php foreach ($userCPCs as $cpc): ?>
             <li>
                 <?php echo htmlspecialchars($cpc['codigo'] . ' - ' . $cpc['descripcion']); ?>
-                <form class="ajax-form" action="/subs/participant/profile" method="POST">
+                <form class="ajax-form" action="<?= BASE_URL ?>participant/profile" method="POST">
                     <input type="hidden" name="action" value="remove_cpc">
                     <input type="hidden" name="cpc_id" value="<?php echo $cpc['id']; ?>">
                     <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
@@ -38,7 +38,7 @@
     </ul>
 
     <h3>Agregar CPC</h3>
-    <form id="add-cpc-form" class="ajax-form" action="/subs/participant/profile" method="POST">
+    <form id="add-cpc-form" class="ajax-form" action="<?= BASE_URL ?>participant/profile" method="POST">
         <input type="hidden" name="action" value="add_cpc">
         <select name="cpc_id" required>
             <?php foreach ($allCPCs as $cpc): ?>

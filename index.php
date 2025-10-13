@@ -6,6 +6,14 @@ ini_set('display_errors', 1);
 define('BASE_PATH', dirname(__FILE__));
 define('DEBUG', false);
 
+// === Environment-aware base URL ===
+$__host = $_SERVER['HTTP_HOST'] ?? '';
+$__is_local = (stripos($__host,'localhost') !== false) || ($__host === '127.0.0.1');
+$baseUrl = $__is_local ? 'http://localhost/subs/' : 'https://sie.hjconsulting.com.ec/';
+define('BASE_URL', $baseUrl);
+// Path prefix used to strip from REQUEST_URI for routing
+$basePath = $__is_local ? '/subs/' : '/';
+
 if (DEBUG) {
     echo "BASE_PATH: " . BASE_PATH . "<br>";
     echo "Current file: " . __FILE__ . "<br>";
@@ -29,17 +37,17 @@ function loadController($controllerName) {
 
 function checkAccess($requiredLevel) {
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel_acceso'])) {
-        header('Location: /subs/login');
+        header('Location: ' . BASE_URL . 'login');
         exit();
     }
     if ($_SESSION['nivel_acceso'] < $requiredLevel) {
-        header('Location: /subs/unauthorized');
+        header('Location: ' . BASE_URL . 'unauthorized');
         exit();
     }
 }
 
 $uri = $_SERVER['REQUEST_URI'];
-$basePath = '/subs/';
+$basePath = $__is_local ? '/subs/' : '/';
 $route = str_replace($basePath, '', $uri);
 $route = strtok($route, '?');
 $route = trim($route, '/');
@@ -232,7 +240,7 @@ try {
                     http_response_code(404);
                     echo json_encode(['error' => 'Página no encontrada']);
                 } else {
-                    header('Location: /subs/login');
+                    header('Location: ' . BASE_URL . 'login');
                 }
                 break;
         }

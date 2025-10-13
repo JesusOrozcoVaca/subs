@@ -1,5 +1,5 @@
 <h2>Editar Usuario</h2>
-<form action="/subs/admin/edit-user/<?php echo $user['id']; ?>" method="POST">
+<form action="<?= BASE_URL ?>admin/edit-user/<?php echo $user['id']; ?>" method="POST">
     <div class="form-group">
         <label for="cedula">Cédula:</label>
         <input type="text" id="cedula" name="cedula" value="<?php echo htmlspecialchars($user['cedula']); ?>" required>

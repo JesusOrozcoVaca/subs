@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Sistema de Subastas Inversas</title>
-    <link rel="stylesheet" href="/subs/public/css/styles.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/styles.css">
+    <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
 </head>
 <body>
     <div class="login-container">
@@ -18,7 +19,7 @@
                 <?php if (isset($error)): ?>
                     <p class="error-message"><?php echo $error; ?></p>
                 <?php endif; ?>
-                <form action="/subs/login" method="POST" id="loginForm">
+                <form action="<?= BASE_URL ?>login" method="POST" id="loginForm">
                     <div class="form-group">
                         <label for="username">Usuario o Correo Electrónico</label>
                         <input type="text" id="username" name="username" required>
@@ -32,6 +33,6 @@
             </div>
         </div>
     </div>
-    <script src="/subs/public/js/login.js"></script>
+    <script src="<?= BASE_URL ?>public/js/login.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <h2>Crear Nuevo Producto</h2>
-<form action="/subs/admin/create-product" method="POST" id="createProductForm">
+<form action="<?= BASE_URL ?>admin/create-product" method="POST" id="createProductForm">
     <div class="form-group">
         <label for="entidad">Entidad:</label>
         <input type="text" id="entidad" name="entidad" required>

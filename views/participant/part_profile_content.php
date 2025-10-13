@@ -1,5 +1,5 @@
 <h2>Información Personal</h2>
-<form action="/subs/participant/profile" method="POST">
+<form action="<?= BASE_URL ?>participant/profile" method="POST">
     <input type="hidden" name="action" value="update_profile">
     <div class="form-group">
         <label for="cedula">Cédula:</label>
@@ -25,7 +25,7 @@
     <?php foreach ($userCPCs as $cpc): ?>
         <li>
             <?php echo htmlspecialchars($cpc['codigo'] . ' - ' . $cpc['descripcion']); ?>
-            <form action="/subs/participant/profile" method="POST" style="display: inline;">
+            <form action="<?= BASE_URL ?>participant/profile" method="POST" style="display: inline;">
                 <input type="hidden" name="action" value="remove_cpc">
                 <input type="hidden" name="cpc_id" value="<?php echo $cpc['id']; ?>">
                 <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
@@ -35,7 +35,7 @@
 </ul>
 
 <h3>Agregar CPC</h3>
-<form action="/subs/participant/profile" method="POST">
+<form action="<?= BASE_URL ?>participant/profile" method="POST">
     <input type="hidden" name="action" value="add_cpc">
     <select name="cpc_id" required>
         <?php foreach ($allCPCs as $cpc): ?>

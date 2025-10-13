@@ -13,8 +13,8 @@
             <td><?php echo htmlspecialchars($cpc['codigo']); ?></td>
             <td><?php echo htmlspecialchars($cpc['descripcion']); ?></td>
             <td>
-                <a href="/subs/moderator/edit-cpc/<?php echo $cpc['id']; ?>" class="btn btn-small btn-edit">Editar</a>
-                <form action="/subs/moderator/delete-cpc" method="POST" style="display:inline;">
+                <a href="<?= BASE_URL ?>moderator/edit-cpc/<?php echo $cpc['id']; ?>" class="btn btn-small btn-edit">Editar</a>
+                <form action="<?= BASE_URL ?>moderator/delete-cpc" method="POST" style="display:inline;">
                     <input type="hidden" name="id" value="<?php echo $cpc['id']; ?>">
                     <button class="btn btn-small btn-danger btn-delete" data-id="<?php echo $cpc['id']; ?>">Eliminar</button>
                 </form>
@@ -25,7 +25,7 @@
 </table>
 
 <h3>Agregar Nuevo CPC</h3>
-<form id="add-cpc-form" action="/subs/moderator/manage-cpcs" method="POST">
+<form id="add-cpc-form" action="<?= BASE_URL ?>moderator/manage-cpcs" method="POST">
     <input type="hidden" name="action" value="add">
     <div class="form-group">
         <label for="codigo">Código:</label>
