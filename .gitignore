@@ -5,7 +5,7 @@ config/database.php
 
 # Index #
 ######################
-index.php
+#index.php
 
 # HTACCESS #
 ######################
@@ -23,7 +23,7 @@ utils/replace_urls.php
 
 # Eliminado /subs de las url #
 ######################
-public/js/admin-dashboard.js
-public/js/login.js
-public/js/moderator-dashboard.js
-public/js/participant-dashboard.js
+#public/js/admin-dashboard.js
+#public/js/login.js
+#public/js/moderator-dashboard.js
+#public/js/participant-dashboard.js
