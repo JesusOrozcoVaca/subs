@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <section id="productos">
     <h2>Productos Activos</h2>
     <table class="data-table">
@@ -18,7 +19,7 @@
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
                 <td>
-                    <a href="/subs/moderator/manage-product/<?php echo $product['id']; ?>" class="btn btn-small btn-manage">Gestionar</a>
+                    <a href="<?php echo url('moderator/manage-product/' . $product['id']); ?>" class="btn btn-small btn-manage">Gestionar</a>
                 </td>
             </tr>
             <?php endforeach; ?>

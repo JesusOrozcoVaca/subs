@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>Mis Productos</h2>
 <table class="data-table">
     <thead>
@@ -17,7 +18,7 @@
             <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
             <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
             <td>
-                <a href="/subs/participant/view-product/<?php echo $product['id']; ?>" class="btn btn-small">Ver Detalles</a>
+                <a href="<?php echo url('participant/view-product/' . $product['id']); ?>" class="btn btn-small">Ver Detalles</a>
             </td>
         </tr>
         <?php endforeach; ?>

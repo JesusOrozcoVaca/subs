@@ -39,7 +39,7 @@ class AdminController {
                         $this->sendJsonResponse(true, "Producto creado exitosamente.");
                     } else {
                         $_SESSION['success_message'] = "Producto creado exitosamente.";
-                        header('Location: /subs/admin/dashboard');
+                        header('Location: ' . url('admin/dashboard'));
                         exit();
                     }
                 } else {
@@ -67,7 +67,7 @@ class AdminController {
                         $this->sendJsonResponse(true, "Usuario creado exitosamente.");
                     } else {
                         $_SESSION['success_message'] = "Usuario creado exitosamente.";
-                        header('Location: /subs/admin/dashboard');
+                        header('Location: ' . url('admin/dashboard'));
                         exit();
                     }
                 } else {
@@ -148,7 +148,7 @@ class AdminController {
                         $this->sendJsonResponse(true, "CPC creado exitosamente.");
                     } else {
                         $_SESSION['success_message'] = "CPC creado exitosamente.";
-                        header('Location: /subs/admin/dashboard');
+                        header('Location: ' . url('admin/dashboard'));
                         exit();
                     }
                 } else {
@@ -284,7 +284,7 @@ class AdminController {
             $this->sendJsonResponse(false, $e->getMessage());
         } else {
             $_SESSION['error_message'] = $e->getMessage();
-            header('Location: /subs/admin/dashboard');
+            header('Location: ' . url('admin/dashboard'));
             exit;
         }
     }

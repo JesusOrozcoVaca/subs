@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Administrador</title>
+    <title>Gestionar Producto - Administrador</title>
     <link rel="stylesheet" href="<?php echo css('styles.css'); ?>">
 </head>
 <body>
@@ -20,19 +20,31 @@
         </aside>
         <main class="main-content">
             <header class="dashboard-header">
-                <h1>Dashboard de Administrador</h1>
+                <h1>Gestionar Producto</h1>
                 <form action="<?php echo logout_url(); ?>" method="POST">
                     <button type="submit" class="logout-btn">Cerrar sesión</button>
                 </form>
             </header>
 
             <div id="dynamic-content">
-                <?php
-                // Carga inicial del contenido del dashboard
-                $users = $this->userModel->getAllUsers();
-                $products = $this->productModel->getAllProducts();
-                $cpcs = $this->cpcModel->getAllCPCs();
-                include BASE_PATH . '/views/admin/dashboard_content.php';
+                <?php 
+                // Obtener datos del producto
+                $product = $this->productModel->getProductById($id);
+                if ($product) {
+                    echo "<div class='card'>";
+                    echo "<h2>Producto: " . htmlspecialchars($product['nombre']) . "</h2>";
+                    echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
+                    echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado']) . "</p>";
+                    echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
+                    echo "<div class='actions'>";
+                    echo "<a href='" . url('admin/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
+                    echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+                    echo "</div>";
+                    echo "</div>";
+                } else {
+                    echo "<div class='error'>Producto no encontrado.</div>";
+                    echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+                }
                 ?>
             </div>
         </main>

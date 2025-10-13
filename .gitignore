@@ -11,6 +11,16 @@ index.php
 ######################
 .htaccess
 
+# Configuraciones de entorno #
+######################
+config/app.production.php
+config/app.development.php
+
+# Scripts de migración #
+######################
+utils/fix_urls.php
+utils/replace_urls.php
+
 # Eliminado /subs de las url #
 ######################
 public/js/admin-dashboard.js

@@ -62,7 +62,7 @@ class ModeratorController {
                     $_SESSION['success_message'] = "Respuesta enviada exitosamente.";
                     break;
             }
-            header('Location: /subs/moderator/manage-product/' . $id);
+            header('Location: ' . url('moderator/manage-product/' . $id));
             exit;
         }
         
@@ -115,7 +115,7 @@ class ModeratorController {
                 exit;
             } else {
                 $_SESSION['message'] = $response['message'];
-                header('Location: /subs/moderator/manage-cpcs');
+                header('Location: ' . url('moderator/manage-cpcs'));
                 exit;
             }
         }
@@ -144,7 +144,7 @@ class ModeratorController {
                 exit;
             } else {
                 $_SESSION['message'] = $response['message'];
-                header('Location: /subs/moderator/manage-cpcs');
+                header('Location: ' . url('moderator/manage-cpcs'));
                 exit;
             }
         }
@@ -169,7 +169,7 @@ class ModeratorController {
             } else {
                 $_SESSION['error_message'] = "Error al enviar la respuesta.";
             }
-            header('Location: /subs/moderator/manage-questions/' . $productId);
+            header('Location: ' . url('moderator/manage-questions/' . $productId));
             exit;
         }
         
@@ -189,7 +189,7 @@ class ModeratorController {
             } else {
                 $_SESSION['error_message'] = "Error al actualizar la evaluación del participante.";
             }
-            header('Location: /subs/moderator/evaluate-participants/' . $productId);
+            header('Location: ' . url('moderator/evaluate-participants/' . $productId));
             exit;
         }
         

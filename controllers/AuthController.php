@@ -40,7 +40,7 @@ class AuthController {
 
     public function logout() {
         $this->destroySession();
-        header('Location: /subs/login');
+        header('Location: ' . LOGIN_URL);
         exit();
     }
 
@@ -67,12 +67,12 @@ class AuthController {
     private function getDashboardUrl() {
         switch ($_SESSION['nivel_acceso']) {
             case 1:
-                return '/subs/admin/dashboard';
+                return ADMIN_DASHBOARD_URL;
             case 2:
-                return '/subs/moderator/dashboard';
+                return MODERATOR_DASHBOARD_URL;
             case 3:
             default:
-                return '/subs/participant/dashboard';
+                return PARTICIPANT_DASHBOARD_URL;
         }
     }
 

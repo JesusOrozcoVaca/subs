@@ -1,5 +1,6 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>Editar Producto</h2>
-<form action="/subs/admin/edit-product/<?php echo $product['id']; ?>" method="POST">
+<form action="<?php echo url('admin/edit-product/' . $product['id']); ?>" method="POST">
     <div class="form-group">
         <label for="entidad">Entidad:</label>
         <input type="text" id="entidad" name="entidad" value="<?php echo htmlspecialchars($product['entidad']); ?>" required>

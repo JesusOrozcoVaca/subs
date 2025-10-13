@@ -1,30 +1,31 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ver Producto - Participante</title>
-    <link rel="stylesheet" href="/subs/public/css/styles.css">
+    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>">
 </head>
 <body>
     <header class="main-header">
         <div class="logo-container">
-            <img src="/subs/public/images/logo-left.png" alt="Logo Izquierdo" class="logo">
+            <img src="<?php echo image('logo-left.png'); ?>" alt="Logo Izquierdo" class="logo">
             <h1>Sistema de Simulación de Contratación Pública</h1>
-            <img src="/subs/public/images/logo-right.png" alt="Logo Derecho" class="logo">
+            <img src="<?php echo image('logo-right.png'); ?>" alt="Logo Derecho" class="logo">
         </div>
         <div class="user-info">
             <span><?php echo date('Y-m-d H:i:s'); ?></span>
             <span><?php echo htmlspecialchars($_SESSION['nombre_completo']); ?></span>
-            <a href="/subs/participant/dashboard" class="btn-return">Regresar</a>
+            <a href="<?php echo url('participant/dashboard'); ?>" class="btn-return">Regresar</a>
         </div>
     </header>
 
     <nav class="top-nav">
         <ul>
-            <li><a href="/subs/participant/dashboard">Inicio</a></li>
-            <li><a href="/subs/participant/profile">Datos Generales</a></li>
-            <li><a href="/subs/participant/search-process">Consultar Procesos</a></li>
+            <li><a href="<?php echo url('participant/dashboard'); ?>">Inicio</a></li>
+            <li><a href="<?php echo url('participant/profile'); ?>">Datos Generales</a></li>
+            <li><a href="<?php echo url('participant/search-process'); ?>">Consultar Procesos</a></li>
         </ul>
     </nav>
 
@@ -78,6 +79,6 @@
         </main>
     </div>
 
-    <script src="/subs/public/js/participant-dashboard.js"></script>
+    <script src="<?php echo js('participant-dashboard.js'); ?>"></script>
 </body>
 </html>

@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 if (confirm(`¿Está seguro de que desea ${action} este usuario?`)) {
-                    const url = '/subs/admin/toggle-user-status';
+                    const url = baseUrl + 'admin/toggle-user-status';
                     console.log(`Sending request to: ${url} for user ID: ${userId}`);
                     fetch(url, {
                         method: 'POST',
@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Response data:', data);
                         if (data.success) {
                             alert(data.message);
-                            loadContent('/subs/admin/dashboard');
+                            loadContent(baseUrl + 'admin/dashboard');
                         } else {
                             alert(data.message || 'Error al cambiar el estado del usuario');
                         }
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleFormSubmit.call(this, e, () => {
                         document.body.removeChild(popup);
                         document.body.removeChild(overlay);
-                        loadContent('/subs/admin/dashboard');
+                        loadContent(baseUrl + 'admin/dashboard');
                     });
                 });
             }
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (callback) {
                     callback();
                 } else {
-                    loadContent('/subs/admin/dashboard');
+                    loadContent(baseUrl + 'admin/dashboard');
                 }
             } else {
                 alert(data.message || 'Error al procesar la solicitud');
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type = this.getAttribute('data-type');
                 const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}?`;
                 if (confirm(confirmMessage)) {
-                    fetch(`/subs/admin/delete-${type}`, {
+                    fetch(`${baseUrl}admin/delete-${type}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             alert(data.message);
-                            loadContent('/subs/admin/dashboard');
+                            loadContent(baseUrl + 'admin/dashboard');
                         } else {
                             alert(data.message || `Error al eliminar el ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}`);
                         }
@@ -235,5 +235,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Cargar el contenido inicial del dashboard
-    loadContent('/subs/admin/dashboard');
+                            loadContent(baseUrl + 'admin/dashboard');
 });

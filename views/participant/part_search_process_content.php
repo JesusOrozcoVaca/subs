@@ -1,6 +1,7 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>Buscar Proceso</h2>
 
-<form action="/subs/participant/search-process" method="POST">
+<form action="<?php echo url('participant/search-process'); ?>" method="POST">
     <div class="form-group">
         <label for="codigo">Código del Proceso:</label>
         <input type="text" id="codigo" name="codigo" required>

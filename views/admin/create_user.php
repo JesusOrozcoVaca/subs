@@ -1,5 +1,6 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>Crear Nuevo Usuario</h2>
-<form action="/subs/admin/create-user" method="POST">
+<form action="<?php echo url('admin/create-user'); ?>" method="POST">
     <div class="form-group">
         <label for="cedula">Cédula:</label>
         <input type="text" id="cedula" name="cedula" required>

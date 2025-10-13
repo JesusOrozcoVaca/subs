@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>CPCs Existentes</h2>
 <table class="data-table">
     <thead>
@@ -13,8 +14,8 @@
             <td><?php echo htmlspecialchars($cpc['codigo']); ?></td>
             <td><?php echo htmlspecialchars($cpc['descripcion']); ?></td>
             <td>
-                <a href="/subs/moderator/edit-cpc/<?php echo $cpc['id']; ?>" class="btn btn-small btn-edit">Editar</a>
-                <form action="/subs/moderator/delete-cpc" method="POST" style="display:inline;">
+                <a href="<?php echo url('moderator/edit-cpc/' . $cpc['id']); ?>" class="btn btn-small btn-edit">Editar</a>
+                <form action="<?php echo url('moderator/delete-cpc'); ?>" method="POST" style="display:inline;">
                     <input type="hidden" name="id" value="<?php echo $cpc['id']; ?>">
                     <button class="btn btn-small btn-danger btn-delete" data-id="<?php echo $cpc['id']; ?>">Eliminar</button>
                 </form>
@@ -25,7 +26,7 @@
 </table>
 
 <h3>Agregar Nuevo CPC</h3>
-<form id="add-cpc-form" action="/subs/moderator/manage-cpcs" method="POST">
+<form id="add-cpc-form" action="<?php echo url('moderator/manage-cpcs'); ?>" method="POST">
     <input type="hidden" name="action" value="add">
     <div class="form-group">
         <label for="codigo">Código:</label>

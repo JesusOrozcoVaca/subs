@@ -1,5 +1,6 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <h2>Crear Nuevo Producto</h2>
-<form action="/subs/admin/create-product" method="POST" id="createProductForm">
+<form action="<?php echo url('admin/create-product'); ?>" method="POST" id="createProductForm">
     <div class="form-group">
         <label for="entidad">Entidad:</label>
         <input type="text" id="entidad" name="entidad" required>

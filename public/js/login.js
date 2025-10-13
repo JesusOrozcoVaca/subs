@@ -1,3 +1,6 @@
+// Configuración de URL base
+const baseUrl = window.location.pathname.includes('/subs/') ? '/subs/' : '/';
+
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
     const usernameInput = document.getElementById('username');
@@ -15,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Enviar datos al servidor
-        fetch('/subs/login', {
+        fetch(baseUrl + 'login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <section id="usuarios">
     <h2>Usuarios del Sistema</h2>
     <table class="data-table">
@@ -22,7 +23,7 @@
                 <td><?php echo htmlspecialchars($user['nivel_acceso']); ?></td>
                 <td><?php echo htmlspecialchars($user['estado']); ?></td>
                 <td>
-                    <a href="/subs/admin/edit-user/<?php echo $user['id']; ?>" class="btn btn-small btn-edit">Editar</a>
+                    <a href="<?php echo url('admin/edit-user/' . $user['id']); ?>" class="btn btn-small btn-edit">Editar</a>
                     <?php if ($user['estado'] === 'activo'): ?>
                         <button class="btn btn-small btn-danger btn-deactivate" data-user-id="<?php echo htmlspecialchars($user['id']); ?>">Desactivar</button>
                     <?php else: ?>
@@ -60,8 +61,8 @@
                 <td><?php echo htmlspecialchars($product['tipo_compra']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
                 <td>
-                    <a href="/subs/admin/edit-product/<?php echo $product['id']; ?>" class="btn btn-small btn-edit">Editar</a>
-                    <a href="/subs/admin/manage-product/<?php echo $product['id']; ?>" class="btn btn-small btn-manage">Gestionar</a>
+                    <a href="<?php echo url('admin/edit-product/' . $product['id']); ?>" class="btn btn-small btn-edit">Editar</a>
+                    <a href="<?php echo url('admin/manage-product/' . $product['id']); ?>" class="btn btn-small btn-manage">Gestionar</a>
                     <button class="btn btn-small btn-danger btn-delete" data-type="product" data-id="<?php echo htmlspecialchars($product['id']); ?>">Eliminar</button>
                 </td>
             </tr>
@@ -88,7 +89,7 @@
                 <td><?php echo htmlspecialchars($cpc['codigo']); ?></td>
                 <td><?php echo htmlspecialchars($cpc['descripcion']); ?></td>
                 <td>
-                    <a href="/subs/admin/edit-cpc/<?php echo $cpc['id']; ?>" class="btn btn-small btn-edit">Editar</a>
+                    <a href="<?php echo url('admin/edit-cpc/' . $cpc['id']); ?>" class="btn btn-small btn-edit">Editar</a>
                     <button class="btn btn-small btn-danger btn-delete" data-type="cpc" data-id="<?php echo htmlspecialchars($cpc['id']); ?>">Eliminar</button>
                 </td>
             </tr>

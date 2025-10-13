@@ -19,7 +19,7 @@ class ParticipantController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$this->isAjaxRequest()) {
-                header('Location: /subs/participant/profile');
+                header('Location: ' . url('participant/profile'));
                 exit;
             }
     
