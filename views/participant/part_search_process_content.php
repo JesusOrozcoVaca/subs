@@ -1,6 +1,6 @@
 <h2>Buscar Proceso</h2>
 
-<form action="<?= BASE_URL ?>participant/search-process" method="POST">
+<form action="/subs/participant/search-process" method="POST">
     <div class="form-group">
         <label for="codigo">Código del Proceso:</label>
         <input type="text" id="codigo" name="codigo" required>

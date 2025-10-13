@@ -1,6 +1,6 @@
 <div id="dynamic-content">
     <h2>Buscar Proceso</h2>
-    <form id="search-process-form" action="<?= BASE_URL ?>participant/search-process" method="POST" class="ajax-form">
+    <form id="search-process-form" action="/subs/participant/search-process" method="POST" class="ajax-form">
         <div class="form-group">
             <label for="codigo">Código del Proceso:</label>
             <input type="text" id="codigo" name="codigo" required>

@@ -1,5 +1,5 @@
 <h2>Crear Nuevo Usuario</h2>
-<form action="<?= BASE_URL ?>admin/create-user" method="POST">
+<form action="/subs/admin/create-user" method="POST">
     <div class="form-group">
         <label for="cedula">Cédula:</label>
         <input type="text" id="cedula" name="cedula" required>

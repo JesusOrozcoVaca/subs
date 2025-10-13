@@ -1,5 +1,5 @@
 <h2>Editar CPC</h2>
-<form id="edit-cpc-form" action="<?= BASE_URL ?>moderator/edit-cpc/<?php echo $cpc['id']; ?>" method="POST">
+<form id="edit-cpc-form" action="/subs/moderator/edit-cpc/<?php echo $cpc['id']; ?>" method="POST">
     <div class="form-group">
         <label for="codigo">Código:</label>
         <input type="text" id="codigo" name="codigo" required maxlength="5" pattern="\d{5}" value="<?php echo htmlspecialchars($cpc['codigo']); ?>">

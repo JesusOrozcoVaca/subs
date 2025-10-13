@@ -17,7 +17,7 @@
             <td><?php echo htmlspecialchars($searchResult['objeto_proceso']); ?></td>
             <td><?php echo htmlspecialchars($searchResult['estado_proceso']); ?></td>
             <td>
-                <a href="<?= BASE_URL ?>participant/view-product/<?php echo $searchResult['id']; ?>" class="btn btn-small">Ver Detalles</a>
+                <a href="/subs/participant/view-product/<?php echo $searchResult['id']; ?>" class="btn btn-small">Ver Detalles</a>
             </td>
         </tr>
     </tbody>

@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Response data:', data);
                         if (data.success) {
                             alert(data.message);
-                            loadContent(window.BASE_URL + 'admin/dashboard');
+                            loadContent('/subs/admin/dashboard');
                         } else {
                             alert(data.message || 'Error al cambiar el estado del usuario');
                         }
@@ -155,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleFormSubmit.call(this, e, () => {
                         document.body.removeChild(popup);
                         document.body.removeChild(overlay);
-                        loadContent(window.BASE_URL + 'admin/dashboard');
+                        loadContent('/subs/admin/dashboard');
                     });
                 });
             }
@@ -183,7 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (callback) {
                     callback();
                 } else {
-                    loadContent(window.BASE_URL + 'admin/dashboard');
+                    loadContent('/subs/admin/dashboard');
                 }
             } else {
                 alert(data.message || 'Error al procesar la solicitud');
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             alert(data.message);
-                            loadContent(window.BASE_URL + 'admin/dashboard');
+                            loadContent('/subs/admin/dashboard');
                         } else {
                             alert(data.message || `Error al eliminar el ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}`);
                         }
@@ -235,5 +235,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Cargar el contenido inicial del dashboard
-    loadContent(window.BASE_URL + 'admin/dashboard');
+    loadContent('/subs/admin/dashboard');
 });

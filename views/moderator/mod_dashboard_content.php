@@ -18,7 +18,7 @@
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
                 <td>
-                    <a href="<?= BASE_URL ?>moderator/manage-product/<?php echo $product['id']; ?>" class="btn btn-small btn-manage">Gestionar</a>
+                    <a href="/subs/moderator/manage-product/<?php echo $product['id']; ?>" class="btn btn-small btn-manage">Gestionar</a>
                 </td>
             </tr>
             <?php endforeach; ?>

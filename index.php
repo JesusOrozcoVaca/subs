@@ -1,12 +1,4 @@
-<?php
-// === Base URL auto (local vs prod fixed) ===
-$__host = $_SERVER['HTTP_HOST'] ?? '';
-$__is_local = (stripos($__host,'localhost') !== false) || ($__host === '127.0.0.1');
-$baseUrl = $__is_local ? 'http://localhost/subs/' : 'https://sie.hjconsulting.com.ec/';
-if (!defined('BASE_URL')) { define('BASE_URL', $baseUrl); }
-$basePath = $__is_local ? '/subs/' : '/';
-// === end base url auto ===
- 
+<?php 
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
@@ -37,17 +29,17 @@ function loadController($controllerName) {
 
 function checkAccess($requiredLevel) {
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel_acceso'])) {
-        header('Location: ' . BASE_URL . 'login');
+        header('Location: /subs/login');
         exit();
     }
     if ($_SESSION['nivel_acceso'] < $requiredLevel) {
-        header('Location: ' . BASE_URL . 'unauthorized');
+        header('Location: /subs/unauthorized');
         exit();
     }
 }
 
 $uri = $_SERVER['REQUEST_URI'];
-$basePath = $__is_local ? '/subs/' : '/';
+$basePath = '/subs/';
 $route = str_replace($basePath, '', $uri);
 $route = strtok($route, '?');
 $route = trim($route, '/');
@@ -240,7 +232,7 @@ try {
                     http_response_code(404);
                     echo json_encode(['error' => 'Página no encontrada']);
                 } else {
-                    header('Location: ' . BASE_URL . 'login');
+                    header('Location: /subs/login');
                 }
                 break;
         }

@@ -18,7 +18,7 @@
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
                 <td>
-                    <a href="<?= BASE_URL ?>participant/view-product/<?php echo $product['id']; ?>" class="btn btn-small btn-view-details">Ver Detalles</a>
+                    <a href="/subs/participant/view-product/<?php echo $product['id']; ?>" class="btn btn-small btn-view-details">Ver Detalles</a>
                 </td>
             </tr>
             <?php endforeach; ?>

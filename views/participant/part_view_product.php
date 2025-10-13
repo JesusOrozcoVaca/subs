@@ -4,28 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ver Producto - Participante</title>
-    <link rel="stylesheet" href="<?= BASE_URL ?>public/css/styles.css">
-<script>window.BASE_URL='<?= BASE_URL ?>';</script>
+    <link rel="stylesheet" href="/subs/public/css/styles.css">
 </head>
 <body>
     <header class="main-header">
         <div class="logo-container">
-            <img src="<?= BASE_URL ?>public/images/logo-left.png" alt="Logo Izquierdo" class="logo">
+            <img src="/subs/public/images/logo-left.png" alt="Logo Izquierdo" class="logo">
             <h1>Sistema de Simulación de Contratación Pública</h1>
-            <img src="<?= BASE_URL ?>public/images/logo-right.png" alt="Logo Derecho" class="logo">
+            <img src="/subs/public/images/logo-right.png" alt="Logo Derecho" class="logo">
         </div>
         <div class="user-info">
             <span><?php echo date('Y-m-d H:i:s'); ?></span>
             <span><?php echo htmlspecialchars($_SESSION['nombre_completo']); ?></span>
-            <a href="<?= BASE_URL ?>participant/dashboard" class="btn-return">Regresar</a>
+            <a href="/subs/participant/dashboard" class="btn-return">Regresar</a>
         </div>
     </header>
 
     <nav class="top-nav">
         <ul>
-            <li><a href="<?= BASE_URL ?>participant/dashboard">Inicio</a></li>
-            <li><a href="<?= BASE_URL ?>participant/profile">Datos Generales</a></li>
-            <li><a href="<?= BASE_URL ?>participant/search-process">Consultar Procesos</a></li>
+            <li><a href="/subs/participant/dashboard">Inicio</a></li>
+            <li><a href="/subs/participant/profile">Datos Generales</a></li>
+            <li><a href="/subs/participant/search-process">Consultar Procesos</a></li>
         </ul>
     </nav>
 
@@ -79,6 +78,6 @@
         </main>
     </div>
 
-    <script src="<?= BASE_URL ?>public/js/participant-dashboard.js"></script>
+    <script src="/subs/public/js/participant-dashboard.js"></script>
 </body>
 </html>
