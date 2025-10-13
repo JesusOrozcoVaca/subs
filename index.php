@@ -1,18 +1,19 @@
-<?php 
+<?php
+<?php
+// === Base URL auto (local vs prod fixed) ===
+$__host = $_SERVER['HTTP_HOST'] ?? '';
+$__is_local = (stripos($__host,'localhost') !== false) || ($__host === '127.0.0.1');
+$baseUrl = $__is_local ? 'http://localhost/subs/' : 'https://sie.hjconsulting.com.ec/';
+if (!defined('BASE_URL')) { define('BASE_URL', $baseUrl); }
+$basePath = $__is_local ? '/subs/' : '/';
+// === end base url auto ===
+ 
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 define('BASE_PATH', dirname(__FILE__));
 define('DEBUG', false);
-
-// === Environment-aware base URL ===
-$__host = $_SERVER['HTTP_HOST'] ?? '';
-$__is_local = (stripos($__host,'localhost') !== false) || ($__host === '127.0.0.1');
-$baseUrl = $__is_local ? 'http://localhost/subs/' : 'https://sie.hjconsulting.com.ec/';
-define('BASE_URL', $baseUrl);
-// Path prefix used to strip from REQUEST_URI for routing
-$basePath = $__is_local ? '/subs/' : '/';
 
 if (DEBUG) {
     echo "BASE_PATH: " . BASE_PATH . "<br>";

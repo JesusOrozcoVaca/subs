@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Simulación de Contratación Pública</title>
     <link rel="stylesheet" href="<?= BASE_URL ?>public/css/styles.css">
-    <script>window.BASE_URL = '<?= BASE_URL ?>';</script>
+<script>window.BASE_URL='<?= BASE_URL ?>';</script>
 </head>
 <body>
     <header>

@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function deleteCPC(id) {
-        fetch(window.BASE_URL + 'moderator/manage-cpcs', {  // Cambiado de window.BASE_URL + 'moderator/delete-cpc'
+        fetch(window.BASE_URL + 'moderator/manage-cpcs', {  // Cambiado de '/subs/moderator/delete-cpc'
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

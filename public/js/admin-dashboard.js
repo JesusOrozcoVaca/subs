@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 if (confirm(`¿Está seguro de que desea ${action} este usuario?`)) {
-                    const url = window.BASE_URL + 'admin/toggle-user-status';
+                    const url = '/subs/admin/toggle-user-status';
                     console.log(`Sending request to: ${url} for user ID: ${userId}`);
                     fetch(url, {
                         method: 'POST',
@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type = this.getAttribute('data-type');
                 const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}?`;
                 if (confirm(confirmMessage)) {
-                    fetch(window.BASE_URL + `admin/delete-${type}`, {
+                    fetch(`/subs/admin/delete-${type}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',

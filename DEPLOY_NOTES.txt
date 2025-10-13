@@ -1,0 +1,8 @@
+Deploy Notes:
+
+- Production base URL is fixed to: https://sie.hjconsulting.com.ec/
+- Local base URL is: http://localhost/subs/
+- .htaccess (production) uses: RewriteBase /
+- .htaccess.local (for local dev) uses: RewriteBase /subs/
+- PHP defines BASE_URL on bootstrap (index.php). Use <?= BASE_URL ?> for asset and link paths.
+- JS gets window.BASE_URL injected in layouts/pages that include </head>.
