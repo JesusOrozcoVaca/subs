@@ -1,5 +1,4 @@
 <?php
-<?php
 // === Base URL auto (local vs prod fixed) ===
 $__host = $_SERVER['HTTP_HOST'] ?? '';
 $__is_local = (stripos($__host,'localhost') !== false) || ($__host === '127.0.0.1');
