@@ -3,6 +3,10 @@
 config/database.php
 
 
-# Logs and databases #
+# Index #
 ######################
 index.php
+
+# HTACCESS #
+######################
+.htaccess
