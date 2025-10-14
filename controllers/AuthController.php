@@ -9,8 +9,16 @@ class AuthController {
     }
 
     public function login() {
+        error_log("=== LOGIN CALLED ===");
+        error_log("isLoggedIn(): " . ($this->isLoggedIn() ? 'TRUE' : 'FALSE'));
+        error_log("Session ID: " . session_id());
+        error_log("Session data: " . print_r($_SESSION, true));
+        
         if ($this->isLoggedIn()) {
+            error_log("REDIRECTING TO DASHBOARD");
             $this->redirectToDashboard();
+        } else {
+            error_log("USER NOT LOGGED IN, SHOWING LOGIN FORM");
         }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

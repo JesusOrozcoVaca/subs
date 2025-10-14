@@ -41,14 +41,22 @@ function loadController($controllerName) {
 }
 
 function checkAccess($requiredLevel) {
+    error_log("=== CHECKACCESS CALLED ===");
+    error_log("Required level: $requiredLevel");
+    error_log("Session ID: " . session_id());
+    error_log("Session data: " . print_r($_SESSION, true));
+    
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel_acceso'])) {
+        error_log("ACCESS DENIED: Missing session data, redirecting to login");
         header('Location: ' . LOGIN_URL);
         exit();
     }
     if ($_SESSION['nivel_acceso'] < $requiredLevel) {
+        error_log("ACCESS DENIED: Insufficient level, redirecting to unauthorized");
         header('Location: ' . UNAUTHORIZED_URL);
         exit();
     }
+    error_log("ACCESS GRANTED");
 }
 
 function isAjaxRequest() {
@@ -64,12 +72,11 @@ $route = str_replace($basePath, '', $uri);
 $route = strtok($route, '?');
 $route = trim($route, '/');
 
-// Debug comentado para producción
-/*
-if (DEBUG) {
-    echo "Processed route: " . $route . "<br>";
-}
-*/
+error_log("=== ROUTING ===");
+error_log("REQUEST_URI: " . $uri);
+error_log("BASE_URL: " . BASE_URL);
+error_log("Processed route: " . $route);
+error_log("Session ID: " . session_id());
 
 try {
     switch ($route) {
