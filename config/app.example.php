@@ -1,15 +1,16 @@
 <?php
 /**
- * Configuración de la aplicación
+ * Configuración de la aplicación - ARCHIVO DE EJEMPLO
  * 
- * Este archivo contiene las configuraciones principales de la aplicación,
- * incluyendo la URL base que se puede cambiar fácilmente entre entornos.
+ * Copia este archivo como 'app.php' y configura según tu entorno:
+ * - Desarrollo local: BASE_URL = '/subs/'
+ * - Producción: BASE_URL = '/'
  */
 
 // Configuración de la URL base
 // Para desarrollo local: '/subs/'
 // Para producción: '/' (cambiar manualmente al desplegar)
-define('BASE_URL', '/subs/');
+define('BASE_URL', '/subs/'); // ← CAMBIAR SEGÚN ENTORNO
 
 // Otras configuraciones de la aplicación
 define('APP_NAME', 'Simulador de Subasta Inversa Electrónica');

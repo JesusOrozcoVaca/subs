@@ -1,28 +1,49 @@
 # Instrucciones para Despliegue en Producción
 
-## Problema Actual
-- En producción: Respuesta 200 pero pantalla en blanco (archivos JS se sirven como HTML)
-- En localhost: Error 404 Not Found
+## 🔧 Archivos de Configuración
 
-## Solución
+Los siguientes archivos **NO se subirán a Git** y debes configurarlos manualmente en cada entorno:
+- `config/app.php` - Configuración de la aplicación (BASE_URL)
+- `config/database.php` - Credenciales de base de datos
+- `.htaccess` - Configuración de Apache
 
-### Paso 1: Cambiar BASE_URL en Producción
-En el archivo `config/app.php`, cambiar **MANUALMENTE**:
+## 📋 Pasos para Configurar Producción
+
+### Paso 1: Copiar Archivos de Ejemplo
+
+Después de hacer `git pull` en producción, copia los archivos de ejemplo:
+
+```bash
+# Si no existen los archivos, créalos desde los ejemplos:
+cp config/app.example.php config/app.php
+cp config/database.example.php config/database.php
+cp .htaccess.example .htaccess
+```
+
+### Paso 2: Configurar BASE_URL en Producción
+Edita el archivo `config/app.php` en producción:
 ```php
-// De:
+// Cambiar de:
 define('BASE_URL', '/subs/');
 
 // A:
 define('BASE_URL', '/');
 ```
 
-**Importante**: Este archivo NO está en .gitignore, por lo que debes editarlo directamente en el servidor.
+### Paso 3: Configurar .htaccess en Producción
+Edita el archivo `.htaccess` en producción:
+```apache
+# Cambiar de:
+RewriteBase /subs/
+ErrorDocument 404 /subs/index.php
 
-### Paso 2: Configurar .htaccess en Producción
-✅ **Ya configurado**: Tienes el `.htaccess` correcto en producción.
+# A:
+RewriteBase /
+ErrorDocument 404 /index.php
+```
 
-### Paso 3: Configurar Database en Producción
-Crear el archivo `config/database.php` con las credenciales de producción:
+### Paso 4: Configurar Database en Producción
+Edita el archivo `config/database.php` con las credenciales de producción:
 ```php
 <?php
 class Database {
@@ -56,19 +77,37 @@ class Database {
 }
 ```
 
-### Paso 4: Deshabilitar DEBUG en Producción
-En `config/app.php`:
+### Paso 5: Deshabilitar DEBUG en Producción
+En el archivo `config/app.php`, asegúrate de que:
 ```php
 define('DEBUG', false);
+define('ENVIRONMENT', 'production');
 ```
 
-## Verificación
+### Paso 6: Verificar Permisos de Archivos
+Asegúrate de que los archivos tengan permisos de lectura:
+```bash
+chmod 644 config/app.php
+chmod 644 .htaccess
+chmod 644 config/database.php
+chmod -R 644 public/css/
+chmod -R 644 public/js/
+chmod -R 644 public/images/
+```
+
+## ✅ Verificación
 1. Los archivos CSS/JS deben servirse con el tipo MIME correcto
 2. Las rutas deben funcionar sin el prefijo `/subs/`
 3. No debe haber errores 500 en archivos estáticos
+4. El login debe funcionar correctamente
 
-## Rollback
-Si algo sale mal, revertir los cambios:
-1. Cambiar `BASE_URL` de vuelta a `/subs/`
-2. Restaurar el `.htaccess` anterior
-3. Verificar que localhost funcione
+## 🔄 Importante: Despliegues Futuros
+
+**Después de cada `git pull` en producción:**
+- ✅ Los archivos `config/app.php`, `config/database.php` y `.htaccess` **NO se sobrescribirán**
+- ✅ Tu configuración de producción se mantendrá intacta
+- ✅ Solo se actualizarán los archivos de código (controllers, views, js, etc.)
+
+**Si necesitas actualizar la configuración:**
+- Revisa los archivos `.example` para ver si hay nuevas opciones
+- Actualiza manualmente tus archivos de configuración en producción

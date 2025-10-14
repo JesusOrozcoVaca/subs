@@ -1,5 +1,6 @@
 # Archivos de configuración sensibles (configurar manualmente en producción)
 config/database.php
+config/app.php
 
 # Archivos del sistema (configurar manualmente en producción)
 .htaccess

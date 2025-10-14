@@ -1,4 +1,6 @@
 RewriteEngine On
+# Para desarrollo local: RewriteBase /subs/
+# Para producción: RewriteBase / (o comentar esta línea)
 RewriteBase /subs/
 
 # Servir archivos estáticos directamente sin procesamiento PHP
@@ -18,6 +20,8 @@ RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 </IfModule>
 
 # Manejar errores 404
+# Para desarrollo local: ErrorDocument 404 /subs/index.php
+# Para producción: ErrorDocument 404 /index.php
 ErrorDocument 404 /subs/index.php
 
 # Prevenir listado de directorios
@@ -42,3 +46,4 @@ Options -Indexes
     AddOutputFilterByType DEFLATE application/javascript
     AddOutputFilterByType DEFLATE application/x-javascript
 </IfModule>
+
