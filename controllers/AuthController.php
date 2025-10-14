@@ -9,18 +9,9 @@ class AuthController {
     }
 
     public function login() {
-        // Debug: Log para verificar el estado de login
-        error_log("AuthController::login() called");
-        error_log("isLoggedIn(): " . ($this->isLoggedIn() ? 'true' : 'false'));
-        error_log("Session data: " . print_r($_SESSION, true));
-        
-        // TEMPORAL: Comentar redirección automática para romper el bucle
-        /*
         if ($this->isLoggedIn()) {
-            error_log("User is already logged in, redirecting to dashboard");
             $this->redirectToDashboard();
         }
-        */
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = $_POST['username'] ?? '';
@@ -61,9 +52,6 @@ class AuthController {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['nivel_acceso'] = $user['nivel_acceso'];
         $_SESSION['nombre_completo'] = $user['nombre_completo'];
-        
-        // Debug: Log para verificar que la sesión se crea
-        error_log("Session created for user: " . $user['id'] . " with level: " . $user['nivel_acceso']);
     }
 
     private function destroySession() {
@@ -72,9 +60,7 @@ class AuthController {
     }
 
     private function isLoggedIn() {
-        $isLoggedIn = isset($_SESSION['user_id']);
-        error_log("isLoggedIn() check: user_id=" . ($_SESSION['user_id'] ?? 'not set') . ", result=" . ($isLoggedIn ? 'true' : 'false'));
-        return $isLoggedIn;
+        return isset($_SESSION['user_id']);
     }
 
     private function redirectToDashboard() {
