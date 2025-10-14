@@ -57,12 +57,13 @@ $route = str_replace($basePath, '', $uri);
 $route = strtok($route, '?');
 $route = trim($route, '/');
 
-// Debug comentado para producción
-/*
-if (DEBUG) {
+// Debug temporal para diagnóstico de producción
+if (DEBUG || (isset($_GET['debug']) && $_GET['debug'] == '1')) {
+    echo "BASE_URL: " . BASE_URL . "<br>";
+    echo "REQUEST_URI: " . $_SERVER['REQUEST_URI'] . "<br>";
     echo "Processed route: " . $route . "<br>";
+    echo "Base path: " . $basePath . "<br>";
 }
-*/
 
 try {
     switch ($route) {

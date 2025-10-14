@@ -9,6 +9,11 @@ class AuthController {
     }
 
     public function login() {
+        // Debug temporal para diagnóstico
+        if (isset($_GET['debug']) && $_GET['debug'] == '1') {
+            echo "AuthController::login() ejecutándose<br>";
+        }
+        
         if ($this->isLoggedIn()) {
             $this->redirectToDashboard();
         }
