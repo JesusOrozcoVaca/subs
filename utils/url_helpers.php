@@ -20,6 +20,11 @@ if (!defined('BASE_URL')) {
 function url($path = '') {
     $path = ltrim($path, '/');
     
+    // Si ya es una URL completa o ya tiene query parameters, devolverla tal como está
+    if (strpos($path, 'http') === 0 || strpos($path, '?') !== false || strpos($path, 'index.php') !== false) {
+        return $path;
+    }
+    
     // Detectar si estamos en el nuevo sistema (producción con query parameters)
     // Si ENVIRONMENT está definido como 'production' y no estamos en localhost
     $isProduction = (defined('ENVIRONMENT') && ENVIRONMENT === 'production');
@@ -28,7 +33,13 @@ function url($path = '') {
                     strpos($_SERVER['HTTP_HOST'], '127.0.0.1') !== false));
     
     if ($isProduction && !$isLocalhost) {
-        // Sistema nuevo - convertir rutas legacy a query parameters
+        // Sistema nuevo - verificar si hay constantes definidas primero
+        $constantName = strtoupper(str_replace(['/', '-'], ['_', '_'], $path)) . '_URL';
+        if (defined($constantName)) {
+            return constant($constantName);
+        }
+        
+        // Si no hay constante definida, convertir rutas legacy a query parameters
         return convertToQueryParams($path);
     } else {
         // Sistema legacy - URLs amigables
