@@ -51,6 +51,13 @@ function checkAccess($requiredLevel) {
     }
 }
 
+function isAjaxRequest() {
+    return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+            strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
+           (!empty($_SERVER['HTTP_ACCEPT']) && 
+            strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+}
+
 $uri = $_SERVER['REQUEST_URI'];
 $basePath = BASE_URL;
 $route = str_replace($basePath, '', $uri);
@@ -265,13 +272,6 @@ try {
                 require_once BASE_PATH . '/views/error.php';
             }
         }
-    }
-    
-    function isAjaxRequest() {
-        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
-               (!empty($_SERVER['HTTP_ACCEPT']) && 
-                strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     }
     
     // Debug comentado para producción
