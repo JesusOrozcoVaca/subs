@@ -8,6 +8,8 @@ define('BASE_PATH', dirname(__FILE__));
 // Cargar configuración de la aplicación
 require_once BASE_PATH . '/config/app.php';
 
+// Debug comentado para producción
+/*
 if (DEBUG) {
     echo "BASE_PATH: " . BASE_PATH . "<br>";
     echo "Current file: " . __FILE__ . "<br>";
@@ -15,12 +17,16 @@ if (DEBUG) {
     echo "QUERY_STRING: " . $_SERVER['QUERY_STRING'] . "<br>";
     echo "SESSION: "; print_r($_SESSION); echo "<br>";
 }
+*/
 
 function loadController($controllerName) {
     $controllerFile = BASE_PATH . "/controllers/{$controllerName}.php";
+    // Debug comentado para producción
+    /*
     if (DEBUG) {
         echo "Attempting to load controller: " . $controllerFile . "<br>";
     }
+    */
     if (file_exists($controllerFile)) {
         require_once $controllerFile;
         return new $controllerName();
@@ -46,9 +52,12 @@ $route = str_replace($basePath, '', $uri);
 $route = strtok($route, '?');
 $route = trim($route, '/');
 
+// Debug comentado para producción
+/*
 if (DEBUG) {
     echo "Processed route: " . $route . "<br>";
 }
+*/
 
 try {
     switch ($route) {
@@ -260,6 +269,9 @@ try {
                 strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     }
     
+    // Debug comentado para producción
+    /*
     if (DEBUG) {
         echo "End of index.php reached.";
     }
+    */

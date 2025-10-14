@@ -1,12 +1,11 @@
 # Archivos de configuración sensibles (configurar manualmente en producción)
 config/database.php
 
-# Archivos de entorno específico (plantillas necesarias para el sistema)
-config/app.production.php
-config/app.development.php
-
 # Archivos del sistema (configurar manualmente en producción)
 .htaccess
+
+# Archivos temporales de migración (ya no necesarios)
+# config/app.production.php - Eliminado: no necesario con enfoque manual
 .DS_Store
 Thumbs.db
 

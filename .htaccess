@@ -1,16 +1,5 @@
 RewriteEngine On
-
-# Detectar el entorno basado en la URL base
-RewriteCond %{REQUEST_URI} ^/subs/
-RewriteRule ^(.*)$ - [E=ENV:dev]
-
-# Configuración para desarrollo local (/subs/)
-RewriteCond %{ENV:ENV} =dev
 RewriteBase /subs/
-
-# Configuración para producción (/)
-RewriteCond %{ENV:ENV} !dev
-RewriteBase /
 
 # Servir archivos estáticos directamente sin procesamiento PHP
 RewriteCond %{REQUEST_FILENAME} -f
@@ -21,12 +10,6 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 
-# Permitir caracteres especiales en la URL
-RewriteCond %{THE_REQUEST} !^[A-Z]{3,9}\ /index\.php\ HTTP/
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php/$1 [B,L]
-
 # Asegurar que las solicitudes AJAX se manejen correctamente
 <IfModule mod_headers.c>
     Header set Access-Control-Allow-Origin "*"
@@ -34,12 +17,8 @@ RewriteRule ^(.*)$ index.php/$1 [B,L]
     Header set Access-Control-Allow-Methods "POST, GET, OPTIONS, DELETE, PUT"
 </IfModule>
 
-# Manejar errores 404 (adaptativo)
-RewriteCond %{ENV:ENV} =dev
-RewriteRule ^(.*)$ - [E=ERROR_BASE:/subs/]
-RewriteCond %{ENV:ENV} !dev
-RewriteRule ^(.*)$ - [E=ERROR_BASE:/]
-ErrorDocument 404 %{ENV:ERROR_BASE}index.php
+# Manejar errores 404
+ErrorDocument 404 /subs/index.php
 
 # Prevenir listado de directorios
 Options -Indexes
