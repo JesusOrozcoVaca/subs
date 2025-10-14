@@ -1,4 +1,9 @@
 <?php 
+// Verificación segura de output buffer para evitar Quirks mode
+if (ob_get_level()) {
+    ob_clean();
+}
+
 session_start();
 //error_reporting(E_ALL);
 //ini_set('display_errors', 1);

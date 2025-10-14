@@ -22,12 +22,14 @@ class AuthController {
                 $this->createSession($user);
                 if ($this->isAjaxRequest()) {
                     echo json_encode(['success' => true, 'redirect' => $this->getDashboardUrl()]);
+                    exit();
                 } else {
                     $this->redirectToDashboard();
                 }
             } else {
                 if ($this->isAjaxRequest()) {
                     echo json_encode(['success' => false, 'message' => 'Credenciales inválidas']);
+                    exit();
                 } else {
                     $error = "Credenciales inválidas";
                     require_once BASE_PATH . '/views/auth/login.php';
