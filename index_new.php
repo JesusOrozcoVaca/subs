@@ -49,7 +49,9 @@ function isAjaxRequest() {
 
 // Nueva función para generar URLs
 function getAppUrl($action, $params = []) {
-    $url = BASE_URL . 'index_new.php?action=' . $action;
+    // En producción, el archivo se renombra a index.php
+    $indexFile = (defined('ENVIRONMENT') && ENVIRONMENT === 'production') ? 'index.php' : 'index_new.php';
+    $url = BASE_URL . $indexFile . '?action=' . $action;
     if (!empty($params)) {
         $url .= '&' . http_build_query($params);
     }

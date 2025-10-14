@@ -19,9 +19,10 @@ define('ENVIRONMENT', 'production');
 // Configuración de debug - DESHABILITADO en producción
 define('DEBUG', false);
 
-// Configuración de rutas
+// Configuración de rutas - NUEVA ARQUITECTURA (query parameters)
 define('LOGIN_URL', BASE_URL . 'index.php?action=login');
 define('UNAUTHORIZED_URL', BASE_URL . 'index.php?action=unauthorized');
+define('LOGOUT_URL', BASE_URL . 'index.php?action=logout');
 
 // URLs de redirección por rol - NUEVA ARQUITECTURA (query parameters)
 define('ADMIN_DASHBOARD_URL', BASE_URL . 'index.php?action=admin_dashboard');
