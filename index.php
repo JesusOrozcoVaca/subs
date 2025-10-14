@@ -46,22 +46,21 @@ function loadController($controllerName) {
 }
 
 function checkAccess($requiredLevel) {
-    error_log("=== CHECKACCESS CALLED ===");
-    error_log("Required level: $requiredLevel");
-    error_log("Session ID: " . session_id());
-    error_log("Session data: " . print_r($_SESSION, true));
+    error_log("CHECKACCESS START - Level: $requiredLevel");
     
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel_acceso'])) {
-        error_log("ACCESS DENIED: Missing session data, redirecting to login");
+        error_log("CHECKACCESS FAIL - Missing session, redirecting to login");
         header('Location: ' . LOGIN_URL);
         exit();
     }
+    
     if ($_SESSION['nivel_acceso'] < $requiredLevel) {
-        error_log("ACCESS DENIED: Insufficient level, redirecting to unauthorized");
+        error_log("CHECKACCESS FAIL - Insufficient level, redirecting to unauthorized");
         header('Location: ' . UNAUTHORIZED_URL);
         exit();
     }
-    error_log("ACCESS GRANTED");
+    
+    error_log("CHECKACCESS SUCCESS - Access granted");
 }
 
 function isAjaxRequest() {
@@ -98,7 +97,9 @@ try {
 
         // Rutas del Administrador
         case 'admin/dashboard':
+            error_log("=== ABOUT TO CALL CHECKACCESS FOR ADMIN DASHBOARD ===");
             checkAccess(1);
+            error_log("=== CHECKACCESS COMPLETED, LOADING ADMIN CONTROLLER ===");
             $controller = loadController('AdminController');
             $controller->dashboard();
             break;
