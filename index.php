@@ -4,6 +4,11 @@ if (ob_get_level()) {
     ob_clean();
 }
 
+// Deshabilitar errores de WordPress que interfieren
+error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 session_start();
 //error_reporting(E_ALL);
 //ini_set('display_errors', 1);
@@ -267,7 +272,17 @@ try {
                 break;
         }
     } catch (Exception $e) {
-        error_log($e->getMessage());
+        error_log("EXCEPTION CAUGHT: " . $e->getMessage());
+        error_log("Stack trace: " . $e->getTraceAsString());
+        
+        // Si es un error de WordPress, ignorar y continuar
+        if (strpos($e->getMessage(), 'wp-includes') !== false || 
+            strpos($e->getMessage(), 'wordpress') !== false ||
+            strpos($e->getMessage(), 'dt_theme') !== false) {
+            error_log("WordPress error ignored, continuing...");
+            return;
+        }
+        
         if (DEBUG) {
             echo "Error: " . $e->getMessage() . "<br>";
             echo "Stack trace: <pre>" . $e->getTraceAsString() . "</pre>";
