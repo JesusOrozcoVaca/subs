@@ -9,11 +9,6 @@ class AuthController {
     }
 
     public function login() {
-        // Debug temporal para diagnóstico
-        if (isset($_GET['debug']) && $_GET['debug'] == '1') {
-            echo "AuthController::login() ejecutándose<br>";
-        }
-        
         if ($this->isLoggedIn()) {
             $this->redirectToDashboard();
         }
@@ -26,6 +21,7 @@ class AuthController {
             if ($user) {
                 $this->createSession($user);
                 if ($this->isAjaxRequest()) {
+                    header('Content-Type: application/json');
                     echo json_encode(['success' => true, 'redirect' => $this->getDashboardUrl()]);
                     exit();
                 } else {
@@ -33,6 +29,7 @@ class AuthController {
                 }
             } else {
                 if ($this->isAjaxRequest()) {
+                    header('Content-Type: application/json');
                     echo json_encode(['success' => false, 'message' => 'Credenciales inválidas']);
                     exit();
                 } else {
