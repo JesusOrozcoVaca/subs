@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
         })
@@ -29,21 +30,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!response.ok) {
                 throw new Error('Error en la respuesta del servidor');
             }
-            return response.text();
+            return response.json();
         })
         .then(data => {
-            try {
-                const jsonData = JSON.parse(data);
-                if (jsonData.success) {
-                    window.location.href = jsonData.redirect;
-                } else {
-                    showError(jsonData.message || 'Error de inicio de sesión. Por favor, inténtelo de nuevo.');
-                }
-            } catch (error) {
-                // Si la respuesta no es JSON, asumimos que es una redirección HTML
-                document.open();
-                document.write(data);
-                document.close();
+            if (data.success) {
+                window.location.href = data.redirect;
+            } else {
+                showError(data.message || 'Error de inicio de sesión. Por favor, inténtelo de nuevo.');
             }
         })
         .catch(err => {
