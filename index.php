@@ -41,11 +41,17 @@ function loadController($controllerName) {
 }
 
 function checkAccess($requiredLevel) {
+    // Debug: Log para verificar el estado de la sesión
+    error_log("checkAccess called with requiredLevel: $requiredLevel, session_id: " . session_id());
+    error_log("Session data: " . print_r($_SESSION, true));
+    
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['nivel_acceso'])) {
+        error_log("Access denied: Missing session data, redirecting to login");
         header('Location: ' . LOGIN_URL);
         exit();
     }
     if ($_SESSION['nivel_acceso'] < $requiredLevel) {
+        error_log("Access denied: Insufficient level, redirecting to unauthorized");
         header('Location: ' . UNAUTHORIZED_URL);
         exit();
     }

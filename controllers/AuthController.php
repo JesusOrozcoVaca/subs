@@ -52,6 +52,9 @@ class AuthController {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['nivel_acceso'] = $user['nivel_acceso'];
         $_SESSION['nombre_completo'] = $user['nombre_completo'];
+        
+        // Debug: Log para verificar que la sesión se crea
+        error_log("Session created for user: " . $user['id'] . " with level: " . $user['nivel_acceso']);
     }
 
     private function destroySession() {
