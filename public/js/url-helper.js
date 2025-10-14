@@ -33,7 +33,11 @@ function generateUrl(action, params = {}) {
     
     if (isNewSystem()) {
         // Nuevo sistema - usar query parameters
-        let url = baseUrl + 'index_new.php?action=' + action;
+        // En producción, index_new.php se renombra a index.php
+        const indexFile = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+            ? 'index_new.php' 
+            : 'index.php';
+        let url = baseUrl + indexFile + '?action=' + action;
         if (Object.keys(params).length > 0) {
             url += '&' + new URLSearchParams(params).toString();
         }
