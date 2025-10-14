@@ -4,6 +4,7 @@ config/app.php
 
 # Archivos del sistema (configurar manualmente en producción)
 .htaccess
+index.php
 
 # Archivos de backup del sistema
 index_legacy_backup.php
