@@ -5,13 +5,26 @@ if (ob_get_level()) {
 }
 
 // Deshabilitar errores de WordPress que interfieren
-error_reporting(E_ALL & ~E_WARNING & ~E_NOTICE);
+error_reporting(0); // Deshabilitar TODOS los errores
 ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+ini_set('log_errors', 0); // También deshabilitar logs de errores
+ini_set('error_log', '/dev/null'); // Enviar errores a /dev/null
 
 session_start();
-//error_reporting(E_ALL);
-//ini_set('display_errors', 1);
+
+// Función para manejar errores de WordPress
+function handleWordPressError($errno, $errstr, $errfile, $errline) {
+    // Ignorar errores de WordPress
+    if (strpos($errfile, 'wp-includes') !== false || 
+        strpos($errfile, 'wordpress') !== false ||
+        strpos($errstr, 'dt_theme') !== false ||
+        strpos($errstr, 'call_user_func_array') !== false) {
+        return true; // Ignorar el error
+    }
+    return false; // Permitir que PHP maneje otros errores
+}
+
+set_error_handler('handleWordPressError');
 
 define('BASE_PATH', dirname(__FILE__));
 
