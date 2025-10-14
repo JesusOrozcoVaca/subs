@@ -9,6 +9,11 @@ config/app.php
 index_legacy_backup.php
 config/app_backup.php
 
+# Documentación obsoleta (ya no necesaria)
+# INSTRUCCIONES_PRODUCCION.md - Eliminado: documentación desactualizada
+# README_CONFIGURACION.md - Eliminado: documentación desactualizada  
+# switch_to_new_system.php - Eliminado: script ya no necesario
+
 # Archivos temporales de migración (ya no necesarios)
 # config/app.production.php - Eliminado: no necesario con enfoque manual
 .DS_Store

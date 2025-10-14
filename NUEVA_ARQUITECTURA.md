@@ -29,11 +29,11 @@ La nueva arquitectura soluciona los problemas de:
 
 ## 📋 **Archivos Principales**
 
-- **`index_new.php`** - Nuevo sistema de routing
+- **`index_new.php`** - Nuevo sistema de routing (para producción)
 - **`index.php`** - Sistema legacy (para desarrollo local)
 - **`config/app.php`** - Configuración para producción (nueva arquitectura)
 - **`config/app_local.php`** - Configuración para desarrollo local (sistema legacy)
-- **`switch_to_new_system.php`** - Script para cambiar al nuevo sistema
+- **`public/js/url-helper.js`** - Helper para compatibilidad entre sistemas
 
 ## 🔧 **Instrucciones de Uso**
 
@@ -42,8 +42,8 @@ La nueva arquitectura soluciona los problemas de:
 # 1. Hacer git pull
 git pull origin master
 
-# 2. Cambiar al nuevo sistema
-php switch_to_new_system.php
+# 2. Renombrar index_new.php a index.php (una sola vez)
+mv index_new.php index.php
 
 # 3. Acceder con nuevas URLs
 https://sie.hjconsulting.com.ec/index.php?action=login
@@ -79,12 +79,19 @@ http://localhost/subs/admin/dashboard
 
 ### **Para volver al sistema anterior:**
 ```bash
+# Restaurar desde backup (si existe)
 mv index_legacy_backup.php index.php
 mv config/app_backup.php config/app.php
 ```
 
 ### **Para limpiar archivos de backup:**
 ```bash
-rm index_legacy_backup.php
-rm config/app_backup.php
+rm -f index_legacy_backup.php
+rm -f config/app_backup.php
+```
+
+### **Para desarrollo local:**
+```bash
+# Usar sistema legacy
+cp config/app_local.php config/app.php
 ```
