@@ -1,11 +1,12 @@
-# Archivos de configuración sensibles (crear manualmente en producción)
-# config/database.php - REMOVIDO: Este archivo es crítico y debe estar incluido
+# Archivos de configuración sensibles (configurar manualmente en producción)
+config/database.php
 
 # Archivos de entorno específico (plantillas necesarias para el sistema)
-# config/app.production.php - REQUERIDO: Plantilla para producción
-# config/app.development.php - Se genera automáticamente como backup
+config/app.production.php
+config/app.development.php
 
-# Archivos del sistema (removido .htaccess - es crítico para el funcionamiento)
+# Archivos del sistema (configurar manualmente en producción)
+.htaccess
 .DS_Store
 Thumbs.db
 

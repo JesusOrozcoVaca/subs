@@ -8,7 +8,7 @@
 
 // Configuración de la URL base
 // Para desarrollo local: '/subs/'
-// Para producción: '/'
+// Para producción: '/' (cambiar manualmente al desplegar)
 define('BASE_URL', '/subs/');
 
 // Otras configuraciones de la aplicación
