@@ -5,6 +5,10 @@ config/app.php
 # Archivos del sistema (configurar manualmente en producción)
 .htaccess
 
+# Archivos de backup del sistema
+index_legacy_backup.php
+config/app_backup.php
+
 # Archivos temporales de migración (ya no necesarios)
 # config/app.production.php - Eliminado: no necesario con enfoque manual
 .DS_Store

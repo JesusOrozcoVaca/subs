@@ -1,28 +1,28 @@
 <?php
 /**
- * Configuración de la aplicación - PRODUCCIÓN
+ * Configuración de la aplicación - DESARROLLO LOCAL
  * 
- * Este es el archivo de configuración real para producción
+ * Este archivo mantiene la compatibilidad con el sistema legacy para desarrollo local
  */
 
-// Configuración de la URL base para PRODUCCIÓN
-define('BASE_URL', '/'); // ← PRODUCCIÓN: sin subdirectorio
+// Configuración de la URL base para DESARROLLO LOCAL
+define('BASE_URL', '/subs/'); // ← DESARROLLO LOCAL: con subdirectorio
 
 // Otras configuraciones de la aplicación
 define('APP_NAME', 'Simulador de Subasta Inversa Electrónica');
 define('APP_VERSION', '1.0.0');
 
 // Configuración de entorno
-define('ENVIRONMENT', 'production');
+define('ENVIRONMENT', 'development');
 
-// Configuración de debug - DESHABILITADO en producción
+// Configuración de debug
 define('DEBUG', false);
 
-// Configuración de rutas
+// Configuración de rutas - SISTEMA LEGACY para desarrollo local
 define('LOGIN_URL', BASE_URL . 'login');
 define('UNAUTHORIZED_URL', BASE_URL . 'unauthorized');
 
-// URLs de redirección por rol
+// URLs de redirección por rol - SISTEMA LEGACY
 define('ADMIN_DASHBOARD_URL', BASE_URL . 'admin/dashboard');
 define('MODERATOR_DASHBOARD_URL', BASE_URL . 'moderator/dashboard');
 define('PARTICIPANT_DASHBOARD_URL', BASE_URL . 'participant/dashboard');
