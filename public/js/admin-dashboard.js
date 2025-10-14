@@ -1,19 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const dynamicContent = document.getElementById('dynamic-content');
-    // Calcular la URL base dinámicamente para desarrollo y producción
-    let baseUrl;
-    const pathParts = window.location.pathname.split('/').filter(part => part !== '');
     
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Desarrollo local - incluir el directorio del proyecto
-        baseUrl = window.location.origin + '/' + (pathParts.length > 0 ? pathParts[0] + '/' : '');
-    } else {
-        // Producción - usar la raíz del dominio
-        baseUrl = window.location.origin + '/';
-    }
-    
-    console.log('Base URL calculada:', baseUrl);
-    console.log('Entorno detectado:', window.location.hostname === 'localhost' ? 'Desarrollo' : 'Producción');
+    console.log('Sistema detectado:', isNewSystem() ? 'Nuevo (Query Parameters)' : 'Legacy (URLs Amigables)');
+    console.log('Base URL:', getBaseUrl());
 
     function loadContent(url) {
         console.log('Cargando contenido desde:', url);
@@ -72,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        loadContent(baseUrl + 'admin/dashboard');
+                        loadContent(URLS.adminDashboard());
                     } else {
                         alert(data.message || 'Error al procesar la solicitud');
                     }
@@ -107,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 if (confirm(`¿Está seguro de que desea ${action} este usuario?`)) {
-                    const url = baseUrl + 'admin/toggle-user-status';
+                    const url = URLS.adminToggleUserStatus();
                     console.log(`Sending request to: ${url} for user ID: ${userId}`);
                     fetch(url, {
                         method: 'POST',
@@ -128,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         console.log('Response data:', data);
                         if (data.success) {
                             alert(data.message);
-                            loadContent(baseUrl + 'admin/dashboard');
+                            loadContent(URLS.adminDashboard());
                         } else {
                             alert(data.message || 'Error al cambiar el estado del usuario');
                         }
@@ -203,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             alert(data.message);
                             document.body.removeChild(popup);
                             document.body.removeChild(overlay);
-                            loadContent(baseUrl + 'admin/dashboard');
+                            loadContent(URLS.adminDashboard());
                         } else {
                             alert(data.message || 'Error al procesar la solicitud');
                         }
@@ -230,7 +219,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type = this.getAttribute('data-type');
                 const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}?`;
                 if (confirm(confirmMessage)) {
-                    fetch(`${baseUrl}admin/delete-${type}`, {
+                    const deleteUrl = type === 'user' ? URLS.adminDeleteUser() : 
+                                     type === 'product' ? URLS.adminDeleteProduct() : 
+                                     URLS.adminDeleteCpc();
+                    fetch(deleteUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
@@ -247,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     .then(data => {
                         if (data.success) {
                             alert(data.message);
-                            loadContent(baseUrl + 'admin/dashboard');
+                            loadContent(URLS.adminDashboard());
                         } else {
                             alert(data.message || `Error al eliminar el ${type === 'user' ? 'usuario' : type === 'product' ? 'producto' : 'CPC'}`);
                         }
@@ -262,5 +254,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Cargar el contenido inicial del dashboard
-                            loadContent(baseUrl + 'admin/dashboard');
+    loadContent(URLS.adminDashboard());
 });

@@ -33,6 +33,7 @@
             </div>
         </div>
     </div>
+    <script src="<?php echo js('url-helper.js'); ?>"></script>
     <script src="<?php echo js('login.js'); ?>"></script>
 </body>
 </html>

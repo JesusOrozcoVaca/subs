@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Simulación de Contratación Pública</title>
     <link rel="stylesheet" href="<?php echo css('styles.css'); ?>">
+    <script src="<?php echo js('url-helper.js'); ?>"></script>
 </head>
 <body>
     <header>

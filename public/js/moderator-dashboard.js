@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function deleteCPC(id) {
-        fetch(`${baseUrl}moderator/manage-cpcs`, {
+        fetch(URLS.moderatorManageCpcs(), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 alert(data.message);
-                loadContent(`${baseUrl}moderator/manage-cpcs`);
+                loadContent(URLS.moderatorManageCpcs());
             } else {
                 alert(data.message || 'Error al eliminar el CPC');
             }
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const formData = new FormData(this);
                 
-                fetch(`${baseUrl}moderator/manage-cpcs`, {
+                fetch(URLS.moderatorManageCpcs(), {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        loadContent(`${baseUrl}moderator/manage-cpcs`);
+                        loadContent(URLS.moderatorManageCpcs());
                     } else {
                         alert(data.message || 'Error al agregar el CPC');
                     }

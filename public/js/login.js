@@ -1,5 +1,5 @@
-// Configuración de URL base
-const baseUrl = window.location.pathname.includes('/subs/') ? '/subs/' : '/';
+// Cargar helper de URLs
+// const baseUrl = getBaseUrl(); // Se obtiene del helper
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('loginForm');
@@ -17,8 +17,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Usar la función helper para obtener la URL correcta
+        const loginUrl = URLS.login();
+
         // Enviar datos al servidor
-        fetch(baseUrl + 'login', {
+        fetch(loginUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',

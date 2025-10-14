@@ -91,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
             userCPCsList.innerHTML = data.userCPCs.map(cpc => `
                 <li>
                     ${cpc.codigo} - ${cpc.descripcion}
-                    <form class="ajax-form" action="${baseUrl}participant/profile" method="POST">
+                    <form class="ajax-form" action="${URLS.participantProfile()}" method="POST">
                         <input type="hidden" name="action" value="remove_cpc">
                         <input type="hidden" name="cpc_id" value="${cpc.id}">
                         <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadPhaseContent(phase, phaseContainer, productInfoContainer) {
-        fetch(`${baseUrl}participant/phase/${phase}`, {
+        fetch(URLS.participantPhase(phase), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => {
