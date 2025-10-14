@@ -1,29 +1,46 @@
-# Logs and databases #
-######################
-config/database.php
+# Archivos de configuración sensibles (crear manualmente en producción)
+# config/database.php - REMOVIDO: Este archivo es crítico y debe estar incluido
 
+# Archivos de entorno específico (plantillas necesarias para el sistema)
+# config/app.production.php - REQUERIDO: Plantilla para producción
+# config/app.development.php - Se genera automáticamente como backup
 
-# Index #
-######################
-#index.php
+# Archivos del sistema (removido .htaccess - es crítico para el funcionamiento)
+.DS_Store
+Thumbs.db
 
-# HTACCESS #
-######################
-.htaccess
+# Logs
+*.log
+logs/
 
-# Configuraciones de entorno #
-######################
-config/app.production.php
-config/app.development.php
+# Archivos temporales
+*.tmp
+*.temp
+*~
 
-# Scripts de migración #
-######################
+# Archivos de backup
+*.bak
+*.backup
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de Node.js (si se agregan en el futuro)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archivos de Composer (si se agregan en el futuro)
+vendor/composer/
+composer.lock
+
+# Archivos de sesión PHP
+sess_*
+
+# Scripts de migración (ya no necesarios)
 utils/fix_urls.php
 utils/replace_urls.php
-
-# Eliminado /subs de las url #
-######################
-#public/js/admin-dashboard.js
-#public/js/login.js
-#public/js/moderator-dashboard.js
-#public/js/participant-dashboard.js

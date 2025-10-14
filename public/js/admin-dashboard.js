@@ -1,5 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     const dynamicContent = document.getElementById('dynamic-content');
+    // Calcular la URL base dinámicamente para desarrollo y producción
+    let baseUrl;
+    const pathParts = window.location.pathname.split('/').filter(part => part !== '');
+    
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Desarrollo local - incluir el directorio del proyecto
+        baseUrl = window.location.origin + '/' + (pathParts.length > 0 ? pathParts[0] + '/' : '');
+    } else {
+        // Producción - usar la raíz del dominio
+        baseUrl = window.location.origin + '/';
+    }
+    
+    console.log('Base URL calculada:', baseUrl);
+    console.log('Entorno detectado:', window.location.hostname === 'localhost' ? 'Desarrollo' : 'Producción');
 
     function loadContent(url) {
         console.log('Cargando contenido desde:', url);
@@ -44,7 +58,30 @@ document.addEventListener('DOMContentLoaded', function() {
     function initFormListeners() {
         const form = dynamicContent.querySelector('form');
         if (form) {
-            form.addEventListener('submit', handleFormSubmit);
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        loadContent(baseUrl + 'admin/dashboard');
+                    } else {
+                        alert(data.message || 'Error al procesar la solicitud');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al procesar la solicitud');
+                });
+            });
         }
     }
 
@@ -152,10 +189,28 @@ document.addEventListener('DOMContentLoaded', function() {
             if (form) {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    handleFormSubmit.call(this, e, () => {
-                        document.body.removeChild(popup);
-                        document.body.removeChild(overlay);
-                        loadContent(baseUrl + 'admin/dashboard');
+                    const formData = new FormData(this);
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            document.body.removeChild(popup);
+                            document.body.removeChild(overlay);
+                            loadContent(baseUrl + 'admin/dashboard');
+                        } else {
+                            alert(data.message || 'Error al procesar la solicitud');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud');
                     });
                 });
             }
@@ -166,34 +221,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function handleFormSubmit(e, callback) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        fetch(e.target.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                if (callback) {
-                    callback();
-                } else {
-                    loadContent(baseUrl + 'admin/dashboard');
-                }
-            } else {
-                alert(data.message || 'Error al procesar la solicitud');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al procesar la solicitud');
-        });
-    }
 
     function initDeleteButtons() {
         dynamicContent.querySelectorAll('.btn-delete').forEach(button => {

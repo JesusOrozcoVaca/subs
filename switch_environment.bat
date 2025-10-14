@@ -10,14 +10,14 @@ set /p choice="Selecciona el entorno (1 o 2): "
 if "%choice%"=="1" (
     echo.
     echo Configurando para DESARROLLO LOCAL...
-    if exist "config\app.production.php" (
-        copy "config\app.php" "config\app.development.php" >nul
-        copy "config\app.production.php" "config\app.php" >nul
+    if exist "config\app.development.php" (
         echo ERROR: Ya existe una configuracion de desarrollo. 
         echo Por favor, verifica manualmente los archivos.
         pause
         exit /b 1
     )
+    copy "config\app.php" "config\app.development.php" >nul
+    copy "config\app.production.php" "config\app.php" >nul
     echo BASE_URL configurado para: /subs/
     echo DEBUG configurado para: false (sin mensajes de debug)
     echo.
