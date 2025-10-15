@@ -114,7 +114,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const formData = new FormData(this);
 
-                fetch(this.action, {
+                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                const formAction = this.getAttribute('action');
+                console.log('Form action URL:', formAction);
+                
+                fetch(formAction, {
                     method: 'POST',
                     body: formData,
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }

@@ -112,15 +112,27 @@ document.addEventListener('DOMContentLoaded', function() {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
-                fetch(this.action, {
+                
+                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                const formAction = this.getAttribute('action');
+                console.log('Form action URL:', formAction);
+                
+                fetch(formAction, {
                     method: 'POST',
                     body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Response data:', data);
                     if (data.success) {
                         alert(data.message);
                         loadContent(URLS.moderatorManageCpcs());
@@ -130,7 +142,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
+                    alert('Error al procesar la solicitud: ' + error.message);
                 });
             });
         }
@@ -195,7 +207,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
-                    fetch(this.action, {
+                    // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                    const formAction = this.getAttribute('action');
+                    console.log('Popup form action URL:', formAction);
+                    
+                    fetch(formAction, {
                         method: 'POST',
                         body: formData,
                         headers: {
@@ -273,15 +289,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const formData = new FormData(this);
                 
-                fetch(URLS.moderatorManageCpcs(), {
+                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                const formAction = this.getAttribute('action');
+                console.log('Add CPC form action URL:', formAction);
+                
+                fetch(formAction, {
                     method: 'POST',
                     body: formData,
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Add CPC response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Add CPC response data:', data);
                     if (data.success) {
                         alert(data.message);
                         loadContent(URLS.moderatorManageCpcs());
@@ -290,8 +317,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud');
+                    console.error('Add CPC error:', error);
+                    alert('Error al procesar la solicitud: ' + error.message);
                 });
             });
         }

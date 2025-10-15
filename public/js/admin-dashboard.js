@@ -113,7 +113,11 @@ document.addEventListener('DOMContentLoaded', function() {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 const formData = new FormData(this);
-                fetch(this.action, {
+                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                const formAction = this.getAttribute('action');
+                console.log('Form action URL:', formAction);
+                
+                fetch(formAction, {
                     method: 'POST',
                     body: formData,
                     headers: {
@@ -253,7 +257,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.addEventListener('submit', function(e) {
                     e.preventDefault();
                     const formData = new FormData(this);
-                    fetch(this.action, {
+                    // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                    const formAction = this.getAttribute('action');
+                    console.log('Popup form action URL:', formAction);
+                    
+                    fetch(formAction, {
                         method: 'POST',
                         body: formData,
                         headers: {
