@@ -6,20 +6,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function loadContent(url) {
         console.log('Cargando contenido desde:', url);
+        
+        // Mostrar indicador de carga
+        dynamicContent.innerHTML = '<div class="loading">Cargando...</div>';
+        
         fetch(url, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.text())
+        .then(response => {
+            console.log('Respuesta del servidor:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.text();
+        })
         .then(html => {
-            console.log('Contenido HTML recibido:', html.substring(0, 100) + '...');
+            console.log('Contenido HTML recibido:', html.substring(0, 200) + '...');
+            console.log('Longitud del contenido:', html.length);
+            
+            if (html.trim() === '') {
+                throw new Error('El servidor devolvió contenido vacío');
+            }
+            
             dynamicContent.innerHTML = html;
             initListeners();
+            
+            // Actualizar el título de la página si es necesario
+            updatePageTitle(url);
         })
         .catch(error => {
             console.error('Error al cargar el contenido:', error);
-            dynamicContent.innerHTML = '<p>Error al cargar el contenido. Por favor, intente de nuevo.</p>';
+            dynamicContent.innerHTML = `
+                <div class="error-message">
+                    <h3>Error al cargar el contenido</h3>
+                    <p>${error.message}</p>
+                    <p>URL solicitada: ${url}</p>
+                    <button onclick="loadContent('${url}')" class="btn">Reintentar</button>
+                </div>
+            `;
         });
     }
 
@@ -27,6 +53,12 @@ document.addEventListener('DOMContentLoaded', function() {
         link.addEventListener('click', function(e) {
             e.preventDefault();
             const url = this.getAttribute('href');
+            console.log('Click en menú:', this.textContent, 'URL:', url);
+            
+            // Actualizar clase activa
+            document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+            
             loadContent(url);
             history.pushState(null, '', url);
         });
@@ -262,6 +294,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+    }
+
+    // Función para actualizar el título de la página según la URL
+    function updatePageTitle(url) {
+        const pageTitle = document.querySelector('h1');
+        if (pageTitle) {
+            if (url.includes('create-user')) {
+                pageTitle.textContent = 'Crear Usuario';
+            } else if (url.includes('create-product')) {
+                pageTitle.textContent = 'Crear Producto';
+            } else if (url.includes('create-cpc')) {
+                pageTitle.textContent = 'Crear CPC';
+            } else if (url.includes('dashboard')) {
+                pageTitle.textContent = 'Dashboard de Administrador';
+            }
+        }
     }
 
     // Cargar el contenido inicial del dashboard

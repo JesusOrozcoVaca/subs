@@ -352,6 +352,42 @@ body {
     background-color: #2c4a6b;
 }
 
+/* Estilos para indicador de carga y mensajes de error */
+.loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 18px;
+    color: #666;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 20px;
+}
+
+.error-message h3 {
+    margin-top: 0;
+    color: #721c24;
+}
+
+.error-message button {
+    margin-top: 10px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.error-message button:hover {
+    background-color: #c82333;
+}
+
 /* Estilos responsivos */
 @media (max-width: 768px) {
     .dashboard-container {
