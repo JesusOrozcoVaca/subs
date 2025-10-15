@@ -70,60 +70,54 @@ class ModeratorController {
     }
 
     public function manageCPCs() {
-        $cpcs = $this->cpcModel->getAllCPCs();
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $action = $_POST['action'] ?? '';
-            
-            switch ($action) {
-                case 'add':
-                    $result = $this->cpcModel->createCPC($_POST);
-                    if ($result) {
-                        $response = ['success' => true, 'message' => "CPC creado exitosamente."];
-                    } else {
-                        $response = ['success' => false, 'message' => "Error al crear el CPC."];
-                    }
-                    break;
-                case 'edit':
-                    $result = $this->cpcModel->updateCPC($_POST['id'], $_POST);
-                    if ($result) {
-                        $response = ['success' => true, 'message' => "CPC actualizado exitosamente."];
-                    } else {
-                        $response = ['success' => false, 'message' => "Error al actualizar el CPC."];
-                    }
-                    break;
-                case 'delete':
-                    $id = $_POST['id'] ?? null;
-                    if ($id) {
-                        $result = $this->cpcModel->deleteCPC($id);
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $action = $_POST['action'] ?? '';
+                
+                switch ($action) {
+                    case 'add':
+                        $result = $this->cpcModel->createCPC($_POST);
                         if ($result) {
-                            $response = ['success' => true, 'message' => "CPC eliminado exitosamente."];
+                            $this->sendJsonResponse(true, "CPC creado exitosamente.");
                         } else {
-                            $response = ['success' => false, 'message' => "Error al eliminar el CPC."];
+                            $this->sendJsonResponse(false, "Error al crear el CPC.");
                         }
-                    } else {
-                        $response = ['success' => false, 'message' => "ID de CPC no proporcionado."];
-                    }
-                    break;
-                default:
-                    $response = ['success' => false, 'message' => "Acción no reconocida."];
-            }
-            
-            if ($this->isAjaxRequest()) {
-                header('Content-Type: application/json');
-                echo json_encode($response);
-                exit;
+                        break;
+                    case 'edit':
+                        $result = $this->cpcModel->updateCPC($_POST['id'], $_POST);
+                        if ($result) {
+                            $this->sendJsonResponse(true, "CPC actualizado exitosamente.");
+                        } else {
+                            $this->sendJsonResponse(false, "Error al actualizar el CPC.");
+                        }
+                        break;
+                    case 'delete':
+                        $id = $_POST['id'] ?? null;
+                        if ($id) {
+                            $result = $this->cpcModel->deleteCPC($id);
+                            if ($result) {
+                                $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                            } else {
+                                $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                            }
+                        } else {
+                            $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
+                        }
+                        break;
+                    default:
+                        $this->sendJsonResponse(false, "Acción no reconocida.");
+                }
             } else {
-                $_SESSION['message'] = $response['message'];
-                header('Location: ' . url('moderator/manage-cpcs'));
-                exit;
+                $cpcs = $this->cpcModel->getAllCPCs();
+                
+                if ($this->isAjaxRequest()) {
+                    require_once BASE_PATH . '/views/moderator/mod_manage_cpcs_content.php';
+                } else {
+                    require_once BASE_PATH . '/views/moderator/mod_manage_cpcs.php';
+                }
             }
-        }
-        
-        if ($this->isAjaxRequest()) {
-            require_once BASE_PATH . '/views/moderator/mod_manage_cpcs_content.php';
-        } else {
-            require_once BASE_PATH . '/views/moderator/mod_manage_cpcs.php';
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
     }
 
