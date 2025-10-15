@@ -190,20 +190,25 @@ class ModeratorController {
     }
 
     public function deleteCPC() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $cpcId = $_POST['id'] ?? null;
-            if ($cpcId) {
-                $result = $this->cpcModel->deleteCPC($cpcId);
-                if ($result) {
-                    $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $cpcId = $_POST['id'] ?? null;
+                if ($cpcId) {
+                    $result = $this->cpcModel->deleteCPC($cpcId);
+                    if ($result) {
+                        $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                    } else {
+                        $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                    }
                 } else {
-                    $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                    $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
                 }
             } else {
-                $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
+                $this->sendJsonResponse(false, "Método no permitido.");
             }
-        } else {
-            $this->sendJsonResponse(false, "Método no permitido.");
+        } catch (Exception $e) {
+            error_log("Error en ModeratorController::deleteCPC: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+            $this->sendJsonResponse(false, "Error interno del servidor: " . $e->getMessage());
         }
     }
 
