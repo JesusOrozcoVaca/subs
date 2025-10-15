@@ -128,31 +128,34 @@ class ModeratorController {
     }
 
     public function editCPC($id) {
-        $cpc = $this->cpcModel->getCPCById($id);
-        
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $result = $this->cpcModel->updateCPC($id, $_POST);
-            if ($result) {
-                $response = ['success' => true, 'message' => "CPC actualizado exitosamente."];
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $result = $this->cpcModel->updateCPC($id, $_POST);
+                if ($result) {
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(true, "CPC actualizado exitosamente.");
+                    } else {
+                        $_SESSION['success_message'] = "CPC actualizado exitosamente.";
+                        header('Location: ' . url('moderator/manage-cpcs'));
+                        exit();
+                    }
+                } else {
+                    throw new Exception("Error al actualizar el CPC.");
+                }
             } else {
-                $response = ['success' => false, 'message' => "Error al actualizar el CPC."];
+                $cpc = $this->cpcModel->getCPCById($id);
+                if (!$cpc) {
+                    throw new Exception("CPC no encontrado.");
+                }
+                
+                if ($this->isAjaxRequest()) {
+                    require_once BASE_PATH . '/views/moderator/mod_edit_cpc_content.php';
+                } else {
+                    require_once BASE_PATH . '/views/moderator/mod_edit_cpc.php';
+                }
             }
-            
-            if ($this->isAjaxRequest()) {
-                header('Content-Type: application/json');
-                echo json_encode($response);
-                exit;
-            } else {
-                $_SESSION['message'] = $response['message'];
-                header('Location: ' . url('moderator/manage-cpcs'));
-                exit;
-            }
-        }
-        
-        if ($this->isAjaxRequest()) {
-            require_once BASE_PATH . '/views/moderator/mod_edit_cpc_content.php';
-        } else {
-            require_once BASE_PATH . '/views/moderator/mod_edit_cpc.php';
+        } catch (Exception $e) {
+            $this->handleError($e);
         }
     }
 
@@ -194,5 +197,22 @@ class ModeratorController {
         }
         
         require_once BASE_PATH . '/views/moderator/mod_evaluate_participants.php';
+    }
+
+    private function sendJsonResponse($success, $message, $data = []) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => $success, 'message' => $message, 'data' => $data]);
+        exit();
+    }
+
+    private function handleError(Exception $e) {
+        error_log("Error en ModeratorController: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
+        if ($this->isAjaxRequest()) {
+            $this->sendJsonResponse(false, $e->getMessage());
+        } else {
+            $_SESSION['error_message'] = $e->getMessage();
+            header('Location: ' . url('moderator/dashboard'));
+            exit();
+        }
     }
 }
