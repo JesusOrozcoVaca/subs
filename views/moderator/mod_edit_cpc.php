@@ -30,6 +30,53 @@
         </main>
     </div>
 
+    <script src="<?php echo js('url-helper.js'); ?>"></script>
     <script src="<?php echo js('moderator-dashboard.js'); ?>"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const editForm = document.getElementById('edit-cpc-form');
+        
+        if (editForm) {
+            editForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                
+                // Deshabilitar botón durante el envío
+                submitButton.disabled = true;
+                submitButton.textContent = 'Actualizando...';
+                
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        // Opcional: recargar la página para mostrar los cambios
+                        // window.location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al procesar la solicitud. Por favor, intente de nuevo.');
+                })
+                .finally(() => {
+                    // Rehabilitar botón
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Actualizar CPC';
+                });
+            });
+        }
+    });
+    </script>
 </body>
 </html>
