@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     const dynamicContent = document.getElementById('dynamic-content');
-    
+
     console.log('Sistema detectado:', isNewSystem() ? 'Nuevo (Query Parameters)' : 'Legacy (URLs Amigables)');
     console.log('Base URL:', getBaseUrl());
 
@@ -75,18 +75,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function handleMenuClick(e) {
-        e.preventDefault();
+            e.preventDefault();
         e.stopPropagation();
         
-        const url = this.getAttribute('href');
+            const url = this.getAttribute('href');
         console.log('Click en menú:', this.textContent, 'URL:', url);
         
         // Actualizar clase activa
         document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
         this.classList.add('active');
         
-        loadContent(url);
-        history.pushState(null, '', url);
+            loadContent(url);
+            history.pushState(null, '', url);
         
         return false; // Prevenir comportamiento por defecto adicional
     }
@@ -103,7 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initFormListeners();
         initEditButtons();
         initDeleteButtons();
-        initAddCPCForm();
     }
 
     function initFormListeners() {
@@ -252,11 +251,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (confirm(confirmMessage)) {
                     const deleteUrl = URLS.moderatorDeleteCpc();
                     fetch(deleteUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
                         body: `id=${encodeURIComponent(id)}`
                     })
                     .then(response => {
@@ -265,16 +264,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         return response.json();
                     })
-                    .then(data => {
-                        if (data.success) {
-                            alert(data.message);
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
                             loadContent(URLS.moderatorManageCpcs());
-                        } else {
+            } else {
                             alert(data.message || `Error al eliminar el ${type === 'cpc' ? 'CPC' : 'elemento'}`);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
                         alert('Error al procesar la solicitud: ' + error.message);
                     });
                 }
@@ -282,47 +281,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function initAddCPCForm() {
-        const form = dynamicContent.querySelector('#add-cpc-form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                
-                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
-                const formAction = this.getAttribute('action');
-                console.log('Add CPC form action URL:', formAction);
-                
-                fetch(formAction, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    console.log('Add CPC response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Add CPC response data:', data);
-                    if (data.success) {
-                        alert(data.message);
-                        loadContent(URLS.moderatorManageCpcs());
-                    } else {
-                        alert(data.message || 'Error al agregar el CPC');
-                    }
-                })
-                .catch(error => {
-                    console.error('Add CPC error:', error);
-                    alert('Error al procesar la solicitud: ' + error.message);
-                });
-            });
-        }
-    }
 
 
 
