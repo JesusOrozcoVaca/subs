@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('moderator-dashboard.js cargado correctamente');
     const dynamicContent = document.getElementById('dynamic-content');
+    console.log('dynamicContent encontrado:', dynamicContent);
 
     function loadContent(url) {
         fetch(url, {
@@ -125,12 +127,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initDeleteCPCListeners() {
-        document.querySelectorAll('.btn-delete').forEach(button => {
+        console.log('Inicializando listeners de eliminación de CPC...');
+        const deleteButtons = document.querySelectorAll('.btn-delete');
+        console.log('Botones de eliminar encontrados:', deleteButtons.length);
+        
+        deleteButtons.forEach((button, index) => {
+            console.log(`Botón ${index + 1}:`, button);
             button.addEventListener('click', function(e) {
+                console.log('Click en botón eliminar detectado');
                 e.preventDefault();
                 const id = this.getAttribute('data-id');
                 const type = this.getAttribute('data-type');
+                console.log('ID:', id, 'Type:', type);
                 const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'cpc' ? 'CPC' : 'elemento'}?`;
+                console.log('Mensaje de confirmación:', confirmMessage);
                 if (confirm(confirmMessage)) {
                     const deleteUrl = URLS.moderatorDeleteCpc();
                     fetch(deleteUrl, {
