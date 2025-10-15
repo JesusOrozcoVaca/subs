@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const id = this.getAttribute('data-id');
                 const type = this.getAttribute('data-type');
-                const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'cpc' ? 'CPC'}?`;
+                const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'cpc' ? 'CPC' : 'elemento'}?`;
                 if (confirm(confirmMessage)) {
                     const deleteUrl = URLS.moderatorDeleteCpc();
                     fetch(deleteUrl, {
