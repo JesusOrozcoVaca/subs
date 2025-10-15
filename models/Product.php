@@ -198,4 +198,11 @@ class Product {
             'id' => $productId
         ]);
     }
+
+    public function getProductsByCpcId($cpcId) {
+        $query = "SELECT * FROM productos WHERE cpc_id = :cpc_id";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['cpc_id' => $cpcId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

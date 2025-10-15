@@ -194,11 +194,17 @@ class ModeratorController {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $cpcId = $_POST['id'] ?? null;
                 if ($cpcId) {
-                    $result = $this->cpcModel->deleteCPC($cpcId);
-                    if ($result) {
-                        $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                    // Verificar si hay productos que dependen de este CPC
+                    $productsUsingCpc = $this->productModel->getProductsByCpcId($cpcId);
+                    if (!empty($productsUsingCpc)) {
+                        $this->sendJsonResponse(false, "No se puede eliminar este CPC porque está siendo utilizado por " . count($productsUsingCpc) . " producto(s). Elimine primero los productos relacionados.");
                     } else {
-                        $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                        $result = $this->cpcModel->deleteCPC($cpcId);
+                        if ($result) {
+                            $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                        } else {
+                            $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                        }
                     }
                 } else {
                     $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
