@@ -1,43 +1,143 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('moderator-dashboard.js cargado correctamente');
     const dynamicContent = document.getElementById('dynamic-content');
-    console.log('dynamicContent encontrado:', dynamicContent);
+    
+    console.log('Sistema detectado:', isNewSystem() ? 'Nuevo (Query Parameters)' : 'Legacy (URLs Amigables)');
+    console.log('Base URL:', getBaseUrl());
 
     function loadContent(url) {
+        console.log('Cargando contenido desde:', url);
+        
+        // Mostrar indicador de carga
+        dynamicContent.innerHTML = '<div class="loading">Cargando...</div>';
+        
         fetch(url, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const dynamicContent = doc.querySelector('#dynamic-content');
-            if (dynamicContent) {
-                document.getElementById('dynamic-content').innerHTML = dynamicContent.innerHTML;
-            } else {
-                document.getElementById('dynamic-content').innerHTML = html;
+        .then(response => {
+            console.log('Respuesta del servidor:', response.status, response.statusText);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
+            return response.text();
+        })
+        .then(html => {
+            console.log('Contenido HTML recibido:', html.substring(0, 200) + '...');
+            console.log('Longitud del contenido:', html.length);
+            
+            if (html.trim() === '') {
+                throw new Error('El servidor devolvió contenido vacío');
+            }
+            
+            dynamicContent.innerHTML = html;
             initListeners();
+            
+            // Actualizar el título de la página si es necesario
+            updatePageTitle(url);
         })
         .catch(error => {
             console.error('Error al cargar el contenido:', error);
-            document.getElementById('dynamic-content').innerHTML = '<p>Error al cargar el contenido. Por favor, intente de nuevo.</p>';
+            dynamicContent.innerHTML = `
+                <div class="error-message">
+                    <h3>Error al cargar el contenido</h3>
+                    <p>${error.message}</p>
+                    <p>URL solicitada: ${url}</p>
+                    <button onclick="loadContent('${url}')" class="btn">Reintentar</button>
+                </div>
+            `;
         });
     }
 
-    document.querySelectorAll('.sidebar-menu a').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = this.getAttribute('href');
-            loadContent(url);
-            history.pushState(null, '', url);
+    // Configurar event listeners para el menú
+    function setupMenuListeners() {
+        const menuLinks = document.querySelectorAll('.sidebar-menu a');
+        console.log('Enlaces del menú encontrados:', menuLinks.length);
+        
+        menuLinks.forEach((link, index) => {
+            console.log(`Enlace ${index + 1}:`, link.textContent, 'href:', link.getAttribute('href'));
+            
+            // Remover todos los event listeners existentes
+            const newLink = link.cloneNode(true);
+            link.parentNode.replaceChild(newLink, link);
+            
+            // Agregar nuevo event listener
+            newLink.addEventListener('click', handleMenuClick);
+            
+            // También agregar onclick como respaldo
+            newLink.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMenuClick.call(this, e);
+                return false;
+            };
         });
+    }
+    
+    function handleMenuClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const url = this.getAttribute('href');
+        console.log('Click en menú:', this.textContent, 'URL:', url);
+        
+        // Actualizar clase activa
+        document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        
+        loadContent(url);
+        history.pushState(null, '', url);
+        
+        return false; // Prevenir comportamiento por defecto adicional
+    }
+    
+    // Configurar listeners iniciales
+    setupMenuListeners();
+
+    window.addEventListener('popstate', function() {
+        loadContent(location.pathname);
     });
 
-    function initEditCPCListeners() {
-        document.querySelectorAll('.btn-edit').forEach(button => {
+    function initListeners() {
+        setupMenuListeners(); // Reconfigurar listeners del menú
+        initFormListeners();
+        initEditButtons();
+        initDeleteButtons();
+        initAddCPCForm();
+    }
+
+    function initFormListeners() {
+        const form = dynamicContent.querySelector('form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        loadContent(URLS.moderatorManageCpcs());
+                    } else {
+                        alert(data.message || 'Error al procesar la solicitud');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al procesar la solicitud');
+                });
+            });
+        }
+    }
+
+    function initEditButtons() {
+        dynamicContent.querySelectorAll('.btn-edit').forEach(button => {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const url = this.getAttribute('href');
@@ -110,37 +210,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.body.removeChild(overlay);
                             loadContent(URLS.moderatorManageCpcs());
                         } else {
-                            alert('Error: ' + data.message);
+                            alert(data.message || 'Error al procesar la solicitud');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error al procesar la solicitud: ' + error.message);
+                        alert('Error al procesar la solicitud');
                     });
                 });
             }
         })
         .catch(error => {
-            console.error('Error al cargar el popup:', error);
+            console.error('Error al abrir el popup:', error);
             alert('Error al cargar el formulario de edición');
         });
     }
 
-    function initDeleteCPCListeners() {
-        console.log('Inicializando listeners de eliminación de CPC...');
-        const deleteButtons = document.querySelectorAll('.btn-delete');
-        console.log('Botones de eliminar encontrados:', deleteButtons.length);
-        
-        deleteButtons.forEach((button, index) => {
-            console.log(`Botón ${index + 1}:`, button);
+    function initDeleteButtons() {
+        dynamicContent.querySelectorAll('.btn-delete').forEach(button => {
             button.addEventListener('click', function(e) {
-                console.log('Click en botón eliminar detectado');
                 e.preventDefault();
                 const id = this.getAttribute('data-id');
                 const type = this.getAttribute('data-type');
-                console.log('ID:', id, 'Type:', type);
                 const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'cpc' ? 'CPC' : 'elemento'}?`;
-                console.log('Mensaje de confirmación:', confirmMessage);
                 if (confirm(confirmMessage)) {
                     const deleteUrl = URLS.moderatorDeleteCpc();
                     fetch(deleteUrl, {
@@ -162,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             alert(data.message);
                             loadContent(URLS.moderatorManageCpcs());
                         } else {
-                            alert(data.message || 'Error al eliminar el CPC');
+                            alert(data.message || `Error al eliminar el ${type === 'cpc' ? 'CPC' : 'elemento'}`);
                         }
                     })
                     .catch(error => {
@@ -175,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initAddCPCForm() {
-        const form = document.getElementById('add-cpc-form');
+        const form = dynamicContent.querySelector('#add-cpc-form');
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -207,12 +299,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-    function initListeners() {
-        // Aquí puedes agregar inicializaciones específicas para el moderador
-        initEditCPCListeners();
-        initDeleteCPCListeners();
-        initAddCPCForm();
+    // Función para actualizar el título de la página según la URL
+    function updatePageTitle(url) {
+        const pageTitle = document.querySelector('h1');
+        if (pageTitle) {
+            if (url.includes('manage-cpcs')) {
+                pageTitle.textContent = 'Gestionar CPCs';
+            } else if (url.includes('dashboard')) {
+                pageTitle.textContent = 'Dashboard de Moderador';
+            }
+        }
     }
 
-    // No necesitamos cargar el contenido inicial aquí, ya que se carga en PHP
+    // Cargar el contenido inicial del dashboard después de un pequeño delay
+    setTimeout(() => {
+        loadContent(URLS.moderatorDashboard());
+    }, 100);
 });

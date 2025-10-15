@@ -83,27 +83,6 @@ class ModeratorController {
                             $this->sendJsonResponse(false, "Error al crear el CPC.");
                         }
                         break;
-                    case 'edit':
-                        $result = $this->cpcModel->updateCPC($_POST['id'], $_POST);
-                        if ($result) {
-                            $this->sendJsonResponse(true, "CPC actualizado exitosamente.");
-                        } else {
-                            $this->sendJsonResponse(false, "Error al actualizar el CPC.");
-                        }
-                        break;
-                    case 'delete':
-                        $id = $_POST['id'] ?? null;
-                        if ($id) {
-                            $result = $this->cpcModel->deleteCPC($id);
-                            if ($result) {
-                                $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
-                            } else {
-                                $this->sendJsonResponse(false, "Error al eliminar el CPC.");
-                            }
-                        } else {
-                            $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
-                        }
-                        break;
                     default:
                         $this->sendJsonResponse(false, "Acción no reconocida.");
                 }
@@ -125,24 +104,17 @@ class ModeratorController {
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = $this->cpcModel->updateCPC($id, $_POST);
-                
                 if ($result) {
-                    // Respuesta simple: siempre JSON con mensaje de éxito
-                    $this->sendJsonResponse(true, "El cambio ha sido realizado con éxito");
+                    $this->sendJsonResponse(true, "CPC actualizado exitosamente.");
                 } else {
-                    $this->sendJsonResponse(false, "Error al actualizar el CPC.");
+                    throw new Exception("Error al actualizar el CPC.");
                 }
             } else {
                 $cpc = $this->cpcModel->getCPCById($id);
                 if (!$cpc) {
                     throw new Exception("CPC no encontrado.");
                 }
-                
-                if ($this->isAjaxRequest()) {
-                    require_once BASE_PATH . '/views/moderator/mod_edit_cpc_content.php';
-                } else {
-                    require_once BASE_PATH . '/views/moderator/mod_edit_cpc.php';
-                }
+                require_once BASE_PATH . '/views/moderator/mod_edit_cpc_content.php';
             }
         } catch (Exception $e) {
             $this->handleError($e);
@@ -190,37 +162,32 @@ class ModeratorController {
     }
 
     public function deleteCPC() {
-        try {
-            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                $cpcId = $_POST['id'] ?? null;
-                if ($cpcId) {
-                    // Verificar si hay productos que dependen de este CPC
-                    $productsUsingCpc = $this->productModel->getProductsByCpcId($cpcId);
-                    if (!empty($productsUsingCpc)) {
-                        $this->sendJsonResponse(false, "No se puede eliminar este CPC porque está siendo utilizado por " . count($productsUsingCpc) . " producto(s). Elimine primero los productos relacionados.");
-                    } else {
-                        $result = $this->cpcModel->deleteCPC($cpcId);
-                        if ($result) {
-                            $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
-                        } else {
-                            $this->sendJsonResponse(false, "Error al eliminar el CPC.");
-                        }
-                    }
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $cpcId = $_POST['id'] ?? null;
+            if ($cpcId) {
+                // Verificar si hay productos que dependen de este CPC
+                $productsUsingCpc = $this->productModel->getProductsByCpcId($cpcId);
+                if (!empty($productsUsingCpc)) {
+                    $this->sendJsonResponse(false, "No se puede eliminar este CPC porque está siendo utilizado por " . count($productsUsingCpc) . " producto(s). Elimine primero los productos relacionados.");
                 } else {
-                    $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
+                    $result = $this->cpcModel->deleteCPC($cpcId);
+                    if ($result) {
+                        $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                    } else {
+                        $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                    }
                 }
             } else {
-                $this->sendJsonResponse(false, "Método no permitido.");
+                $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
             }
-        } catch (Exception $e) {
-            error_log("Error en ModeratorController::deleteCPC: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-            $this->sendJsonResponse(false, "Error interno del servidor: " . $e->getMessage());
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido.");
         }
     }
 
-    private function sendJsonResponse($success, $message, $data = []) {
+    private function sendJsonResponse($success, $message) {
         header('Content-Type: application/json');
-        echo json_encode(['success' => $success, 'message' => $message, 'data' => $data]);
+        echo json_encode(['success' => $success, 'message' => $message]);
         exit();
     }
 
