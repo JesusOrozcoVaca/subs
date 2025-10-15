@@ -174,6 +174,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.body.removeChild(overlay);
             });
 
+            // Cerrar popup al hacer clic en el overlay
+            overlay.addEventListener('click', () => {
+                document.body.removeChild(popup);
+                document.body.removeChild(overlay);
+            });
+
+            // Evitar que el popup se cierre al hacer clic en el contenido
+            popup.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
             const form = popup.querySelector('form');
             if (form) {
                 form.addEventListener('submit', function(e) {
