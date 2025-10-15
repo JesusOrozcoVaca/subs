@@ -39,8 +39,88 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const url = this.getAttribute('href');
-                loadContent(url);
+                openPopup(url);
             });
+        });
+    }
+
+    function openPopup(url) {
+        console.log('Abriendo popup para URL:', url);
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            console.log('Contenido del popup recibido:', html.substring(0, 100) + '...');
+            
+            // Crear el overlay (fondo oscuro)
+            const overlay = document.createElement('div');
+            overlay.className = 'popup-overlay';
+            document.body.appendChild(overlay);
+            
+            // Crear el popup
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerHTML = `
+                <div class="popup-content">
+                    <span class="close">&times;</span>
+                    ${html}
+                </div>
+            `;
+            document.body.appendChild(popup);
+
+            const closeBtn = popup.querySelector('.close');
+            closeBtn.addEventListener('click', () => {
+                document.body.removeChild(popup);
+                document.body.removeChild(overlay);
+            });
+
+            // Cerrar popup al hacer clic en el overlay
+            overlay.addEventListener('click', () => {
+                document.body.removeChild(popup);
+                document.body.removeChild(overlay);
+            });
+
+            // Evitar que el popup se cierre al hacer clic en el contenido
+            popup.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+
+            const form = popup.querySelector('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(this);
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            document.body.removeChild(popup);
+                            document.body.removeChild(overlay);
+                            loadContent(URLS.moderatorManageCpcs());
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud: ' + error.message);
+                    });
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error al cargar el popup:', error);
+            alert('Error al cargar el formulario de edición');
         });
     }
 
