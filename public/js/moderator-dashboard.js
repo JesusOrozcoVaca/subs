@@ -129,34 +129,38 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', function(e) {
                 e.preventDefault();
                 const id = this.getAttribute('data-id');
-                if (confirm('¿Está seguro de eliminar este CPC?')) {
-                    deleteCPC(id);
+                const type = this.getAttribute('data-type');
+                const confirmMessage = `¿Está seguro de que desea eliminar este ${type === 'cpc' ? 'CPC'}?`;
+                if (confirm(confirmMessage)) {
+                    const deleteUrl = URLS.moderatorDeleteCpc();
+                    fetch(deleteUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: `id=${encodeURIComponent(id)}`
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            loadContent(URLS.moderatorManageCpcs());
+                        } else {
+                            alert(data.message || 'Error al eliminar el CPC');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al procesar la solicitud: ' + error.message);
+                    });
                 }
             });
-        });
-    }
-    
-    function deleteCPC(id) {
-        fetch(URLS.moderatorManageCpcs(), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: `id=${id}&action=delete`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                loadContent(URLS.moderatorManageCpcs());
-            } else {
-                alert(data.message || 'Error al eliminar el CPC');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al procesar la solicitud');
         });
     }
 

@@ -189,6 +189,24 @@ class ModeratorController {
         require_once BASE_PATH . '/views/moderator/mod_evaluate_participants.php';
     }
 
+    public function deleteCPC() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $cpcId = $_POST['id'] ?? null;
+            if ($cpcId) {
+                $result = $this->cpcModel->deleteCPC($cpcId);
+                if ($result) {
+                    $this->sendJsonResponse(true, "CPC eliminado exitosamente.");
+                } else {
+                    $this->sendJsonResponse(false, "Error al eliminar el CPC.");
+                }
+            } else {
+                $this->sendJsonResponse(false, "ID de CPC no proporcionado.");
+            }
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido.");
+        }
+    }
+
     private function sendJsonResponse($success, $message, $data = []) {
         header('Content-Type: application/json');
         echo json_encode(['success' => $success, 'message' => $message, 'data' => $data]);

@@ -15,10 +15,7 @@
             <td><?php echo htmlspecialchars($cpc['descripcion']); ?></td>
             <td>
                 <a href="<?php echo url('moderator/edit-cpc/' . $cpc['id']); ?>" class="btn btn-small btn-edit">Editar</a>
-                <form action="<?php echo url('moderator/delete-cpc'); ?>" method="POST" style="display:inline;">
-                    <input type="hidden" name="id" value="<?php echo $cpc['id']; ?>">
-                    <button class="btn btn-small btn-danger btn-delete" data-id="<?php echo $cpc['id']; ?>">Eliminar</button>
-                </form>
+                <button class="btn btn-small btn-danger btn-delete" data-type="cpc" data-id="<?php echo $cpc['id']; ?>">Eliminar</button>
             </td>
         </tr>
         <?php endforeach; ?>
