@@ -34,15 +34,27 @@
     <script src="<?php echo js('moderator-dashboard.js'); ?>"></script>
     
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    // Función para manejar el formulario de edición de CPC
+    function setupEditForm() {
+        console.log('Configurando formulario de edición de CPC...');
+        
         const editForm = document.getElementById('edit-cpc-form');
+        console.log('Formulario encontrado:', editForm);
         
         if (editForm) {
-            editForm.addEventListener('submit', function(e) {
+            // Remover event listeners existentes
+            const newForm = editForm.cloneNode(true);
+            editForm.parentNode.replaceChild(newForm, editForm);
+            
+            newForm.addEventListener('submit', function(e) {
+                console.log('Formulario enviado, previniendo envío por defecto...');
                 e.preventDefault();
+                e.stopPropagation();
                 
                 const formData = new FormData(this);
                 const submitButton = this.querySelector('button[type="submit"]');
+                
+                console.log('Enviando datos AJAX...');
                 
                 // Deshabilitar botón durante el envío
                 submitButton.disabled = true;
@@ -55,12 +67,14 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('Respuesta recibida:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('Datos JSON:', data);
                     if (data.success) {
                         alert(data.message);
-                        // Opcional: recargar la página para mostrar los cambios
-                        // window.location.reload();
                     } else {
                         alert('Error: ' + data.message);
                     }
@@ -74,9 +88,22 @@
                     submitButton.disabled = false;
                     submitButton.textContent = 'Actualizar CPC';
                 });
+                
+                return false;
             });
+            
+            console.log('Event listener agregado al formulario');
+        } else {
+            console.error('No se encontró el formulario con ID edit-cpc-form');
         }
-    });
+    }
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupEditForm);
+    } else {
+        setupEditForm();
+    }
     </script>
 </body>
 </html>
