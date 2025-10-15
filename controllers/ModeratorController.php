@@ -130,13 +130,29 @@ class ModeratorController {
     public function editCPC($id) {
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                error_log("ModeratorController::editCPC - Iniciando actualización de CPC ID: $id");
+                
                 $result = $this->cpcModel->updateCPC($id, $_POST);
+                error_log("ModeratorController::editCPC - Resultado de actualización: " . ($result ? 'true' : 'false'));
+                
                 if ($result) {
                     if ($this->isAjaxRequest()) {
+                        error_log("ModeratorController::editCPC - Enviando respuesta JSON");
                         $this->sendJsonResponse(true, "CPC actualizado exitosamente.");
                     } else {
+                        error_log("ModeratorController::editCPC - Preparando redirección");
                         $_SESSION['success_message'] = "CPC actualizado exitosamente.";
-                        header('Location: ' . url('moderator/manage-cpcs'));
+                        
+                        // Verificar que no se haya enviado output antes
+                        if (headers_sent()) {
+                            error_log("ModeratorController::editCPC - ERROR: Headers ya enviados");
+                            throw new Exception("Headers ya enviados, no se puede redirigir.");
+                        }
+                        
+                        $redirectUrl = url('moderator/manage-cpcs');
+                        error_log("ModeratorController::editCPC - URL de redirección: $redirectUrl");
+                        
+                        header('Location: ' . $redirectUrl);
                         exit();
                     }
                 } else {
@@ -155,6 +171,7 @@ class ModeratorController {
                 }
             }
         } catch (Exception $e) {
+            error_log("ModeratorController::editCPC - Excepción capturada: " . $e->getMessage());
             $this->handleError($e);
         }
     }
