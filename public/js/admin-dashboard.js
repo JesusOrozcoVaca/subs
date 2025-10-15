@@ -49,26 +49,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    document.querySelectorAll('.sidebar-menu a').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const url = this.getAttribute('href');
-            console.log('Click en menú:', this.textContent, 'URL:', url);
+    // Configurar event listeners para el menú
+    function setupMenuListeners() {
+        const menuLinks = document.querySelectorAll('.sidebar-menu a');
+        console.log('Enlaces del menú encontrados:', menuLinks.length);
+        
+        menuLinks.forEach((link, index) => {
+            console.log(`Enlace ${index + 1}:`, link.textContent, 'href:', link.getAttribute('href'));
             
-            // Actualizar clase activa
-            document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
-            this.classList.add('active');
+            // Remover todos los event listeners existentes
+            const newLink = link.cloneNode(true);
+            link.parentNode.replaceChild(newLink, link);
             
-            loadContent(url);
-            history.pushState(null, '', url);
+            // Agregar nuevo event listener
+            newLink.addEventListener('click', handleMenuClick);
+            
+            // También agregar onclick como respaldo
+            newLink.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleMenuClick.call(this, e);
+                return false;
+            };
         });
-    });
+    }
+    
+    function handleMenuClick(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const url = this.getAttribute('href');
+        console.log('Click en menú:', this.textContent, 'URL:', url);
+        
+        // Actualizar clase activa
+        document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+        this.classList.add('active');
+        
+        loadContent(url);
+        history.pushState(null, '', url);
+        
+        return false; // Prevenir comportamiento por defecto adicional
+    }
+    
+    // Configurar listeners iniciales
+    setupMenuListeners();
 
     window.addEventListener('popstate', function() {
         loadContent(location.pathname);
     });
 
     function initListeners() {
+        setupMenuListeners(); // Reconfigurar listeners del menú
         initFormListeners();
         initEditButtons();
         initToggleStatusButtons();
@@ -312,6 +343,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Cargar el contenido inicial del dashboard
-    loadContent(URLS.adminDashboard());
+    // Cargar el contenido inicial del dashboard después de un pequeño delay
+    setTimeout(() => {
+        loadContent(URLS.adminDashboard());
+    }, 100);
 });
