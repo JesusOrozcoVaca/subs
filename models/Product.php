@@ -95,6 +95,9 @@ class Product {
     }
 
     public function getParticipantProducts($userId) {
+        error_log("=== GETPARTICIPANTPRODUCTS START ===");
+        error_log("User ID: " . $userId);
+        
         $query = "SELECT DISTINCT p.* 
                   FROM productos p
                   JOIN cpc c ON p.cpc_id = c.id
@@ -102,9 +105,19 @@ class Product {
                   WHERE uc.usuario_id = :userId
                   ORDER BY p.fecha_creacion DESC";
         
-        $stmt = $this->db->prepare($query);
-        $stmt->execute(['userId' => $userId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("Query: " . $query);
+        
+        try {
+            $stmt = $this->db->prepare($query);
+            $stmt->execute(['userId' => $userId]);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("Query result: " . print_r($result, true));
+            error_log("=== GETPARTICIPANTPRODUCTS COMPLETED SUCCESSFULLY ===");
+            return $result;
+        } catch (Exception $e) {
+            error_log("Error in getParticipantProducts: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function getParticipantStatus($productId, $userId) {

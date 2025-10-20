@@ -99,16 +99,33 @@ class ParticipantController {
     }
 
     public function dashboard() {
+        error_log("=== DASHBOARD METHOD START ===");
         $userId = $_SESSION['user_id'];
+        error_log("User ID: " . $userId);
+        
+        error_log("=== CALLING GETPARTICIPANTPRODUCTS ===");
         $products = $this->productModel->getParticipantProducts($userId);
+        error_log("Products retrieved: " . count($products) . " items");
+        
         $pageTitle = "Dashboard de Participante";
+        error_log("=== RENDERING VIEW ===");
         $content = $this->renderView('part_dashboard.php', ['products' => $products]);
+        error_log("=== VIEW RENDERED SUCCESSFULLY ===");
+        
+        error_log("=== RENDERING RESPONSE ===");
         $this->renderResponse($pageTitle, $content);
+        error_log("=== DASHBOARD METHOD COMPLETED ===");
     }
 
     public function viewProduct($id) {
+        error_log("=== VIEWPRODUCT METHOD START ===");
         $userId = $_SESSION['user_id'];
+        error_log("User ID: " . $userId);
+        error_log("Product ID: " . $id);
+        
         $product = $this->productModel->getProductById($id);
+        error_log("Product retrieved: " . print_r($product, true));
+        
         $userStatus = $this->productModel->getParticipantStatus($id, $userId);
         $dates = $this->productModel->calculateDates($id);
         $documents = $this->productModel->getProductDocuments($id);
@@ -121,27 +138,40 @@ class ParticipantController {
             'ofini' => 'Oferta Inicial',
             'puja' => 'Puja'
         ];
-    
+        
+        error_log("=== RENDERING VIEW PRODUCT ===");
         require_once BASE_PATH . '/views/participant/part_view_product.php';
+        error_log("=== VIEW PRODUCT RENDERED ===");
     }
     
     public function loadPhaseContent($phase) {
+        error_log("=== LOADPHASECONTENT START ===");
+        error_log("Phase: " . $phase);
+        error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+        
         $allowedPhases = ['pyr', 'eof', 'conv', 'calif', 'ofini', 'puja'];
         
         if (!in_array($phase, $allowedPhases)) {
+            error_log("Phase not allowed: " . $phase);
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Fase no válida']);
             return;
         }
     
         $viewFile = BASE_PATH . "/views/participant/phases/{$phase}.php";
+        error_log("View file: " . $viewFile);
+        error_log("File exists: " . (file_exists($viewFile) ? 'YES' : 'NO'));
+        
         if (file_exists($viewFile)) {
             ob_start();
             include $viewFile;
             $content = ob_get_clean();
+            error_log("Content length: " . strlen($content));
             header('Content-Type: application/json');
             echo json_encode(['success' => true, 'content' => $content]);
+            error_log("=== LOADPHASECONTENT COMPLETED SUCCESSFULLY ===");
         } else {
+            error_log("View file not found: " . $viewFile);
             http_response_code(404);
             echo json_encode(['success' => false, 'message' => 'Contenido de fase no encontrado']);
         }
@@ -200,10 +230,17 @@ class ParticipantController {
     }
 
     private function renderView($viewName, $data = []) {
+        error_log("=== RENDERVIEW START ===");
+        error_log("View name: " . $viewName);
+        error_log("Data: " . print_r($data, true));
+        
         extract($data);
         ob_start();
+        error_log("=== INCLUDING VIEW FILE ===");
         require_once BASE_PATH . '/views/participant/' . $viewName;
-        return ob_get_clean();
+        $content = ob_get_clean();
+        error_log("=== VIEW CONTENT GENERATED ===");
+        return $content;
     }
 
     private function sendJsonResponse($success, $message, $data = null) {
@@ -217,10 +254,17 @@ class ParticipantController {
     }
 
     private function renderResponse($pageTitle, $content) {
+        error_log("=== RENDERRESPONSE START ===");
+        error_log("Page title: " . $pageTitle);
+        error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+        
         if ($this->isAjaxRequest()) {
+            error_log("=== SENDING AJAX RESPONSE ===");
             $this->sendJsonResponse(true, '', ['content' => $content, 'title' => $pageTitle]);
         } else {
+            error_log("=== INCLUDING LAYOUT FILE ===");
             require_once BASE_PATH . '/views/participant/participant_layout.php';
+            error_log("=== LAYOUT INCLUDED SUCCESSFULLY ===");
         }
     }
 

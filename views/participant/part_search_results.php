@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <?php if ($searchResult): ?>
 <h3>Resultado de la búsqueda:</h3>
 <table class="data-table">

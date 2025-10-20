@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <div id="dynamic-content">
     <h2>Buscar Proceso</h2>
     <form id="search-process-form" action="<?php echo url('participant/search-process'); ?>" method="POST" class="ajax-form">

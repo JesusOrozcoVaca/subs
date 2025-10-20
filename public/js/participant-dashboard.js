@@ -166,15 +166,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializePhaseLinks() {
+        console.log('Initializing phase links...');
         const phaseLinks = document.querySelectorAll('.process-phases .phase-link');
         const phaseContent = document.getElementById('phase-content');
         const productInfo = document.getElementById('product-info');
         const showDetailsBtn = document.getElementById('showDetailsBtn');
 
+        console.log('Found phase links:', phaseLinks.length);
+        console.log('Phase content element:', phaseContent);
+        console.log('Product info element:', productInfo);
+        console.log('Show details button:', showDetailsBtn);
+
         phaseLinks.forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 const phase = this.getAttribute('data-phase');
+                console.log('Phase link clicked:', phase);
                 if (phaseContent && productInfo) {
                     loadPhaseContent(phase, phaseContent, productInfo);
                     showDetailsBtn.style.display = 'inline-block'; // Muestra el botón
@@ -194,6 +201,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function loadPhaseContent(phase, phaseContainer, productInfoContainer) {
+        console.log('Loading phase content for:', phase);
+        console.log('URL:', URLS.participantPhase(phase));
+        console.log('Phase container:', phaseContainer);
+        console.log('Product info container:', productInfoContainer);
+        
         fetch(URLS.participantPhase(phase), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })

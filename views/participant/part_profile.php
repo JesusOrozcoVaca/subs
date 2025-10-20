@@ -1,3 +1,4 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
 <div id="dynamic-content">
     <h2>Mi Perfil</h2>
 
