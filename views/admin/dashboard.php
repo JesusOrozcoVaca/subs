@@ -28,11 +28,13 @@
 
             <div id="dynamic-content">
                 <?php
-                // Carga inicial del contenido del dashboard
-                $users = $this->userModel->getAllUsers();
-                $products = $this->productModel->getAllProducts();
-                $cpcs = $this->cpcModel->getAllCPCs();
-                include BASE_PATH . '/views/admin/dashboard_content.php';
+                // Si estamos gestionando un producto, cargar ese contenido
+                if (isset($product) && !empty($product)) {
+                    include BASE_PATH . '/views/admin/manage_product_content.php';
+                } else {
+                    // Cargar el contenido normal del dashboard
+                    include BASE_PATH . '/views/admin/dashboard_content.php';
+                }
                 ?>
             </div>
         </main>

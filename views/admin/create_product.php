@@ -67,5 +67,13 @@
         <label for="variacion_minima">Variación Mínima de la Oferta (%):</label>
         <input type="number" id="variacion_minima" name="variacion_minima" step="0.01" required>
     </div>
+    <div class="form-group">
+        <label for="estado_id">Estado del Proceso:</label>
+        <select id="estado_id" name="estado_id" required>
+            <?php foreach ($estados as $estado): ?>
+                <option value="<?php echo $estado['id']; ?>"><?php echo $estado['descripcion']; ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
     <button type="submit" class="btn">Crear Producto</button>
 </form>

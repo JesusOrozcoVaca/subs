@@ -31,6 +31,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             dynamicContent.innerHTML = html;
+            console.log('=== CONTENT LOADED, INITIALIZING LISTENERS ===');
+            console.log('Dynamic content after load:', dynamicContent);
+            console.log('Forms in dynamic content:', dynamicContent.querySelectorAll('form').length);
+            
             initListeners();
             
             // Actualizar el título de la página si es necesario
@@ -95,26 +99,61 @@ document.addEventListener('DOMContentLoaded', function() {
     setupMenuListeners();
 
     window.addEventListener('popstate', function() {
-        loadContent(location.pathname);
+        // Solo cargar contenido si no estamos en una página de gestión de producto
+        if (!location.pathname.includes('/manage-product/')) {
+            loadContent(location.pathname);
+        }
     });
 
     function initListeners() {
+        console.log('=== INITIALIZING ALL LISTENERS ===');
+        console.log('Dynamic content:', dynamicContent);
+        console.log('Dynamic content HTML:', dynamicContent.innerHTML.substring(0, 500) + '...');
+        
         setupMenuListeners(); // Reconfigurar listeners del menú
         initFormListeners();
         initEditButtons();
         initDeleteButtons();
+        
+        console.log('=== ALL LISTENERS INITIALIZED ===');
     }
 
     function initFormListeners() {
-        const form = dynamicContent.querySelector('form');
-        if (form) {
-            form.addEventListener('submit', function(e) {
+        // Buscar todos los formularios en el contenido dinámico
+        const forms = dynamicContent.querySelectorAll('form');
+        console.log('=== INIT FORM LISTENERS ===');
+        console.log('Dynamic content:', dynamicContent);
+        console.log('Forms found:', forms.length);
+        
+        if (forms.length === 0) {
+            console.log('WARNING: No forms found in dynamic content');
+            console.log('Dynamic content HTML:', dynamicContent.innerHTML);
+            return;
+        }
+        
+        forms.forEach((form, index) => {
+            console.log(`=== FORM ${index + 1} ===`);
+            console.log('Form element:', form);
+            console.log('Form action:', form.getAttribute('action'));
+            console.log('Form method:', form.getAttribute('method'));
+            console.log('Form HTML:', form.outerHTML);
+            
+            // Remover listeners existentes
+            const newForm = form.cloneNode(true);
+            form.parentNode.replaceChild(newForm, form);
+            
+            // Agregar nuevo listener
+            newForm.addEventListener('submit', function(e) {
+                console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+                console.log('Form:', this);
+                console.log('Event:', e);
                 e.preventDefault();
-                const formData = new FormData(this);
+                e.stopPropagation();
                 
-                // Obtener la URL del formulario correctamente, evitando conflicto con name="action"
+                const formData = new FormData(this);
                 const formAction = this.getAttribute('action');
                 console.log('Form action URL:', formAction);
+                console.log('Form data:', Array.from(formData.entries()));
                 
                 fetch(formAction, {
                     method: 'POST',
@@ -125,6 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(response => {
                     console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
@@ -134,7 +174,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('Response data:', data);
                     if (data.success) {
                         alert(data.message);
-                        loadContent(URLS.moderatorManageCpcs());
+                        // Redirigir al dashboard del moderador después del cambio exitoso
+                        console.log('Redirecting to moderator dashboard...');
+                        console.log('Dashboard URL:', URLS.moderatorDashboard());
+                        loadContent(URLS.moderatorDashboard());
                     } else {
                         alert(data.message || 'Error al procesar la solicitud');
                     }
@@ -144,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Error al procesar la solicitud: ' + error.message);
                 });
             });
-        }
+        });
     }
 
     function initEditButtons() {
@@ -223,7 +266,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             alert(data.message);
                             document.body.removeChild(popup);
                             document.body.removeChild(overlay);
-                            loadContent(URLS.moderatorManageCpcs());
+                            // No recargar automáticamente, mantener el dashboard actual
+                            // loadContent(URLS.moderatorManageCpcs());
                         } else {
                             alert(data.message || 'Error al procesar la solicitud');
                         }
@@ -296,8 +340,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Cargar el contenido inicial del dashboard después de un pequeño delay
-    setTimeout(() => {
-        loadContent(URLS.moderatorDashboard());
-    }, 100);
+    // Solo cargar el dashboard inicial si no estamos en una página específica
+    // y si el contenido dinámico está vacío o solo contiene el indicador de carga
+    if (!location.pathname.includes('/manage-product/') && !location.pathname.includes('/manage-cpcs')) {
+        setTimeout(() => {
+            // Verificar si ya hay contenido cargado
+            const currentContent = dynamicContent.innerHTML.trim();
+            if (currentContent === '' || currentContent === '<div class="loading">Cargando...</div>') {
+                loadContent(URLS.moderatorDashboard());
+            }
+        }, 100);
+    }
 });

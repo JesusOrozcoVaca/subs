@@ -9,7 +9,7 @@
     <p><strong>Tipo de compra:</strong> <?php echo htmlspecialchars($product['tipo_compra']); ?></p>
     <p><strong>Presupuesto referencial:</strong> $<?php echo number_format($product['presupuesto_referencial'], 2); ?></p>
     <p><strong>Tipo de contratación:</strong> <?php echo htmlspecialchars($product['tipo_contratacion']); ?></p>
-    <p><strong>Estado del proceso:</strong> <?php echo htmlspecialchars($product['estado_proceso']); ?></p>
+    <p><strong>Estado del proceso:</strong> <?php echo htmlspecialchars($product['estado_descripcion']); ?></p>
     <p><strong>Estado de Invitación para Proveedor:</strong> <?php echo htmlspecialchars($userStatus); ?></p>
 </div>
 
@@ -20,7 +20,7 @@
 <?php endforeach; ?>
 </ul>
 
-<?php if ($product['estado_proceso'] === 'Preguntas y Respuestas'): ?>
+<?php if ($product['estado_descripcion'] === 'Preguntas y Respuestas'): ?>
 <h3>Hacer Pregunta</h3>
 <form action="<?php echo url('participant/view-product/' . $product['id']); ?>" method="POST">
     <input type="hidden" name="action" value="ask_question">
@@ -29,7 +29,7 @@
 </form>
 <?php endif; ?>
 
-<?php if ($product['estado_proceso'] === 'Oferta Inicial' && $userStatus === 'Cumple'): ?>
+<?php if ($product['estado_descripcion'] === 'Oferta Inicial' && $userStatus === 'Cumple'): ?>
 <h3>Enviar Oferta Inicial</h3>
 <form action="<?php echo url('participant/view-product/' . $product['id']); ?>" method="POST">
     <input type="hidden" name="action" value="submit_offer">

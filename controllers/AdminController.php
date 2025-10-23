@@ -2,16 +2,19 @@
 require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/Product.php';
 require_once BASE_PATH . '/models/CPC.php';
+require_once BASE_PATH . '/models/ProductState.php';
 
 class AdminController {
     private $userModel;
     private $productModel;
     private $cpcModel;
+    private $productStateModel;
 
     public function __construct() {
         $this->userModel = new User();
         $this->productModel = new Product();
         $this->cpcModel = new CPC();
+        $this->productStateModel = new ProductState();
     }
 
     public function dashboard() {
@@ -50,6 +53,7 @@ class AdminController {
             }
         }
         $cpcs = $this->cpcModel->getAllCPCs();
+        $estados = $this->productStateModel->getAllStates();
         
         if ($this->isAjaxRequest()) {
             require BASE_PATH . '/views/admin/create_product.php';
@@ -199,6 +203,7 @@ class AdminController {
             } else {
                 $product = $this->productModel->getProductById($id);
                 $cpcs = $this->cpcModel->getAllCPCs();
+                $estados = $this->productStateModel->getAllStates();
                 require BASE_PATH . '/views/admin/edit_product.php';
             }
         } catch (Exception $e) {
@@ -263,19 +268,71 @@ class AdminController {
 
     public function manageProduct($id) {
         try {
+            error_log("=== MANAGE PRODUCT START ===");
+            error_log("Product ID: " . $id);
+            
+            // Manejar cambio de estado
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_status') {
+                error_log("=== CHANGE STATUS REQUEST ===");
+                error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+                error_log("X-Requested-With: " . ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? 'NOT SET'));
+                error_log("Accept: " . ($_SERVER['HTTP_ACCEPT'] ?? 'NOT SET'));
+                
+                $estadoId = $_POST['estado_id'];
+                $result = $this->productModel->updateProductStatus($id, $estadoId);
+                
+                if ($this->isAjaxRequest()) {
+                    error_log("=== SENDING JSON RESPONSE ===");
+                    if ($result) {
+                        $this->sendJsonResponse(true, "Estado del producto actualizado exitosamente.");
+                    } else {
+                        $this->sendJsonResponse(false, "Error al actualizar el estado del producto.");
+                    }
+                    return; // Salir para evitar cargar la vista
+                } else {
+                    error_log("=== NOT AJAX, USING SESSION MESSAGES ===");
+                    if ($result) {
+                        $_SESSION['success_message'] = "Estado del producto actualizado exitosamente.";
+                    } else {
+                        $_SESSION['error_message'] = "Error al actualizar el estado del producto.";
+                    }
+                }
+            }
+            
             $product = $this->productModel->getProductById($id);
-            // Aquí implementaremos la lógica para gestionar el producto según los requerimientos
-            require BASE_PATH . '/views/admin/manage_product.php';
+            error_log("Product data: " . print_r($product, true));
+            
+            if (!$product) {
+                error_log("Product not found for ID: " . $id);
+                throw new Exception("Producto no encontrado.");
+            }
+            
+            $estados = $this->productStateModel->getAllStates();
+            
+            error_log("=== LOADING MANAGE PRODUCT CONTENT ===");
+            // Cargar el dashboard con el contenido de gestión de producto
+            if ($this->isAjaxRequest()) {
+                require BASE_PATH . '/views/admin/manage_product_content.php';
+            } else {
+                // Cargar el dashboard principal y el contenido de gestión
+                require BASE_PATH . '/views/admin/dashboard.php';
+            }
+            error_log("=== MANAGE PRODUCT CONTENT LOADED ===");
         } catch (Exception $e) {
+            error_log("Error in manageProduct: " . $e->getMessage());
             $this->handleError($e);
         }
     }
 
     private function isAjaxRequest() {
-        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ||
-               (!empty($_SERVER['HTTP_ACCEPT']) && 
-                strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+        $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+        
+        error_log("=== IS AJAX REQUEST DEBUG ===");
+        error_log("HTTP_X_REQUESTED_WITH: " . ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? 'NOT SET'));
+        error_log("Is AJAX: " . ($isAjax ? 'YES' : 'NO'));
+        
+        return $isAjax;
     }
 
     private function handleError(Exception $e) {
@@ -290,8 +347,19 @@ class AdminController {
     }
 
     private function sendJsonResponse($success, $message) {
+        error_log("=== SENDING JSON RESPONSE ===");
+        error_log("Success: " . ($success ? 'true' : 'false'));
+        error_log("Message: " . $message);
+        
+        // Limpiar cualquier output previo
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
         header('Content-Type: application/json');
-        echo json_encode(['success' => $success, 'message' => $message]);
+        $response = ['success' => $success, 'message' => $message];
+        error_log("JSON Response: " . json_encode($response));
+        echo json_encode($response);
         exit;
     }
 }

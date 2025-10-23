@@ -6,9 +6,17 @@
  */
 function isNewSystem() {
     // Si la URL contiene index_new.php o query parameters de acción, es el nuevo sistema
-    return window.location.href.includes('index_new.php') || 
+    const isNew = window.location.href.includes('index_new.php') || 
            window.location.search.includes('action=') ||
            (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
+    
+    console.log('=== URL SYSTEM DETECTION ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Search params:', window.location.search);
+    console.log('Hostname:', window.location.hostname);
+    console.log('Is new system:', isNew);
+    
+    return isNew;
 }
 
 /**
@@ -30,8 +38,15 @@ function getBaseUrl() {
  */
 function generateUrl(action, params = {}) {
     const baseUrl = getBaseUrl();
+    const isNew = isNewSystem();
     
-    if (isNewSystem()) {
+    console.log('=== GENERATING URL ===');
+    console.log('Action:', action);
+    console.log('Params:', params);
+    console.log('Base URL:', baseUrl);
+    console.log('Is new system:', isNew);
+    
+    if (isNew) {
         // Nuevo sistema - usar query parameters
         // En producción, index_new.php se renombra a index.php
         const indexFile = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
@@ -41,66 +56,98 @@ function generateUrl(action, params = {}) {
         if (Object.keys(params).length > 0) {
             url += '&' + new URLSearchParams(params).toString();
         }
+        console.log('Generated URL (new system):', url);
         return url;
     } else {
         // Sistema legacy - usar URLs amigables
+        console.log('Using legacy system for action:', action);
+        let url;
         switch (action) {
             case 'login':
-                return baseUrl + 'login';
+                url = baseUrl + 'login';
+                break;
             case 'admin_dashboard':
-                return baseUrl + 'admin/dashboard';
+                url = baseUrl + 'admin/dashboard';
+                break;
             case 'admin_create_user':
-                return baseUrl + 'admin/create-user';
+                url = baseUrl + 'admin/create-user';
+                break;
             case 'admin_create_product':
-                return baseUrl + 'admin/create-product';
+                url = baseUrl + 'admin/create-product';
+                break;
             case 'admin_create_cpc':
-                return baseUrl + 'admin/create-cpc';
+                url = baseUrl + 'admin/create-cpc';
+                break;
             case 'admin_edit_user':
-                return baseUrl + 'admin/edit-user/' + (params.id || '');
+                url = baseUrl + 'admin/edit-user/' + (params.id || '');
+                break;
             case 'admin_edit_product':
-                return baseUrl + 'admin/edit-product/' + (params.id || '');
+                url = baseUrl + 'admin/edit-product/' + (params.id || '');
+                break;
             case 'admin_edit_cpc':
-                return baseUrl + 'admin/edit-cpc/' + (params.id || '');
+                url = baseUrl + 'admin/edit-cpc/' + (params.id || '');
+                break;
             case 'admin_toggle_user_status':
-                return baseUrl + 'admin/toggle-user-status';
+                url = baseUrl + 'admin/toggle-user-status';
+                break;
             case 'admin_manage_product':
-                return baseUrl + 'admin/manage-product/' + (params.id || '');
+                url = baseUrl + 'admin/manage-product/' + (params.id || '');
+                break;
             case 'admin_delete_user':
-                return baseUrl + 'admin/delete-user';
+                url = baseUrl + 'admin/delete-user';
+                break;
             case 'admin_delete_product':
-                return baseUrl + 'admin/delete-product';
+                url = baseUrl + 'admin/delete-product';
+                break;
             case 'admin_delete_cpc':
-                return baseUrl + 'admin/delete-cpc';
+                url = baseUrl + 'admin/delete-cpc';
+                break;
             case 'moderator_dashboard':
-                return baseUrl + 'moderator/dashboard';
+                url = baseUrl + 'moderator/dashboard';
+                break;
             case 'moderator_manage_cpcs':
-                return baseUrl + 'moderator/manage-cpcs';
+                url = baseUrl + 'moderator/manage-cpcs';
+                break;
             case 'moderator_edit_cpc':
-                return baseUrl + 'moderator/edit-cpc/' + (params.id || '');
+                url = baseUrl + 'moderator/edit-cpc/' + (params.id || '');
+                break;
             case 'moderator_manage_questions':
-                return baseUrl + 'moderator/manage-questions/' + (params.id || '');
+                url = baseUrl + 'moderator/manage-questions/' + (params.id || '');
+                break;
             case 'moderator_evaluate_participants':
-                return baseUrl + 'moderator/evaluate-participants/' + (params.id || '');
+                url = baseUrl + 'moderator/evaluate-participants/' + (params.id || '');
+                break;
             case 'moderator_delete_cpc':
-                return baseUrl + 'moderator/delete-cpc';
+                url = baseUrl + 'moderator/delete-cpc';
+                break;
             case 'participant_dashboard':
-                return baseUrl + 'participant/dashboard';
+                url = baseUrl + 'participant/dashboard';
+                break;
             case 'participant_view_product':
-                return baseUrl + 'participant/view-product/' + (params.id || '');
+                url = baseUrl + 'participant/view-product/' + (params.id || '');
+                break;
             case 'participant_profile':
-                return baseUrl + 'participant/profile';
+                url = baseUrl + 'participant/profile';
+                break;
             case 'participant_search_process':
-                return baseUrl + 'participant/search-process';
+                url = baseUrl + 'participant/search-process';
+                break;
             case 'participant_add_cpc':
-                return baseUrl + 'participant/add-cpc';
+                url = baseUrl + 'participant/add-cpc';
+                break;
             case 'participant_remove_cpc':
-                return baseUrl + 'participant/remove-cpc';
+                url = baseUrl + 'participant/remove-cpc';
+                break;
             case 'participant_phase':
-                return baseUrl + 'participant/phase/' + (params.phase || '');
+                url = baseUrl + 'participant/phase/' + (params.phase || '');
+                break;
             default:
                 console.warn('Acción no reconocida:', action);
-                return baseUrl;
+                url = baseUrl;
         }
+        
+        console.log('Generated URL (legacy system):', url);
+        return url;
     }
 }
 

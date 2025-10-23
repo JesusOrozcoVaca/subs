@@ -59,7 +59,7 @@
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
                 <td><?php echo htmlspecialchars($product['codigo']); ?></td>
                 <td><?php echo htmlspecialchars($product['tipo_compra']); ?></td>
-                <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
+                <td><?php echo htmlspecialchars($product['estado_descripcion']); ?></td>
                 <td>
                     <a href="<?php echo url('admin/edit-product/' . $product['id']); ?>" class="btn btn-small btn-edit">Editar</a>
                     <a href="<?php echo url('admin/manage-product/' . $product['id']); ?>" class="btn btn-small btn-manage">Gestionar</a>

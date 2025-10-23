@@ -28,13 +28,12 @@
 
             <div id="dynamic-content">
                 <?php 
-                // Obtener datos del producto
-                $product = $this->productModel->getProductById($id);
+                // El producto ya fue obtenido por el controlador
                 if ($product) {
                     echo "<div class='card'>";
-                    echo "<h2>Producto: " . htmlspecialchars($product['nombre']) . "</h2>";
+                    echo "<h2>Producto: " . htmlspecialchars($product['objeto_proceso']) . "</h2>";
                     echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
-                    echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado']) . "</p>";
+                    echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado_proceso']) . "</p>";
                     echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
                     echo "<div class='actions'>";
                     echo "<a href='" . url('admin/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";

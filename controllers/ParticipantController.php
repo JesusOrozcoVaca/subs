@@ -134,14 +134,10 @@ class ParticipantController {
         $dates = $this->productModel->calculateDates($id);
         $documents = $this->productModel->getProductDocuments($id);
     
-        $phases = [
-            'pyr' => 'Preguntas y Respuestas',
-            'eof' => 'Entrega de Ofertas',
-            'conv' => 'Convalidación de errores',
-            'calif' => 'Calificación',
-            'ofini' => 'Oferta Inicial',
-            'puja' => 'Puja'
-        ];
+        // Obtener estados desde la base de datos
+        require_once BASE_PATH . '/models/ProductState.php';
+        $productStateModel = new ProductState();
+        $phases = $productStateModel->getStatesForSelect();
         
         error_log("=== RENDERING VIEW PRODUCT ===");
         require_once BASE_PATH . '/views/participant/part_view_product.php';

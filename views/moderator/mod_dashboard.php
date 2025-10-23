@@ -26,9 +26,21 @@
 
             <div id="dynamic-content">
                 <?php
-                // Carga inicial del contenido del dashboard
-                $products = $this->productModel->getAllActive();
-                include __DIR__ . '/mod_dashboard_content.php';
+                // Si estamos gestionando un producto, cargar ese contenido
+                if (isset($product) && !empty($product)) {
+                    error_log("=== DASHBOARD: LOADING PRODUCT MANAGEMENT CONTENT ===");
+                    include __DIR__ . '/mod_manage_product_content.php';
+                } else {
+                    error_log("=== DASHBOARD: LOADING NORMAL DASHBOARD CONTENT ===");
+                    // Cargar el contenido normal del dashboard
+                    // Asegurar que la variable $products esté disponible
+                    if (!isset($products)) {
+                        error_log("ERROR: Variable \$products not available in dashboard");
+                        echo "<p>Error: No se pudieron cargar los productos</p>";
+                    } else {
+                        include __DIR__ . '/mod_dashboard_content.php';
+                    }
+                }
                 ?>
             </div>
         </main>
@@ -36,5 +48,23 @@
 
     <script src="<?php echo js('url-helper.js'); ?>"></script>
     <script src="<?php echo js('moderator-dashboard.js'); ?>"></script>
+    <script>
+        console.log('Dashboard JavaScript loaded');
+        console.log('Dynamic content:', document.getElementById('dynamic-content'));
+        console.log('URLS object:', URLS);
+        console.log('Moderator dashboard URL:', URLS.moderatorDashboard());
+        console.log('Is new system:', isNewSystem());
+        console.log('Base URL:', getBaseUrl());
+        
+        // Asegurar que los event listeners se adjunten después de que el contenido se cargue
+        setTimeout(() => {
+            console.log('Setting up form listeners after timeout...');
+            const forms = document.querySelectorAll('#dynamic-content form');
+            console.log('Forms found after timeout:', forms.length);
+            forms.forEach((form, index) => {
+                console.log(`Form ${index + 1} after timeout:`, form);
+            });
+        }, 1000);
+    </script>
 </body>
 </html>

@@ -1,0 +1,38 @@
+<?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
+<div class="card">
+    <h2>Gestionar Producto</h2>
+    <?php 
+    // El producto ya fue obtenido por el controlador
+    if ($product) {
+        echo "<div class='product-details'>";
+        echo "<h3>Producto: " . htmlspecialchars($product['objeto_proceso']) . "</h3>";
+        echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
+        echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado_descripcion']) . "</p>";
+        echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
+        
+        // Formulario para cambiar estado
+        echo "<div class='change-status-section'>";
+        echo "<h4>Cambiar Estado del Proceso</h4>";
+        echo "<form action='" . url('admin/manage-product/' . $product['id']) . "' method='POST'>";
+        echo "<input type='hidden' name='action' value='change_status'>";
+        echo "<select name='estado_id' required>";
+        foreach ($estados as $estado) {
+            $selected = ($estado['id'] == $product['estado_id']) ? 'selected' : '';
+            echo "<option value='" . $estado['id'] . "' " . $selected . ">" . htmlspecialchars($estado['descripcion']) . "</option>";
+        }
+        echo "</select>";
+        echo "<button type='submit' class='btn btn-primary'>Actualizar Estado</button>";
+        echo "</form>";
+        echo "</div>";
+        
+        echo "<div class='actions'>";
+        echo "<a href='" . url('admin/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
+        echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+        echo "</div>";
+        echo "</div>";
+    } else {
+        echo "<div class='error'>Producto no encontrado.</div>";
+        echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+    }
+    ?>
+</div>

@@ -17,7 +17,7 @@
                 <td><?php echo htmlspecialchars($product['codigo']); ?></td>
                 <td><?php echo htmlspecialchars($product['entidad']); ?></td>
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
-                <td><?php echo htmlspecialchars($product['estado_proceso']); ?></td>
+                <td><?php echo htmlspecialchars($product['estado_descripcion']); ?></td>
                 <td>
                     <a href="<?php echo url('participant/view-product/' . $product['id']); ?>" class="btn btn-small btn-view-details">Ver Detalles</a>
                 </td>

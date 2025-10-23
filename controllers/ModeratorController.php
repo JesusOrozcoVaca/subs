@@ -4,6 +4,7 @@ require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/Question.php';
 require_once BASE_PATH . '/models/Bid.php';
+require_once BASE_PATH . '/models/ProductState.php';
 
 class ModeratorController {
     private $productModel;
@@ -11,6 +12,7 @@ class ModeratorController {
     private $userModel;
     private $questionModel;
     private $bidModel;
+    private $productStateModel;
 
     public function __construct() {
         $this->productModel = new Product();
@@ -18,15 +20,33 @@ class ModeratorController {
         $this->userModel = new User();
         $this->questionModel = new Question();
         $this->bidModel = new Bid();
+        $this->productStateModel = new ProductState();
     }
 
     private function isAjaxRequest() {
-        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
-                strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+        $isAjax = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+                   strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest');
+        
+        error_log("=== MODERATOR IS AJAX REQUEST DEBUG ===");
+        error_log("HTTP_X_REQUESTED_WITH: " . ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? 'NOT SET'));
+        error_log("HTTP_ACCEPT: " . ($_SERVER['HTTP_ACCEPT'] ?? 'NOT SET'));
+        error_log("REQUEST_METHOD: " . ($_SERVER['REQUEST_METHOD'] ?? 'NOT SET'));
+        error_log("Is AJAX: " . ($isAjax ? 'YES' : 'NO'));
+        
+        // Fallback: si es POST y tiene action=change_status, tratarlo como AJAX
+        if (!$isAjax && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_status') {
+            error_log("=== FALLBACK: Treating as AJAX due to change_status action ===");
+            $isAjax = true;
+        }
+        
+        return $isAjax;
     }
 
     public function dashboard() {
-        $products = $this->productModel->getAllActive();
+        // Usar getAllProducts() en lugar de getAllActive() para mostrar todos los productos
+        $products = $this->productModel->getAllProducts();
+        error_log("=== MODERATOR DASHBOARD ===");
+        error_log("Products loaded: " . count($products));
         
         if ($this->isAjaxRequest()) {
             require_once BASE_PATH . '/views/moderator/mod_dashboard_content.php';
@@ -36,37 +56,108 @@ class ModeratorController {
     }
 
     public function manageProduct($id) {
-        $product = $this->productModel->getProductById($id);
-        $participants = $this->productModel->getParticipants($id);
-        $questions = $this->questionModel->getProductQuestions($id);
-        $bids = $this->bidModel->getProductBids($id);
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $action = $_POST['action'];
-            switch ($action) {
-                case 'update_status':
-                    $newStatus = $_POST['new_status'];
-                    $this->productModel->updateProductStatus($id, $newStatus);
-                    $_SESSION['success_message'] = "Estado del producto actualizado exitosamente.";
-                    break;
-                case 'evaluate_participant':
-                    $participantId = $_POST['participant_id'];
-                    $status = $_POST['status'];
-                    $this->productModel->updateParticipantStatus($id, $participantId, $status);
-                    $_SESSION['success_message'] = "Evaluación del participante actualizada exitosamente.";
-                    break;
-                case 'answer_question':
-                    $questionId = $_POST['question_id'];
-                    $answer = $_POST['answer'];
-                    $this->questionModel->answer($questionId, $answer);
-                    $_SESSION['success_message'] = "Respuesta enviada exitosamente.";
-                    break;
+        try {
+            error_log("=== MODERATOR MANAGE PRODUCT START ===");
+            error_log("Product ID received: " . $id);
+            error_log("Product ID type: " . gettype($id));
+            error_log("Product ID empty: " . (empty($id) ? 'YES' : 'NO'));
+            
+            // Manejar cambio de estado
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_status') {
+                error_log("=== MODERATOR CHANGE STATUS REQUEST ===");
+                error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+                error_log("POST data: " . print_r($_POST, true));
+                
+                // Verificar que el ID del producto sea válido
+                if (empty($id) || !is_numeric($id)) {
+                    error_log("ERROR: Invalid product ID: " . $id);
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, "ID de producto inválido.");
+                    } else {
+                        $_SESSION['error_message'] = "ID de producto inválido.";
+                    }
+                    return;
+                }
+                
+                $estadoId = $_POST['estado_id'];
+                error_log("Estado ID: " . $estadoId);
+                error_log("Product ID: " . $id);
+                
+                try {
+                    $result = $this->productModel->updateProductStatus($id, $estadoId);
+                    error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+                } catch (Exception $e) {
+                    error_log("Error updating product status: " . $e->getMessage());
+                    error_log("Stack trace: " . $e->getTraceAsString());
+                    throw $e;
+                }
+                
+                if ($this->isAjaxRequest()) {
+                    error_log("=== MODERATOR SENDING JSON RESPONSE ===");
+                    if ($result) {
+                        $this->sendJsonResponse(true, "Estado del producto actualizado exitosamente.");
+                    } else {
+                        $this->sendJsonResponse(false, "Error al actualizar el estado del producto.");
+                    }
+                    return; // Salir para evitar cargar la vista
+                } else {
+                    error_log("=== MODERATOR NOT AJAX, USING SESSION MESSAGES ===");
+                    if ($result) {
+                        $_SESSION['success_message'] = "Estado del producto actualizado exitosamente.";
+                        header('Location: ' . url('moderator/manage-product/' . $id));
+                        exit;
+                    } else {
+                        $_SESSION['error_message'] = "Error al actualizar el estado del producto.";
+                        header('Location: ' . url('moderator/manage-product/' . $id));
+                        exit;
+                    }
+                }
             }
-            header('Location: ' . url('moderator/manage-product/' . $id));
-            exit;
+            
+            // Manejar otras acciones
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $action = $_POST['action'];
+                switch ($action) {
+                    case 'evaluate_participant':
+                        $participantId = $_POST['participant_id'];
+                        $status = $_POST['status'];
+                        $this->productModel->updateParticipantStatus($id, $participantId, $status);
+                        $_SESSION['success_message'] = "Evaluación del participante actualizada exitosamente.";
+                        break;
+                    case 'answer_question':
+                        $questionId = $_POST['question_id'];
+                        $answer = $_POST['answer'];
+                        $this->questionModel->answer($questionId, $answer);
+                        $_SESSION['success_message'] = "Respuesta enviada exitosamente.";
+                        break;
+                }
+                header('Location: ' . url('moderator/manage-product/' . $id));
+                exit;
+            }
+            
+            $product = $this->productModel->getProductById($id);
+            $participants = $this->productModel->getParticipants($id);
+            $questions = $this->questionModel->getProductQuestions($id);
+            $bids = $this->bidModel->getProductBids($id);
+            $estados = $this->productStateModel->getAllStates();
+            
+            // Para el dashboard, también necesitamos todos los productos
+            $products = $this->productModel->getAllProducts();
+            
+            error_log("=== MODERATOR LOADING MANAGE PRODUCT VIEW ===");
+            // Cargar el dashboard del moderador con el contenido de gestión de producto
+            if ($this->isAjaxRequest()) {
+                require_once BASE_PATH . '/views/moderator/mod_manage_product_content.php';
+            } else {
+                // Cargar el dashboard principal y el contenido de gestión
+                require_once BASE_PATH . '/views/moderator/mod_dashboard.php';
+            }
+            error_log("=== MODERATOR MANAGE PRODUCT VIEW LOADED ===");
+        } catch (Exception $e) {
+            error_log("Error in moderator manageProduct: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            $this->handleError($e);
         }
-        
-        require_once BASE_PATH . '/views/moderator/mod_manage_product.php';
     }
 
     public function manageCPCs() {
@@ -186,9 +277,20 @@ class ModeratorController {
     }
 
     private function sendJsonResponse($success, $message) {
+        error_log("=== MODERATOR SENDING JSON RESPONSE ===");
+        error_log("Success: " . ($success ? 'true' : 'false'));
+        error_log("Message: " . $message);
+        
+        // Limpiar cualquier output previo
+        if (ob_get_level()) {
+            ob_clean();
+        }
+        
         header('Content-Type: application/json');
-        echo json_encode(['success' => $success, 'message' => $message]);
-        exit();
+        $response = ['success' => $success, 'message' => $message];
+        error_log("JSON Response: " . json_encode($response));
+        echo json_encode($response);
+        exit;
     }
 
     private function handleError(Exception $e) {

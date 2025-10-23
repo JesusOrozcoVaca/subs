@@ -9,19 +9,52 @@ class Product {
     }
 
     public function getAllProducts() {
-        $query = "SELECT * FROM productos";
+        $query = "SELECT p.*, ep.descripcion as estado_descripcion 
+                  FROM productos p 
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id";
         $stmt = $this->db->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getAllActive() {
-        $query = "SELECT * FROM productos WHERE estado_proceso != 'Finalizado'";
+        // Primero, verificar qué estados tienen los productos
+        $checkQuery = "SELECT p.id, p.estado_id, ep.descripcion, ep.codigo 
+                       FROM productos p 
+                       LEFT JOIN estados_producto ep ON p.estado_id = ep.id 
+                       ORDER BY p.id";
+        error_log("=== CHECKING ALL PRODUCTS AND THEIR STATES ===");
+        $checkStmt = $this->db->query($checkQuery);
+        $allProducts = $checkStmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        error_log("Total products in database: " . count($allProducts));
+        foreach ($allProducts as $product) {
+            error_log("Product ID: " . $product['id'] . ", Estado ID: " . $product['estado_id'] . ", Estado: " . $product['descripcion'] . ", Codigo: " . $product['codigo']);
+        }
+        
+        // Cambiar la consulta para mostrar todos los productos, no solo los que no son 'fin'
+        $query = "SELECT p.*, ep.descripcion as estado_descripcion, ep.codigo as estado_codigo
+                  FROM productos p 
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id
+                  ORDER BY p.id";
+        error_log("=== GET ALL ACTIVE PRODUCTS (MODIFIED) ===");
+        error_log("SQL Query: " . $query);
+        
         $stmt = $this->db->query($query);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        error_log("Products found: " . count($products));
+        foreach ($products as $product) {
+            error_log("Product ID: " . $product['id'] . ", Estado: " . $product['estado_descripcion'] . ", Codigo: " . $product['estado_codigo']);
+        }
+        
+        return $products;
     }
 
     public function getProductById($id) {
-        $query = "SELECT * FROM productos WHERE id = :id";
+        $query = "SELECT p.*, ep.descripcion as estado_descripcion 
+                  FROM productos p 
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id
+                  WHERE p.id = :id";
         $stmt = $this->db->prepare($query);
         $stmt->execute(['id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -29,11 +62,12 @@ class Product {
 
     public function createProduct($data) {
         $query = "INSERT INTO productos (entidad, objeto_proceso, cpc_id, codigo, tipo_compra, presupuesto_referencial, 
-                  tipo_contratacion, forma_pago, plazo_entrega, vigencia_oferta, funcionario_encargado, descripcion, variacion_minima, estado_proceso) 
+                  tipo_contratacion, forma_pago, plazo_entrega, vigencia_oferta, funcionario_encargado, descripcion, variacion_minima, estado_id) 
                   VALUES (:entidad, :objeto_proceso, :cpc_id, :codigo, :tipo_compra, :presupuesto_referencial, 
-                  :tipo_contratacion, :forma_pago, :plazo_entrega, :vigencia_oferta, :funcionario_encargado, :descripcion, :variacion_minima, 'Preguntas y Respuestas')";
+                  :tipo_contratacion, :forma_pago, :plazo_entrega, :vigencia_oferta, :funcionario_encargado, :descripcion, :variacion_minima, :estado_id)";
         
         $data['codigo'] = $this->generateProductCode($data);
+        $data['estado_id'] = 1; // Preguntas y Respuestas por defecto
         
         $stmt = $this->db->prepare($query);
         return $stmt->execute($data);
@@ -52,7 +86,8 @@ class Product {
                   vigencia_oferta = :vigencia_oferta, 
                   funcionario_encargado = :funcionario_encargado, 
                   descripcion = :descripcion, 
-                  variacion_minima = :variacion_minima 
+                  variacion_minima = :variacion_minima,
+                  estado_id = :estado_id
                   WHERE id = :id";
         
         $stmt = $this->db->prepare($query);
@@ -60,10 +95,54 @@ class Product {
         return $stmt->execute($data);
     }
 
-    public function updateProductStatus($id, $status) {
-        $query = "UPDATE productos SET estado_proceso = :estado WHERE id = :id";
-        $stmt = $this->db->prepare($query);
-        return $stmt->execute(['id' => $id, 'estado' => $status]);
+    public function updateProductStatus($id, $estadoId) {
+        error_log("=== UPDATE PRODUCT STATUS ===");
+        error_log("Product ID: " . $id);
+        error_log("Estado ID: " . $estadoId);
+        
+        try {
+            // Verificar si la columna estado_id existe
+            $checkQuery = "SHOW COLUMNS FROM productos LIKE 'estado_id'";
+            $checkStmt = $this->db->query($checkQuery);
+            $columnExists = $checkStmt->fetch();
+            
+            if (!$columnExists) {
+                error_log("ERROR: Column 'estado_id' does not exist in 'productos' table");
+                return false;
+            }
+            
+            $query = "UPDATE productos SET estado_id = :estado_id WHERE id = :id";
+            error_log("SQL Query: " . $query);
+            
+            $stmt = $this->db->prepare($query);
+            if (!$stmt) {
+                error_log("Error preparing statement: " . print_r($this->db->errorInfo(), true));
+                return false;
+            }
+            
+            $params = ['id' => $id, 'estado_id' => $estadoId];
+            error_log("SQL Parameters: " . print_r($params, true));
+            
+            $result = $stmt->execute($params);
+            
+            if (!$result) {
+                error_log("Error executing statement: " . print_r($stmt->errorInfo(), true));
+            }
+            
+            error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));
+            error_log("Rows affected: " . $stmt->rowCount());
+            
+            // Verificar que solo se actualizó un producto
+            if ($stmt->rowCount() > 1) {
+                error_log("WARNING: Updated more than 1 product! Rows affected: " . $stmt->rowCount());
+            }
+            
+            return $result;
+        } catch (Exception $e) {
+            error_log("Exception in updateProductStatus: " . $e->getMessage());
+            error_log("Stack trace: " . $e->getTraceAsString());
+            return false;
+        }
     }
 
     public function deleteProduct($id) {
@@ -98,8 +177,9 @@ class Product {
         error_log("=== GETPARTICIPANTPRODUCTS START ===");
         error_log("User ID: " . $userId);
         
-        $query = "SELECT DISTINCT p.* 
+        $query = "SELECT DISTINCT p.*, ep.descripcion as estado_descripcion 
                   FROM productos p
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id
                   JOIN cpc c ON p.cpc_id = c.id
                   JOIN usuarios_cpc uc ON c.id = uc.cpc_id
                   WHERE uc.usuario_id = :userId
@@ -203,11 +283,11 @@ class Product {
         return $stmt->fetchColumn();
     }
 
-    public function updatePhase($productId, $newPhase) {
-        $query = "UPDATE productos SET estado_proceso = :estado WHERE id = :id";
+    public function updatePhase($productId, $estadoId) {
+        $query = "UPDATE productos SET estado_id = :estado_id WHERE id = :id";
         $stmt = $this->db->prepare($query);
         return $stmt->execute([
-            'estado' => $newPhase,
+            'estado_id' => $estadoId,
             'id' => $productId
         ]);
     }
