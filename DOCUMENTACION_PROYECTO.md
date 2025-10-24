@@ -768,6 +768,6 @@ function loadTabContent(tabId, url) {
 
 ---
 
-**Última actualización:** Diciembre 2024  
+**Última actualización:** Octubre 2025  
 **Versión del documento:** 2.0  
 **Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
