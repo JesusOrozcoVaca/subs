@@ -699,6 +699,41 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(html => {
             content.innerHTML = html;
             console.log('Popup content loaded successfully');
+            
+            // Interceptar formularios dentro del popup
+            const forms = content.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    console.log('Form submission intercepted in popup');
+                    
+                    const formData = new FormData(this);
+                    const formAction = this.getAttribute('action');
+                    
+                    fetch(formAction, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(data.message);
+                            closePopup();
+                            // Recargar la página para mostrar los cambios
+                            location.reload();
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error submitting form:', error);
+                        alert('Error al enviar el formulario');
+                    });
+                });
+            });
         })
         .catch(error => {
             console.error('Error loading popup content:', error);
