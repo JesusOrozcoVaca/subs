@@ -5,6 +5,7 @@
         <thead>
             <tr>
                 <th>Código</th>
+                <th>CPC</th>
                 <th>Entidad</th>
                 <th>Objeto del Proceso</th>
                 <th>Estado</th>
@@ -15,6 +16,7 @@
             <?php foreach ($products as $product): ?>
             <tr>
                 <td><?php echo htmlspecialchars($product['codigo']); ?></td>
+                <td><?php echo htmlspecialchars($product['cpc_descripcion'] ?? 'N/A'); ?></td>
                 <td><?php echo htmlspecialchars($product['entidad']); ?></td>
                 <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_descripcion']); ?></td>

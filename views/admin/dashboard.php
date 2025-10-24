@@ -40,7 +40,48 @@
         </main>
     </div>
 
+    <!-- Modal para responder preguntas -->
+    <div id="answer-questions-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Responder Preguntas</h3>
+                <span class="close" onclick="closeAnswerQuestionsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="questions-container">
+                    <!-- Las preguntas se cargarán aquí dinámicamente -->
+                </div>
+                <div class="modal-actions" style="margin-top: 20px; text-align: right;">
+                    <button id="save-answers" class="btn btn-primary" style="display: none;">Enviar respuestas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="<?php echo js('url-helper.js'); ?>"></script>
     <script src="<?php echo js('admin-dashboard.js'); ?>"></script>
+    
+    <script>
+        console.log('=== DASHBOARD HTML SCRIPT ===');
+        console.log('Script loaded in dashboard.php');
+        
+        // Popup de prueba eliminado - ya no es necesario
+        
+        // Test de botones después de 3 segundos
+        setTimeout(() => {
+            console.log('=== TESTING EDIT BUTTONS ===');
+            const editButtons = document.querySelectorAll('.btn-edit');
+            console.log('Edit buttons found in test:', editButtons.length);
+            
+            if (editButtons.length > 0) {
+                console.log('First edit button:', editButtons[0]);
+                console.log('First edit button href:', editButtons[0].getAttribute('href'));
+            } else {
+                console.log('NO EDIT BUTTONS FOUND IN TEST');
+                console.log('All buttons:', document.querySelectorAll('button, a'));
+                console.log('All links:', document.querySelectorAll('a'));
+            }
+        }, 3000);
+    </script>
 </body>
 </html>

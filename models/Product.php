@@ -177,7 +177,7 @@ class Product {
         error_log("=== GETPARTICIPANTPRODUCTS START ===");
         error_log("User ID: " . $userId);
         
-        $query = "SELECT DISTINCT p.*, ep.descripcion as estado_descripcion 
+        $query = "SELECT DISTINCT p.*, ep.descripcion as estado_descripcion, c.descripcion as cpc_descripcion
                   FROM productos p
                   LEFT JOIN estados_producto ep ON p.estado_id = ep.id
                   JOIN cpc c ON p.cpc_id = c.id

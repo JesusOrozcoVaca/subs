@@ -30,6 +30,25 @@
         </main>
     </div>
 
+    <!-- Modal para responder preguntas -->
+    <div id="answer-questions-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Responder Preguntas</h3>
+                <span class="close" onclick="closeAnswerQuestionsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="questions-container">
+                    <!-- Las preguntas se cargarán aquí dinámicamente -->
+                </div>
+                <div class="modal-actions" style="margin-top: 20px; text-align: right;">
+                    <button id="save-answers" class="btn btn-primary" style="display: none;">Enviar respuestas</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="<?php echo js('url-helper.js'); ?>"></script>
     <script src="<?php echo js('moderator-dashboard.js'); ?>"></script>
 </body>
 </html>

@@ -37,6 +37,7 @@ error_log("Products count in view: " . count($products));
                 <td><?php echo htmlspecialchars($product['estado_descripcion'] ?? 'Sin estado'); ?></td>
                 <td>
                     <a href="<?php echo url('moderator/manage-product/' . $product['id']); ?>" class="btn btn-small btn-manage">Gestionar</a>
+                    <button class="btn btn-small btn-answer-questions" data-product-id="<?php echo $product['id']; ?>" data-product-code="<?php echo htmlspecialchars($product['codigo']); ?>">Responder Preguntas</button>
                 </td>
             </tr>
             <?php endforeach; ?>

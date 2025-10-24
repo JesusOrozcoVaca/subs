@@ -25,8 +25,9 @@
         echo "</form>";
         echo "</div>";
         
-        echo "<div class='actions'>";
+        echo "<div class='actions' style='display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;'>";
         echo "<a href='" . url('admin/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
+        echo "<button class='btn btn-info btn-answer-questions' data-product-id='" . htmlspecialchars($product['id']) . "' data-product-code='" . htmlspecialchars($product['codigo']) . "'>Responder Preguntas</button>";
         echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
         echo "</div>";
         echo "</div>";

@@ -35,8 +35,9 @@
                     echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
                     echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado_proceso']) . "</p>";
                     echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
-                    echo "<div class='actions'>";
+                    echo "<div class='actions' style='display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;'>";
                     echo "<a href='" . url('admin/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
+                    echo "<button class='btn btn-info btn-answer-questions' data-product-id='" . htmlspecialchars($product['id']) . "' data-product-code='" . htmlspecialchars($product['codigo']) . "'>Responder Preguntas</button>";
                     echo "<a href='" . url('admin/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
                     echo "</div>";
                     echo "</div>";
@@ -47,6 +48,24 @@
                 ?>
             </div>
         </main>
+    </div>
+
+    <!-- Modal para responder preguntas -->
+    <div id="answer-questions-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Responder Preguntas</h3>
+                <span class="close" onclick="closeAnswerQuestionsModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="questions-container">
+                    <!-- Las preguntas se cargarán aquí dinámicamente -->
+                </div>
+                <div class="modal-actions" style="margin-top: 20px; text-align: right;">
+                    <button id="save-answers" class="btn btn-primary" style="display: none;">Enviar respuestas</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="<?php echo js('url-helper.js'); ?>"></script>

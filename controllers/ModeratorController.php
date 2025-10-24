@@ -276,10 +276,13 @@ class ModeratorController {
         }
     }
 
-    private function sendJsonResponse($success, $message) {
+    private function sendJsonResponse($success, $message, $data = null) {
         error_log("=== MODERATOR SENDING JSON RESPONSE ===");
         error_log("Success: " . ($success ? 'true' : 'false'));
         error_log("Message: " . $message);
+        if ($data) {
+            error_log("Data: " . print_r($data, true));
+        }
         
         // Limpiar cualquier output previo
         if (ob_get_level()) {
@@ -288,6 +291,11 @@ class ModeratorController {
         
         header('Content-Type: application/json');
         $response = ['success' => $success, 'message' => $message];
+        
+        if ($data) {
+            $response['data'] = $data;
+        }
+        
         error_log("JSON Response: " . json_encode($response));
         echo json_encode($response);
         exit;
@@ -301,6 +309,65 @@ class ModeratorController {
             $_SESSION['error_message'] = $e->getMessage();
             header('Location: ' . url('moderator/dashboard'));
             exit();
+        }
+    }
+
+    public function getUnansweredQuestions() {
+        error_log("=== MODERATOR GET UNANSWERED QUESTIONS START ===");
+        error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+        error_log("GET parameters: " . print_r($_GET, true));
+        
+        if ($this->isAjaxRequest()) {
+            $productoId = $_GET['producto_id'] ?? null;
+            error_log("Product ID: " . $productoId);
+            
+            if (!$productoId) {
+                error_log("No product ID provided");
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+            
+            $questions = $this->questionModel->getAllQuestions($productoId);
+            error_log("Questions found: " . count($questions));
+            error_log("Questions data: " . print_r($questions, true));
+            
+            $this->sendJsonResponse(true, "", ['questions' => $questions]);
+        } else {
+            error_log("Not an AJAX request");
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function answerQuestions() {
+        error_log("=== MODERATOR ANSWER QUESTIONS START ===");
+        error_log("Request method: " . $_SERVER['REQUEST_METHOD']);
+        error_log("Is AJAX: " . ($this->isAjaxRequest() ? 'YES' : 'NO'));
+        error_log("POST data: " . print_r($_POST, true));
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
+            $answersJson = $_POST['answers'] ?? '';
+            error_log("Answers JSON received: " . $answersJson);
+            
+            $answers = json_decode($answersJson, true);
+            error_log("Answers decoded: " . print_r($answers, true));
+            
+            if (empty($answers)) {
+                error_log("No answers provided");
+                $this->sendJsonResponse(false, "No hay respuestas para procesar");
+                return;
+            }
+            
+            $result = $this->questionModel->answerMultiple($answers);
+            error_log("Answer multiple result: " . ($result ? 'SUCCESS' : 'FAILED'));
+            
+            if ($result) {
+                $this->sendJsonResponse(true, "Respuestas publicadas exitosamente");
+            } else {
+                $this->sendJsonResponse(false, "Error al publicar las respuestas");
+            }
+        } else {
+            error_log("Invalid request method or not AJAX");
+            $this->sendJsonResponse(false, "Método no permitido");
         }
     }
 }

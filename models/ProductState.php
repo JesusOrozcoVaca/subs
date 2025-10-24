@@ -51,9 +51,25 @@ class ProductState {
         $states = $this->getAllStates();
         $options = [];
         foreach ($states as $state) {
-            $options[$state['id']] = $state['descripcion'];
+            $options[$state['codigo']] = $state['descripcion'];
         }
         return $options;
+    }
+
+    public function getStateIdByCode($code) {
+        $query = "SELECT id FROM estados_producto WHERE codigo = :code";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['code' => $code]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['id'] : null;
+    }
+
+    public function getStateCodeById($id) {
+        $query = "SELECT codigo FROM estados_producto WHERE id = :id";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['id' => $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result ? $result['codigo'] : 'pyr';
     }
 }
 

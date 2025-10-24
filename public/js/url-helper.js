@@ -102,6 +102,12 @@ function generateUrl(action, params = {}) {
             case 'admin_delete_cpc':
                 url = baseUrl + 'admin/delete-cpc';
                 break;
+            case 'admin_get_unanswered_questions':
+                url = baseUrl + 'admin/get-unanswered-questions';
+                break;
+            case 'admin_answer_questions':
+                url = baseUrl + 'admin/answer-questions';
+                break;
             case 'moderator_dashboard':
                 url = baseUrl + 'moderator/dashboard';
                 break;
@@ -119,6 +125,12 @@ function generateUrl(action, params = {}) {
                 break;
             case 'moderator_delete_cpc':
                 url = baseUrl + 'moderator/delete-cpc';
+                break;
+            case 'moderator_get_unanswered_questions':
+                url = baseUrl + 'moderator/get-unanswered-questions';
+                break;
+            case 'moderator_answer_questions':
+                url = baseUrl + 'moderator/answer-questions';
                 break;
             case 'participant_dashboard':
                 url = baseUrl + 'participant/dashboard';
@@ -144,6 +156,12 @@ function generateUrl(action, params = {}) {
             default:
                 console.warn('Acción no reconocida:', action);
                 url = baseUrl;
+        }
+        
+        // Agregar parámetros adicionales si existen
+        if (Object.keys(params).length > 0) {
+            const queryString = new URLSearchParams(params).toString();
+            url += (url.includes('?') ? '&' : '?') + queryString;
         }
         
         console.log('Generated URL (legacy system):', url);

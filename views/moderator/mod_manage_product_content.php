@@ -12,24 +12,44 @@ if (!isset($estados)) {
     return;
 }
 ?>
-<h2>Detalles del Producto: <?php echo htmlspecialchars($product['codigo']); ?></h2>
-
-<p>Entidad: <?php echo htmlspecialchars($product['entidad']); ?></p>
-<p>Objeto del Proceso: <?php echo htmlspecialchars($product['objeto_proceso']); ?></p>
-<p>Estado Actual: <?php echo htmlspecialchars($product['estado_descripcion']); ?></p>
-
-<h3>Actualizar Estado</h3>
-<form id="change-status-form" action="<?php echo url('moderator/manage-product/' . $product['id']); ?>" method="POST">
-    <input type="hidden" name="action" value="change_status">
-    <select name="estado_id" required>
-        <?php foreach ($estados as $estado): ?>
-            <option value="<?php echo $estado['id']; ?>" <?php echo $estado['id'] == $product['estado_id'] ? 'selected' : ''; ?>>
-                <?php echo htmlspecialchars($estado['descripcion']); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-    <button type="submit" class="btn">Actualizar Estado</button>
-</form>
+<div class="card">
+    <h2>Gestionar Producto</h2>
+    <?php 
+    // El producto ya fue obtenido por el controlador
+    if ($product) {
+        echo "<div class='product-details'>";
+        echo "<h3>Producto: " . htmlspecialchars($product['objeto_proceso']) . "</h3>";
+        echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
+        echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado_descripcion']) . "</p>";
+        echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
+        
+        // Formulario para cambiar estado
+        echo "<div class='change-status-section'>";
+        echo "<h4>Cambiar Estado del Proceso</h4>";
+        echo "<form id='change-status-form' action='" . url('moderator/manage-product/' . $product['id']) . "' method='POST'>";
+        echo "<input type='hidden' name='action' value='change_status'>";
+        echo "<select name='estado_id' required>";
+        foreach ($estados as $estado) {
+            $selected = ($estado['id'] == $product['estado_id']) ? 'selected' : '';
+            echo "<option value='" . $estado['id'] . "' " . $selected . ">" . htmlspecialchars($estado['descripcion']) . "</option>";
+        }
+        echo "</select>";
+        echo "<button type='submit' class='btn btn-primary'>Actualizar Estado</button>";
+        echo "</form>";
+        echo "</div>";
+        
+        echo "<div class='actions' style='display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;'>";
+        echo "<a href='" . url('moderator/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
+        echo "<button class='btn btn-info btn-answer-questions' data-product-id='" . htmlspecialchars($product['id']) . "' data-product-code='" . htmlspecialchars($product['codigo']) . "'>Responder Preguntas</button>";
+        echo "<a href='" . url('moderator/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+        echo "</div>";
+        echo "</div>";
+    } else {
+        echo "<div class='error'>Producto no encontrado.</div>";
+        echo "<a href='" . url('moderator/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
+    }
+    ?>
+</div>
 
 <script>
 console.log('Product management content loaded');

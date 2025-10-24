@@ -61,7 +61,6 @@
                 <td><?php echo htmlspecialchars($product['tipo_compra']); ?></td>
                 <td><?php echo htmlspecialchars($product['estado_descripcion']); ?></td>
                 <td>
-                    <a href="<?php echo url('admin/edit-product/' . $product['id']); ?>" class="btn btn-small btn-edit">Editar</a>
                     <a href="<?php echo url('admin/manage-product/' . $product['id']); ?>" class="btn btn-small btn-manage">Gestionar</a>
                     <button class="btn btn-small btn-danger btn-delete" data-type="product" data-id="<?php echo htmlspecialchars($product['id']); ?>">Eliminar</button>
                 </td>
