@@ -287,6 +287,17 @@ try {
                 throw new Exception("ID requerido");
             }
             break;
+            
+        case 'moderator_edit_product':
+            checkAccess(2);
+            $id = $_GET['id'] ?? null;
+            if ($id) {
+                $controller = loadController('ModeratorController');
+                $controller->editProduct($id);
+            } else {
+                throw new Exception("ID requerido");
+            }
+            break;
 
         case 'moderator_manage_cpcs':
             checkAccess(2);

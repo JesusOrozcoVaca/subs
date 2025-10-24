@@ -601,6 +601,115 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Funcionalidad para editar producto - igual que en el administrador
+    function setupEditProductDelegation() {
+        console.log('=== SETTING UP EDIT PRODUCT DELEGATION ===');
+        
+        // Usar event delegation en el documento para capturar todos los clics
+        document.addEventListener('click', function(e) {
+            // Verificar si el elemento clickeado tiene la clase btn-edit
+            if (e.target.classList.contains('btn-edit')) {
+                console.log('Edit button clicked via delegation!');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const url = e.target.getAttribute('href');
+                console.log('Opening popup for URL:', url);
+                
+                // Crear popup simple igual que en el administrador
+                createSimplePopup(url);
+            }
+        });
+        
+        console.log('Edit product delegation set up successfully');
+    }
+
+    function createSimplePopup(url) {
+        console.log('Creating simple popup for:', url);
+        
+        // Crear overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
+        
+        // Crear popup
+        const popup = document.createElement('div');
+        popup.style.cssText = `
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        `;
+        
+        // Botón de cierre
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        `;
+        
+        // Contenido de carga
+        const content = document.createElement('div');
+        content.innerHTML = '<div style="text-align: center; padding: 20px;">Cargando...</div>';
+        
+        // Ensamblar popup
+        popup.appendChild(closeBtn);
+        popup.appendChild(content);
+        overlay.appendChild(popup);
+        document.body.appendChild(overlay);
+        
+        // Función para cerrar
+        const closePopup = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        // Event listeners para cerrar
+        closeBtn.addEventListener('click', closePopup);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closePopup();
+        });
+        
+        // Cargar contenido
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            content.innerHTML = html;
+            console.log('Popup content loaded successfully');
+        })
+        .catch(error => {
+            console.error('Error loading popup content:', error);
+            content.innerHTML = '<div style="text-align: center; padding: 20px; color: red;">Error al cargar el contenido</div>';
+        });
+    }
+
+    // Inicializar delegación para editar producto
+    setupEditProductDelegation();
+
     console.log('=== MODERATOR DASHBOARD JS FULLY LOADED ===');
     console.log('Event delegation set up for answer questions buttons');
+    console.log('Edit product buttons initialized');
 });

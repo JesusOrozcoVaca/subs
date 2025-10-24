@@ -370,4 +370,30 @@ class ModeratorController {
             $this->sendJsonResponse(false, "Método no permitido");
         }
     }
+
+    public function editProduct($id) {
+        try {
+            if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $result = $this->productModel->updateProduct($id, $_POST);
+                if ($result) {
+                    $this->sendJsonResponse(true, "Producto actualizado exitosamente.");
+                } else {
+                    throw new Exception("Error al actualizar el producto.");
+                }
+            } else {
+                $product = $this->productModel->getProductById($id);
+                $cpcs = $this->cpcModel->getAllCPCs();
+                $estados = $this->productStateModel->getAllStates();
+                
+                // Si es una petición AJAX (popup), devolver solo el formulario
+                if ($this->isAjaxRequest()) {
+                    require BASE_PATH . '/views/moderator/mod_edit_product_form.php';
+                } else {
+                    require BASE_PATH . '/views/moderator/mod_edit_product.php';
+                }
+            }
+        } catch (Exception $e) {
+            $this->handleError($e);
+        }
+    }
 }
