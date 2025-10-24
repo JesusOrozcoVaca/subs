@@ -529,6 +529,245 @@ define('DEBUG', false);
 
 ---
 
-**Última actualización:** Octubre 2025  
-**Versión del documento:** 1.0  
-**Estado del proyecto:** Funcional en local y producción
+## 🆕 Consideraciones Principales - Desarrollo Avanzado
+
+### 📊 Sistema de Gestión de Estados de Productos
+
+#### Nueva Tabla: `estados_producto`
+```sql
+CREATE TABLE estados_producto (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    descripcion VARCHAR(100) NOT NULL,
+    activo BOOLEAN DEFAULT TRUE
+);
+
+-- Estados por defecto
+INSERT INTO estados_producto (descripcion) VALUES 
+('Preguntas y Respuestas'),
+('Entrega de Ofertas'),
+('Por adjudicar'),
+('Adjudicado'),
+('Cancelado');
+```
+
+#### Migración de Datos
+```sql
+-- Agregar columna estado_id a productos
+ALTER TABLE productos ADD COLUMN estado_id INT;
+ALTER TABLE productos ADD FOREIGN KEY (estado_id) REFERENCES estados_producto(id);
+
+-- Migrar datos existentes (estado_proceso → estado_id)
+UPDATE productos SET estado_id = 1 WHERE estado_proceso = 'Preguntas y Respuestas';
+UPDATE productos SET estado_id = 2 WHERE estado_proceso = 'Entrega de Ofertas';
+-- ... etc
+
+-- Eliminar columna antigua
+ALTER TABLE productos DROP COLUMN estado_proceso;
+```
+
+### 🔧 Sistema de Preguntas y Respuestas
+
+#### Tabla: `preguntas_respuestas`
+```sql
+CREATE TABLE preguntas_respuestas (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    producto_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    pregunta TEXT NOT NULL,
+    respuesta TEXT NULL,
+    fecha_pregunta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_respuesta TIMESTAMP NULL,
+    FOREIGN KEY (producto_id) REFERENCES productos(id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+```
+
+#### Funcionalidades Implementadas
+- **Participantes:** Pueden hacer preguntas ilimitadas (máx 500 caracteres)
+- **Admin/Moderador:** Pueden responder preguntas desde popup
+- **Visibilidad:** Preguntas visibles para todos los participantes del CPC
+- **Control de estado:** Preguntas se deshabilitan cuando cambia el estado del producto
+
+### 🎯 Sistema de Popups Dinámicos
+
+#### Event Delegation Pattern
+```javascript
+// Interceptar clics en elementos dinámicos
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-edit')) {
+        e.preventDefault();
+        createSimplePopup(e.target.getAttribute('href'));
+    }
+});
+```
+
+#### Popup Dinámico
+```javascript
+function createSimplePopup(url) {
+    // Crear overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.8); z-index: 99999;
+        display: flex; justify-content: center; align-items: center;
+    `;
+    
+    // Crear popup
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+        background-color: white; border-radius: 8px; padding: 20px;
+        max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;
+    `;
+    
+    // Cargar contenido via AJAX
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => popup.innerHTML = html);
+}
+```
+
+### 🔄 Interceptación de Formularios
+
+#### Manejo AJAX de Formularios
+```javascript
+// Interceptar envío de formularios
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const formAction = this.getAttribute('action');
+    
+    fetch(formAction, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            closePopup();
+            location.reload();
+        }
+    });
+});
+```
+
+### 🎨 Gestión de Estados en Controladores
+
+#### Detección de Peticiones AJAX
+```php
+private function isAjaxRequest() {
+    return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && 
+           $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+}
+
+public function editProduct($id) {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        // Procesar actualización
+        $result = $this->productModel->updateProduct($id, $_POST);
+        $this->sendJsonResponse($result, "Producto actualizado exitosamente.");
+    } else {
+        // Si es AJAX, devolver solo formulario
+        if ($this->isAjaxRequest()) {
+            require 'views/moderator/mod_edit_product_form.php';
+        } else {
+            // Si no es AJAX, devolver página completa
+            require 'views/moderator/mod_edit_product.php';
+        }
+    }
+}
+```
+
+### 📱 Sistema de Tabs Dinámicos
+
+#### Gestión de Contenido Dinámico
+```javascript
+// Sistema unificado de tabs
+function loadTabContent(tabId, url) {
+    const contentArea = document.getElementById('tab-content');
+    contentArea.innerHTML = '<div class="loading">Cargando...</div>';
+    
+    fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(response => response.text())
+        .then(html => {
+            contentArea.innerHTML = html;
+            // Re-inicializar listeners para contenido dinámico
+            initDynamicListeners();
+        });
+}
+```
+
+### 🎯 Patrones de Desarrollo Aprendidos
+
+#### 1. Análisis Exhaustivo Antes de Implementar
+- **SIEMPRE** revisar cómo está implementado en el administrador
+- **NUNCA** asumir funcionalidad sin verificar el código existente
+- **SIEMPRE** replicar patrones probados y funcionales
+
+#### 2. Event Delegation para Elementos Dinámicos
+- **Problema:** Event listeners no se adjuntan a elementos cargados dinámicamente
+- **Solución:** Usar event delegation en el documento padre
+- **Patrón:** `document.addEventListener('click', function(e) { if (e.target.matches('.selector')) { ... } })`
+
+#### 3. Interceptación de Formularios
+- **Problema:** Formularios se envían como navegación normal
+- **Solución:** Interceptar con `preventDefault()` y manejar como AJAX
+- **Resultado:** Experiencia de usuario fluida sin recargas de página
+
+#### 4. Detección de Contexto (AJAX vs Página Completa)
+- **Problema:** Mismo endpoint para popup y página completa
+- **Solución:** Header `X-Requested-With: XMLHttpRequest`
+- **Resultado:** Servidor devuelve contenido apropiado según el contexto
+
+#### 5. Gestión de Estados de Productos
+- **Problema:** Estados hardcodeados como strings
+- **Solución:** Tabla `estados_producto` con relaciones
+- **Beneficio:** Flexibilidad y mantenibilidad
+
+### 🚨 Errores Comunes y Soluciones
+
+#### Error: "Modal not found"
+**Causa:** JavaScript busca modal estático que no existe
+**Solución:** Crear modal dinámicamente con `createSimplePopup()`
+
+#### Error: "Form submission redirects to JSON page"
+**Causa:** Formulario no interceptado, se envía como navegación normal
+**Solución:** Interceptar con `addEventListener('submit', preventDefault)`
+
+#### Error: "Popup shows full page layout"
+**Causa:** Servidor devuelve página completa en lugar de solo formulario
+**Solución:** Detectar AJAX y devolver vista específica para popup
+
+#### Error: "Event listeners not working on dynamic content"
+**Causa:** Listeners adjuntados antes de que exista el elemento
+**Solución:** Event delegation en documento padre
+
+### 📋 Checklist de Desarrollo
+
+#### Antes de Implementar Nueva Funcionalidad:
+1. ✅ **Analizar implementación existente** (administrador)
+2. ✅ **Identificar patrones probados**
+3. ✅ **Replicar estructura exacta**
+4. ✅ **Verificar rutas en ambos sistemas** (legacy y query params)
+5. ✅ **Probar en local primero**
+
+#### Para Popups Dinámicos:
+1. ✅ **Event delegation en documento**
+2. ✅ **Creación dinámica de modal**
+3. ✅ **Header AJAX en peticiones**
+4. ✅ **Detección de contexto en servidor**
+5. ✅ **Interceptación de formularios**
+
+#### Para Gestión de Estados:
+1. ✅ **Crear tabla de estados**
+2. ✅ **Migrar datos existentes**
+3. ✅ **Actualizar controladores**
+4. ✅ **Modificar vistas para mostrar descripción**
+5. ✅ **Eliminar columnas obsoletas**
+
+---
+
+**Última actualización:** Diciembre 2024  
+**Versión del documento:** 2.0  
+**Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
