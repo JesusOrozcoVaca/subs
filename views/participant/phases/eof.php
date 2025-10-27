@@ -274,11 +274,14 @@ function loadOfertas() {
     .then(data => {
         console.log('Offers response:', data);
         if (data.success) {
-            displayOfertas(data.ofertas);
+            // Verificar si data.ofertas existe, si no, usar data.data.ofertas
+            const ofertas = data.ofertas || (data.data && data.data.ofertas) || [];
+            console.log('Ofertas to display (eof.php):', ofertas);
+            displayOfertas(ofertas);
         } else {
             const listaOfertas = document.getElementById('lista-ofertas');
             if (listaOfertas) {
-                listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
+                listaOfertas.innerHTML = '<p>Error al cargar las ofertas: ' + (data.message || 'Error desconocido') + '</p>';
             }
         }
     })
@@ -294,9 +297,20 @@ function loadOfertas() {
 // Función para mostrar ofertas
 function displayOfertas(ofertas) {
     console.log('=== DISPLAY OFFERS FUNCTION CALLED ===');
+    console.log('Ofertas received (eof.php):', ofertas);
+    console.log('Ofertas type (eof.php):', typeof ofertas);
+    console.log('Ofertas is array (eof.php):', Array.isArray(ofertas));
+    
     const listaOfertas = document.getElementById('lista-ofertas');
     if (!listaOfertas) {
         console.error('Lista ofertas element not found');
+        return;
+    }
+    
+    // Verificar que ofertas sea un array válido
+    if (!ofertas || !Array.isArray(ofertas)) {
+        console.error('Ofertas is not a valid array (eof.php):', ofertas);
+        listaOfertas.innerHTML = '<p>Error: No se pudieron cargar las ofertas</p>';
         return;
     }
     
