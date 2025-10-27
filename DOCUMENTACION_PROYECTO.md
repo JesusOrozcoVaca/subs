@@ -965,6 +965,165 @@ function generateUrl(path) {
 
 ---
 
+## 🚨 CONSIDERACIÓN CRÍTICA - Servicio de Documentos PDF y Archivos Estáticos
+
+### **PROBLEMA IDENTIFICADO:**
+Los archivos PDF y otros documentos no se pueden servir directamente desde el servidor web en producción, causando errores 404 o 500 al intentar acceder a ellos.
+
+### **SÍNTOMAS:**
+- Botones "Ver" redirigen al dashboard en lugar de mostrar archivos
+- Error 404 al acceder a archivos en `uploads/`
+- Error 500 en producción al intentar servir archivos estáticos
+- URLs como `/subs/uploads/offers/archivo.pdf` no funcionan
+
+### **CAUSA RAÍZ:**
+- **Servidor web no configurado** para servir archivos desde `uploads/`
+- **Falta de ruta específica** en la aplicación PHP para manejar archivos
+- **URLs hardcodeadas** que no pasan por el sistema de enrutamiento
+
+### **SOLUCIÓN OBLIGATORIA:**
+**SIEMPRE crear una ruta `view_file` en el sistema de enrutamiento** para servir archivos de forma controlada:
+
+```php
+case 'view_file':
+    // Servir archivos estáticos (uploads)
+    $filePath = $_GET['path'] ?? '';
+    
+    if (empty($filePath)) {
+        http_response_code(400);
+        echo "Archivo no especificado";
+        exit;
+    }
+    
+    // Validar que el archivo esté dentro del directorio uploads
+    $fullPath = __DIR__ . '/' . $filePath;
+    $uploadsDir = __DIR__ . '/uploads/';
+    
+    // Verificar que el directorio uploads existe
+    if (!is_dir($uploadsDir)) {
+        http_response_code(500);
+        echo "Directorio uploads no existe";
+        exit;
+    }
+    
+    // Verificar que el archivo esté dentro del directorio uploads
+    $realFullPath = realpath($fullPath);
+    $realUploadsDir = realpath($uploadsDir);
+    
+    if (!$realFullPath || !$realUploadsDir || strpos($realFullPath, $realUploadsDir) !== 0) {
+        http_response_code(403);
+        echo "Acceso denegado";
+        exit;
+    }
+    
+    // Verificar que el archivo existe y es válido
+    if (!file_exists($fullPath) || !is_file($fullPath)) {
+        http_response_code(404);
+        echo "Archivo no encontrado";
+        exit;
+    }
+    
+    // Determinar el tipo MIME
+    $mimeType = mime_content_type($fullPath);
+    if (!$mimeType) {
+        $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+        switch ($extension) {
+            case 'pdf':
+                $mimeType = 'application/pdf';
+                break;
+            case 'jpg':
+            case 'jpeg':
+                $mimeType = 'image/jpeg';
+                break;
+            case 'png':
+                $mimeType = 'image/png';
+                break;
+            default:
+                $mimeType = 'application/octet-stream';
+        }
+    }
+    
+    // Limpiar cualquier output buffer
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
+    // Establecer headers para servir el archivo
+    header('Content-Type: ' . $mimeType);
+    header('Content-Length: ' . filesize($fullPath));
+    header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+    header('Cache-Control: private, max-age=3600');
+    
+    // Leer y enviar el archivo
+    $result = readfile($fullPath);
+    if ($result === false) {
+        http_response_code(500);
+        echo "Error al leer el archivo";
+        exit;
+    }
+    
+    exit;
+```
+
+### **GENERACIÓN DE URLs CORRECTAS:**
+**Usar función helper para generar URLs dinámicas:**
+
+```javascript
+// Función helper para generar URLs de archivos
+function generateUrl(path) {
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
+    const baseUrl = isProduction ? '/subs/' : '/subs/';
+    return `${baseUrl}index.php?action=view_file&path=${encodeURIComponent(path)}`;
+}
+
+// Uso en enlaces
+const fileUrl = generateUrl(oferta.ruta_archivo);
+// Resultado: /subs/index.php?action=view_file&path=uploads%2Foffers%2Farchivo.pdf
+```
+
+### **VENTAJAS DE ESTA SOLUCIÓN:**
+1. **Seguridad:** Validación de rutas y permisos
+2. **Control:** Headers personalizados y logs detallados
+3. **Compatibilidad:** Funciona en local y producción
+4. **Flexibilidad:** Fácil de extender para otros tipos de archivos
+5. **Debugging:** Logs detallados para identificar problemas
+
+### **CASOS DE USO CRÍTICOS:**
+1. **Entrega de Ofertas (EOF)** - Archivos PDF, JPG, PNG
+2. **Documentos de Contratación** - PDFs de contratos
+3. **Evidencias de Pago** - Comprobantes en PDF
+4. **Reportes del Sistema** - PDFs generados dinámicamente
+5. **Certificados y Diplomas** - Documentos oficiales
+
+### **REGLAS OBLIGATORIAS:**
+1. **NUNCA** servir archivos directamente desde el servidor web
+2. **SIEMPRE** usar la ruta `view_file` para archivos de usuarios
+3. **VALIDAR** que los archivos estén dentro de `uploads/`
+4. **INCLUIR** logs de debugging para troubleshooting
+5. **PROBAR** en ambos entornos (local y producción)
+
+### **ARCHIVOS AFECTADOS:**
+- `index.php` / `indexpro.php` - Ruta `view_file`
+- `public/js/unified-tabs.js` - Función `generateUrl()`
+- `views/participant/phases/eof.php` - URLs de archivos
+- Cualquier vista que muestre enlaces a archivos
+
+### **CONFIGURACIÓN DE PRODUCCIÓN:**
+```apache
+# .htaccess - Asegurar que todas las solicitudes pasen por index.php
+RewriteEngine On
+RewriteBase /subs/
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+```
+
+**Esta solución es CRÍTICA para todas las fases futuras del proyecto que involucren manejo de documentos.**
+
+---
+
 **Última actualización:** Octubre 2025  
 **Versión del documento:** 2.0  
 **Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
