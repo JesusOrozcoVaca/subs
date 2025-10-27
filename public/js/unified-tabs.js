@@ -56,8 +56,13 @@ function initializePhaseLinks() {
     console.log('Initializing phase links...');
     
     // Solo ejecutar si estamos en la página del producto
-    if (!window.location.pathname.includes('/view-product/')) {
+    const isProductPage = window.location.pathname.includes('/view-product/') || 
+                         window.location.href.includes('participant_view_product');
+    
+    if (!isProductPage) {
         console.log('Not on product page, skipping phase links initialization');
+        console.log('Current URL:', window.location.href);
+        console.log('Current pathname:', window.location.pathname);
         return;
     }
     
