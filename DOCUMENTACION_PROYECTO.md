@@ -408,6 +408,30 @@ define('DEBUG', false);
    # Configurar archivos ignorados manualmente
    ```
 
+#### ⚠️ CONSIDERACIÓN CRÍTICA - Proceso de Despliegue Específico
+
+**Archivos versionados vs no versionados:**
+
+- **Archivos versionados (se actualizan automáticamente con `git pull`):**
+  - Todos los archivos del proyecto EXCEPTO los listados en `.gitignore`
+  - Incluye: controladores, modelos, vistas, CSS, JavaScript, etc.
+
+- **Archivos NO versionados (requieren configuración manual):**
+  - `config/database.php` → Credenciales de producción
+  - `config/app.php` → URLs y configuración de producción  
+  - `.htaccess` → Configuración de Apache
+  - `index.php` → **Se copia manualmente desde `indexpro.php`**
+
+**Proceso específico para `index.php` en producción:**
+1. En local: `indexpro.php` es la plantilla
+2. En producción: Copiar contenido de `indexpro.php` y pegarlo en `index.php`
+3. **NUNCA** hacer commit de `index.php` (está en `.gitignore`)
+
+**Ventajas de este enfoque:**
+- ✅ Mantiene configuraciones específicas de cada entorno
+- ✅ Evita conflictos entre desarrollo y producción
+- ✅ Permite personalizaciones sin afectar el repositorio
+
 ### Verificación Post-Despliegue
 
 1. **Dashboard del participante** → Debe cargar productos
