@@ -2,7 +2,7 @@
 <div id="entrega-ofertas-container">
     <form id="oferta-form" enctype="multipart/form-data" class="oferta-form" action="#" method="POST">
         <div class="file-upload-section">
-            <input type="file" name="documento_oferta" id="file-input" accept=".pdf,.jpg,.png" multiple>
+            <input type="file" name="documento_oferta" id="file-input" accept=".pdf,.jpg,.png" multiple style="display: none;">
             <label for="file-input" class="file-label">
                 <span class="file-icon">📁</span>
                 <span class="file-text">Seleccionar archivos (PDF, JPG, PNG - Máx 512KB cada uno)</span>
