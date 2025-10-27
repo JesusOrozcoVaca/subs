@@ -427,10 +427,122 @@ define('DEBUG', false);
 2. En producción: Copiar contenido de `indexpro.php` y pegarlo en `index.php`
 3. **NUNCA** hacer commit de `index.php` (está en `.gitignore`)
 
+#### 🔄 GESTIÓN DE `indexpro.php` → `index.php`
+
+**PROCESO CRÍTICO DE DESPLIEGUE:**
+
+1. **Desarrollo Local:**
+   - Modificar `indexpro.php` (archivo versionado)
+   - Probar funcionalidad en local
+   - Hacer commit y push de `indexpro.php`
+
+2. **Despliegue en Producción:**
+   ```bash
+   # En servidor de producción
+   git pull origin master
+   
+   # Copiar contenido de indexpro.php a index.php
+   cp indexpro.php index.php
+   ```
+
+3. **Verificación Post-Despliegue:**
+   - ✅ Verificar que `index.php` existe en producción
+   - ✅ Verificar que las rutas funcionan correctamente
+   - ✅ Probar funcionalidades AJAX (Preguntas y Respuestas, etc.)
+
+**⚠️ PUNTOS CRÍTICOS:**
+
+- **`indexpro.php`** = Plantilla versionada (se actualiza con `git pull`)
+- **`index.php`** = Archivo de producción (se copia manualmente)
+- **JavaScript** debe detectar automáticamente el entorno
+- **URLs** se generan dinámicamente según el entorno detectado
+
+**ERRORES COMUNES A EVITAR:**
+- ❌ Modificar `index.php` directamente en producción
+- ❌ Hacer commit de `index.php` (está en `.gitignore`)
+- ❌ Hardcodear URLs en JavaScript
+- ❌ Olvidar copiar `indexpro.php` a `index.php` después de `git pull`
+
 **Ventajas de este enfoque:**
 - ✅ Mantiene configuraciones específicas de cada entorno
 - ✅ Evita conflictos entre desarrollo y producción
 - ✅ Permite personalizaciones sin afectar el repositorio
+
+#### 🚨 CONSIDERACIÓN CRÍTICA - Detección de Entorno en JavaScript
+
+**PROBLEMA RESUELTO:** El JavaScript debe detectar automáticamente si está ejecutándose en desarrollo local o en producción para generar las URLs correctas.
+
+**CAUSA RAÍZ:** 
+- **Desarrollo local:** Usa URLs amigables (`/subs/participant/phase/pyr`)
+- **Producción:** Usa query parameters (`/subs/index.php?action=participant_phase&phase=pyr`)
+- **El mismo código JavaScript debe funcionar en ambos entornos**
+
+**SOLUCIÓN IMPLEMENTADA:**
+
+```javascript
+// Detección automática de entorno
+const isProduction = window.location.pathname.includes('index.php') || 
+                    window.location.hostname.includes('hjconsulting.com.ec');
+
+// Generación de URLs según entorno
+let url;
+if (isProduction) {
+    // Producción: query parameters
+    url = `/subs/index.php?action=participant_phase&phase=${phase}&producto_id=${productId}`;
+} else {
+    // Local: URLs amigables
+    url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
+}
+```
+
+**EXTRACCIÓN DE PARÁMETROS:**
+
+```javascript
+function getProductIdFromURL() {
+    // Primero intentar extraer de parámetros de URL (para producción)
+    const urlParams = new URLSearchParams(window.location.search);
+    const productIdFromParams = urlParams.get('id');
+    
+    if (productIdFromParams) {
+        return productIdFromParams; // ✅ Devuelve '15' de ?id=15
+    }
+    
+    // Si no hay parámetros, intentar extraer del pathname (para local)
+    const pathParts = window.location.pathname.split('/');
+    const productIdFromPath = pathParts[pathParts.length - 1];
+    
+    // Verificar que sea un número (ID válido)
+    if (productIdFromPath && !isNaN(productIdFromPath)) {
+        return productIdFromPath;
+    }
+    
+    return '1'; // Fallback
+}
+```
+
+**DETECCIÓN DE PÁGINA DE PRODUCTO:**
+
+```javascript
+// Detectar si estamos en página de producto (ambos entornos)
+const isProductPage = window.location.pathname.includes('/view-product/') || 
+                     window.location.href.includes('participant_view_product');
+```
+
+**⚠️ REGLAS CRÍTICAS:**
+
+1. **NUNCA hardcodear URLs** - Siempre usar detección de entorno
+2. **SIEMPRE validar parámetros** - Verificar que los IDs sean numéricos
+3. **SIEMPRE probar en ambos entornos** - Local y producción
+4. **MANTENER compatibilidad** - El mismo código debe funcionar en ambos sistemas
+5. **DOCUMENTAR cambios** - Cualquier modificación debe incluir esta consideración
+
+**CASOS DE USO:**
+- ✅ Carga de contenido de fases (`loadPhaseContent`)
+- ✅ Envío de preguntas (`submitPregunta`)
+- ✅ Carga de preguntas (`loadPreguntas`)
+- ✅ Cualquier funcionalidad AJAX que dependa de URLs
+
+**ESTA CONSIDERACIÓN ES FUNDAMENTAL** - Sin ella, el sistema falla silenciosamente en producción mientras funciona perfectamente en local.
 
 ### Verificación Post-Despliegue
 
