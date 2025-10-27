@@ -126,9 +126,10 @@ class ParticipantController {
         $product = $this->productModel->getProductById($id);
         error_log("Product retrieved: " . print_r($product, true));
         
-        // Obtener la descripción del CPC
+        // Obtener la información del CPC
         $cpcInfo = $this->cpcModel->getCPCById($product['cpc_id']);
         $product['cpc_descripcion'] = $cpcInfo ? $cpcInfo['descripcion'] : 'CPC no encontrado';
+        $product['cpc_codigo'] = $cpcInfo ? $cpcInfo['codigo'] : 'CPC no encontrado';
         
         $userStatus = $this->productModel->getParticipantStatus($id, $userId);
         $dates = $this->productModel->calculateDates($id);

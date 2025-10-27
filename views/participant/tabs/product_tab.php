@@ -9,7 +9,7 @@
         <th>Valor referencial</th>
     </tr>
     <tr>
-        <td><?php echo htmlspecialchars($product['cpc_id']); ?></td>
+        <td><?php echo htmlspecialchars($product['cpc_codigo']); ?></td>
         <td><?php echo htmlspecialchars($product['codigo']); ?></td>
         <td><?php echo htmlspecialchars($product['objeto_proceso']); ?></td>
         <td>$<?php echo number_format($product['presupuesto_referencial'], 2); ?></td>
