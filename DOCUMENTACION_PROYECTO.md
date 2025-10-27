@@ -421,6 +421,7 @@ define('DEBUG', false);
   - `config/app.php` → URLs y configuración de producción  
   - `.htaccess` → Configuración de Apache
   - `index.php` → **Se copia manualmente desde `indexpro.php`**
+  - `uploads/` → Archivos subidos por usuarios (se crean dinámicamente)
 
 **Proceso específico para `index.php` en producción:**
 1. En local: `indexpro.php` es la plantilla
