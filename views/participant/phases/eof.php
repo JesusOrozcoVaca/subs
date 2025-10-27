@@ -106,7 +106,15 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        fetch('/subs/participant/process-offer', {
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const processUrl = isProduction ? 
+            '/subs/index.php?action=participant_process_offer' : 
+            '/subs/participant/process-offer';
+        
+        fetch(processUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -143,7 +151,15 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('producto_id', '<?php echo $product['id']; ?>');
             formData.append('documento_oferta', file);
             
-            fetch('/subs/participant/upload-offer', {
+            // Detectar si estamos en producción
+            const isProduction = window.location.pathname.includes('index.php') || 
+                                window.location.hostname.includes('hjconsulting.com.ec');
+            
+            const uploadUrl = isProduction ? 
+                '/subs/index.php?action=participant_upload_offer' : 
+                '/subs/participant/upload-offer';
+            
+            fetch(uploadUrl, {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest'
@@ -182,7 +198,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cargar ofertas
     function loadOfertas() {
-        fetch(`/subs/participant/get-offers?producto_id=<?php echo $product['id']; ?>`, {
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const getOffersUrl = isProduction ? 
+            `/subs/index.php?action=participant_get_offers&producto_id=<?php echo $product['id']; ?>` : 
+            `/subs/participant/get-offers?producto_id=<?php echo $product['id']; ?>`;
+        
+        fetch(getOffersUrl, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
@@ -231,7 +255,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Eliminar oferta
     window.deleteOferta = function(fileId) {
         if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
-            fetch('/subs/participant/delete-offer', {
+            // Detectar si estamos en producción
+            const isProduction = window.location.pathname.includes('index.php') || 
+                                window.location.hostname.includes('hjconsulting.com.ec');
+            
+            const deleteUrl = isProduction ? 
+                '/subs/index.php?action=participant_delete_offer' : 
+                '/subs/participant/delete-offer';
+            
+            fetch(deleteUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
