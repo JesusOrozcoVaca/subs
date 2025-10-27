@@ -426,8 +426,13 @@ function displayPagination(pagination) {
 }
 
 function initializeEOFContent(container) {
-    console.log('Initializing EOF content in container');
+    console.log('=== INITIALIZING EOF CONTENT ===');
+    console.log('Container:', container);
     console.log('Container HTML:', container.innerHTML.substring(0, 200) + '...');
+    
+    // SOLUCIÓN ALTERNATIVA: Inicializar directamente desde aquí PRIMERO
+    console.log('=== FALLBACK: Initializing EOF directly ===');
+    initializeEOFDirectly(container);
     
     // Buscar el script dentro del contenido cargado
     const scriptElement = container.querySelector('script');
@@ -452,10 +457,6 @@ function initializeEOFContent(container) {
         console.error('No script element found in EOF content');
         console.log('Available elements:', container.querySelectorAll('*'));
     }
-    
-    // SOLUCIÓN ALTERNATIVA: Inicializar directamente desde aquí
-    console.log('=== FALLBACK: Initializing EOF directly ===');
-    initializeEOFDirectly(container);
 }
 
 function initializeEOFDirectly(container) {
