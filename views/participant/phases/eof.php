@@ -274,8 +274,8 @@ function loadOfertas() {
     .then(data => {
         console.log('Offers response:', data);
         if (data.success) {
-            // Verificar si data.ofertas existe, si no, usar data.data.ofertas
-            const ofertas = data.ofertas || (data.data && data.data.ofertas) || [];
+            // La estructura correcta es data.data.ofertas
+            const ofertas = data.data && data.data.ofertas ? data.data.ofertas : [];
             console.log('Ofertas to display (eof.php):', ofertas);
             displayOfertas(ofertas);
         } else {

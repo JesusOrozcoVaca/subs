@@ -682,8 +682,8 @@ function loadOfertasDirectly() {
         console.log('Data structure:', JSON.stringify(data, null, 2));
         
         if (data.success) {
-            // Verificar si data.ofertas existe, si no, usar data.data.ofertas
-            const ofertas = data.ofertas || (data.data && data.data.ofertas) || [];
+            // La estructura correcta es data.data.ofertas
+            const ofertas = data.data && data.data.ofertas ? data.data.ofertas : [];
             console.log('Ofertas to display:', ofertas);
             displayOfertasDirectly(ofertas);
         } else {
