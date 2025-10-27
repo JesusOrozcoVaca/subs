@@ -1,6 +1,6 @@
 <h2>Entrega de Ofertas</h2>
 <div id="entrega-ofertas-container">
-    <form id="oferta-form" enctype="multipart/form-data" class="oferta-form">
+    <form id="oferta-form" enctype="multipart/form-data" class="oferta-form" action="#" method="POST">
         <div class="file-upload-section">
             <input type="file" name="documento_oferta" id="file-input" accept=".pdf,.jpg,.png" multiple>
             <label for="file-input" class="file-label">
