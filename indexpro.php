@@ -80,6 +80,63 @@ try {
             $controller->logout();
             break;
 
+        case 'view_file':
+            // Servir archivos estáticos (uploads)
+            $filePath = $_GET['path'] ?? '';
+            if (empty($filePath)) {
+                http_response_code(400);
+                echo "Archivo no especificado";
+                exit;
+            }
+            
+            // Validar que el archivo esté dentro del directorio uploads
+            $fullPath = __DIR__ . '/' . $filePath;
+            $uploadsDir = __DIR__ . '/uploads/';
+            
+            // Verificar que el archivo esté dentro del directorio uploads
+            if (!str_starts_with(realpath($fullPath), realpath($uploadsDir))) {
+                http_response_code(403);
+                echo "Acceso denegado";
+                exit;
+            }
+            
+            // Verificar que el archivo existe
+            if (!file_exists($fullPath)) {
+                http_response_code(404);
+                echo "Archivo no encontrado";
+                exit;
+            }
+            
+            // Determinar el tipo MIME
+            $mimeType = mime_content_type($fullPath);
+            if (!$mimeType) {
+                $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+                switch ($extension) {
+                    case 'pdf':
+                        $mimeType = 'application/pdf';
+                        break;
+                    case 'jpg':
+                    case 'jpeg':
+                        $mimeType = 'image/jpeg';
+                        break;
+                    case 'png':
+                        $mimeType = 'image/png';
+                        break;
+                    default:
+                        $mimeType = 'application/octet-stream';
+                }
+            }
+            
+            // Establecer headers para servir el archivo
+            header('Content-Type: ' . $mimeType);
+            header('Content-Length: ' . filesize($fullPath));
+            header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
+            header('Cache-Control: private, max-age=3600');
+            
+            // Leer y enviar el archivo
+            readfile($fullPath);
+            exit;
+
         // Rutas del Administrador
         case 'admin_dashboard':
             checkAccess(1);

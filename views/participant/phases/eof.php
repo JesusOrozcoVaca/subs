@@ -323,12 +323,12 @@ function displayOfertas(ofertas) {
     const isProduction = window.location.pathname.includes('index.php') || 
                         window.location.hostname.includes('hjconsulting.com.ec');
     
-    // Generar URL base según el entorno
-    const baseUrl = isProduction ? '/subs/' : '/subs/';
-    
     let html = '<div class="ofertas-grid">';
     ofertas.forEach(oferta => {
-        const fileUrl = baseUrl + oferta.ruta_archivo;
+        // Generar URL usando la ruta view_file
+        const fileUrl = isProduction 
+            ? `/subs/index.php?action=view_file&path=${encodeURIComponent(oferta.ruta_archivo)}`
+            : `/subs/index.php?action=view_file&path=${encodeURIComponent(oferta.ruta_archivo)}`;
         console.log('Generating file URL (eof.php):', fileUrl, 'for file:', oferta.nombre_archivo);
         
         html += `
