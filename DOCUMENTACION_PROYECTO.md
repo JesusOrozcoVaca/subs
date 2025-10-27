@@ -905,6 +905,66 @@ function loadTabContent(tabId, url) {
 
 ---
 
+## 🚨 CONSIDERACIÓN CRÍTICA - URLs Dinámicas y Enrutamiento
+
+### **PROBLEMA IDENTIFICADO:**
+El uso de URLs hardcodeadas causa problemas de enrutamiento entre entornos local y producción, especialmente para recursos estáticos como archivos subidos por usuarios.
+
+### **SÍNTOMAS:**
+- Botones "Ver" redirigen al dashboard en producción
+- Enlaces a archivos no funcionan correctamente
+- URLs absolutas fallan en diferentes configuraciones de servidor
+
+### **SOLUCIÓN OBLIGATORIA:**
+**SIEMPRE usar detección de entorno y URLs dinámicas** para cualquier enlace a recursos:
+
+```javascript
+// ✅ CORRECTO - Detección de entorno
+const isProduction = window.location.pathname.includes('index.php') || 
+                    window.location.hostname.includes('hjconsulting.com.ec');
+
+const baseUrl = isProduction ? '/subs/' : '/subs/';
+const fileUrl = baseUrl + rutaArchivo;
+
+// ❌ INCORRECTO - URL hardcodeada
+const fileUrl = '/subs/' + rutaArchivo;
+```
+
+### **CASOS DE USO CRÍTICOS:**
+1. **Enlaces a archivos subidos** (`uploads/offers/`)
+2. **Enlaces a recursos estáticos** (CSS, JS, imágenes)
+3. **Enlaces a vistas** (formularios, reportes)
+4. **URLs de API** (endpoints AJAX)
+
+### **IMPLEMENTACIÓN REQUERIDA:**
+```javascript
+// Función helper para generar URLs dinámicas
+function generateUrl(path) {
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
+    const baseUrl = isProduction ? '/subs/' : '/subs/';
+    return baseUrl + path;
+}
+
+// Uso en enlaces
+<a href="${generateUrl(oferta.ruta_archivo)}" target="_blank">Ver</a>
+```
+
+### **REGLAS OBLIGATORIAS:**
+1. **NUNCA** hardcodear URLs absolutas
+2. **SIEMPRE** detectar entorno antes de generar URLs
+3. **INCLUIR** logs de debugging para URLs generadas
+4. **PROBAR** en ambos entornos (local y producción)
+
+### **ARCHIVOS AFECTADOS:**
+- `public/js/unified-tabs.js`
+- `views/participant/phases/eof.php`
+- Cualquier archivo que genere enlaces dinámicos
+
+**Esta consideración es CRÍTICA y debe aplicarse en TODOS los desarrollos futuros para evitar problemas de enrutamiento.**
+
+---
+
 **Última actualización:** Octubre 2025  
 **Versión del documento:** 2.0  
 **Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
