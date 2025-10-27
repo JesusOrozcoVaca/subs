@@ -13,7 +13,7 @@
             </div>
         </div>
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="upload-btn">Subir Archivos</button>
+            <button type="button" class="btn btn-primary" id="upload-btn">Subir Archivos</button>
             <button type="button" class="btn btn-success" id="process-btn" class="hidden">Procesar</button>
         </div>
     </form>
@@ -103,10 +103,10 @@
         }
     });
     
-    // Envío del formulario
-    console.log('Adding submit event listener to form');
-    form.addEventListener('submit', function(e) {
-        console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+    // Event listener del botón de subir archivos
+    console.log('Adding click event listener to upload button');
+    uploadBtn.addEventListener('click', function(e) {
+        console.log('=== UPLOAD BUTTON CLICKED ===');
         console.log('Event:', e);
         console.log('Files selected:', fileInput.files.length);
         
@@ -133,7 +133,7 @@
         uploadFiles(files);
     });
     
-    console.log('Form event listener added successfully');
+    console.log('Upload button event listener added successfully');
     
     // Procesar entrega
     processBtn.addEventListener('click', function() {
