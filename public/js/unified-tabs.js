@@ -646,12 +646,14 @@ function updateUploadButtonVisibility() {
     // Mostrar botón de subir archivos si:
     // 1. Hay archivos no procesados O
     // 2. Hay archivos seleccionados en el input
-    if (hasUnprocessedFiles || fileInput.files.length > 0) {
+    const hasSelectedFiles = fileInput.files.length > 0;
+    
+    if (hasUnprocessedFiles || hasSelectedFiles) {
         uploadBtn.style.display = 'inline-block';
-        console.log('Showing upload button');
+        console.log('Showing upload button - hasUnprocessedFiles:', hasUnprocessedFiles, 'hasSelectedFiles:', hasSelectedFiles);
     } else {
         uploadBtn.style.display = 'none';
-        console.log('Hiding upload button');
+        console.log('Hiding upload button - no unprocessed files and no selected files');
     }
     
     // Mostrar botón de procesar si hay archivos no procesados
@@ -706,9 +708,25 @@ function uploadFilesDirectly(files) {
             if (uploadCount === totalFiles) {
                 const processBtn = document.querySelector('#process-btn');
                 const uploadBtn = document.querySelector('#upload-btn');
+                const fileInput = document.querySelector('#file-input');
+                const fileCount = document.querySelector('#file-count');
+                const fileSize = document.querySelector('#file-size');
+                
                 if (processBtn) processBtn.style.display = 'inline-block';
-                // NO ocultar el botón de subir archivos - debe mantenerse visible
-                // if (uploadBtn) uploadBtn.style.display = 'none';
+                
+                // Limpiar el input de archivos después de subir exitosamente
+                if (fileInput) {
+                    fileInput.value = '';
+                    console.log('File input cleared after successful upload');
+                }
+                
+                // Actualizar la información de archivos
+                if (fileCount) fileCount.textContent = '0 archivo(s) seleccionado(s)';
+                if (fileSize) fileSize.textContent = 'Tamaño total: 0 KB';
+                
+                // Actualizar visibilidad de botones
+                updateUploadButtonVisibility();
+                
                 loadOfertasDirectly();
             }
         })
