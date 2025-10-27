@@ -55,3 +55,6 @@ sess_*
 # Scripts de migración (ya no necesarios)
 utils/fix_urls.php
 utils/replace_urls.php
+
+# Archivos subidos por usuarios (no versionar)
+uploads/
