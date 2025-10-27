@@ -9,6 +9,21 @@ class Document {
     }
 
     public function uploadDocument($productoId, $usuarioId, $file) {
+        // Verificar límite de 5 archivos por producto y usuario
+        $countQuery = "SELECT COUNT(*) as count FROM documentos_producto 
+                      WHERE producto_id = :producto_id AND usuario_id = :usuario_id";
+        
+        $countStmt = $this->db->prepare($countQuery);
+        $countStmt->execute([
+            'producto_id' => $productoId,
+            'usuario_id' => $usuarioId
+        ]);
+        
+        $result = $countStmt->fetch(PDO::FETCH_ASSOC);
+        if ($result['count'] >= 5) {
+            return ['success' => false, 'message' => 'No se pueden subir más de 5 archivos por producto. Ya tiene ' . $result['count'] . ' archivos subidos.'];
+        }
+        
         // Crear directorio si no existe
         $uploadDir = BASE_PATH . '/uploads/offers/';
         if (!file_exists($uploadDir)) {

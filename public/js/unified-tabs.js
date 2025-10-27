@@ -533,6 +533,15 @@ function initializeEOFDirectly(container) {
             return;
         }
         
+        // Verificar límite total de 5 archivos (existentes + nuevos)
+        const existingFiles = document.querySelectorAll('.oferta-item');
+        const maxTotalFiles = 5;
+        
+        if (existingFiles.length + files.length > maxTotalFiles) {
+            alert(`No se pueden subir más de ${maxTotalFiles} archivos en total. Actualmente tiene ${existingFiles.length} archivos y está intentando subir ${files.length} archivos más.`);
+            return;
+        }
+        
         // Deshabilitar botón durante la subida
         uploadBtn.disabled = true;
         uploadBtn.textContent = 'Subiendo...';
@@ -549,16 +558,25 @@ function initializeEOFDirectly(container) {
             // Verificar si hay archivos no procesados en la lista
             const ofertaItems = document.querySelectorAll('.oferta-item');
             let hasUnprocessedFiles = false;
+            let unprocessedCount = 0;
             
             ofertaItems.forEach(item => {
                 const procesadoBadge = item.querySelector('.procesado-badge');
                 if (!procesadoBadge) {
                     hasUnprocessedFiles = true;
+                    unprocessedCount++;
                 }
             });
             
             if (!hasUnprocessedFiles) {
                 alert('No hay archivos para procesar');
+                return;
+            }
+            
+            // Verificar que no se excedan los 5 archivos totales
+            const maxTotalFiles = 5;
+            if (ofertaItems.length > maxTotalFiles) {
+                alert(`No se pueden procesar más de ${maxTotalFiles} archivos. Actualmente tiene ${ofertaItems.length} archivos.`);
                 return;
             }
             
