@@ -427,19 +427,29 @@ function displayPagination(pagination) {
 
 function initializeEOFContent(container) {
     console.log('Initializing EOF content in container');
+    console.log('Container HTML:', container.innerHTML.substring(0, 200) + '...');
     
     // Buscar el script dentro del contenido cargado
     const scriptElement = container.querySelector('script');
+    console.log('Script element found:', scriptElement);
+    
     if (scriptElement) {
         console.log('Found script element, executing...');
+        console.log('Script content length:', scriptElement.textContent.length);
+        console.log('Script content preview:', scriptElement.textContent.substring(0, 100) + '...');
         
-        // Crear un nuevo script element y ejecutarlo
-        const newScript = document.createElement('script');
-        newScript.textContent = scriptElement.textContent;
-        document.head.appendChild(newScript);
-        
-        console.log('EOF script executed successfully');
+        try {
+            // Crear un nuevo script element y ejecutarlo
+            const newScript = document.createElement('script');
+            newScript.textContent = scriptElement.textContent;
+            document.head.appendChild(newScript);
+            
+            console.log('EOF script executed successfully');
+        } catch (error) {
+            console.error('Error executing EOF script:', error);
+        }
     } else {
         console.error('No script element found in EOF content');
+        console.log('Available elements:', container.querySelectorAll('*'));
     }
 }
