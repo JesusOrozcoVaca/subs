@@ -99,6 +99,14 @@ try {
             error_log("VIEW_FILE - Full path: " . $fullPath);
             error_log("VIEW_FILE - Uploads dir: " . $uploadsDir);
             
+            // Verificar que el directorio uploads existe
+            if (!is_dir($uploadsDir)) {
+                error_log("VIEW_FILE ERROR - Uploads directory does not exist: " . $uploadsDir);
+                http_response_code(500);
+                echo "Directorio uploads no existe";
+                exit;
+            }
+            
             // Verificar que el archivo esté dentro del directorio uploads
             $realFullPath = realpath($fullPath);
             $realUploadsDir = realpath($uploadsDir);
@@ -120,12 +128,21 @@ try {
                 exit;
             }
             
-            error_log("VIEW_FILE - File exists, proceeding to serve");
+            // Verificar que es un archivo (no directorio)
+            if (!is_file($fullPath)) {
+                error_log("VIEW_FILE ERROR - Path is not a file: " . $fullPath);
+                http_response_code(400);
+                echo "Ruta no es un archivo válido";
+                exit;
+            }
+            
+            error_log("VIEW_FILE - File exists and is valid, proceeding to serve");
             
             // Determinar el tipo MIME
             $mimeType = mime_content_type($fullPath);
             if (!$mimeType) {
                 $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+                error_log("VIEW_FILE - Extension detected: " . $extension);
                 switch ($extension) {
                     case 'pdf':
                         $mimeType = 'application/pdf';
@@ -142,14 +159,32 @@ try {
                 }
             }
             
+            error_log("VIEW_FILE - MIME type: " . $mimeType);
+            error_log("VIEW_FILE - File size: " . filesize($fullPath) . " bytes");
+            
+            // Limpiar cualquier output buffer
+            if (ob_get_level()) {
+                ob_clean();
+            }
+            
             // Establecer headers para servir el archivo
             header('Content-Type: ' . $mimeType);
             header('Content-Length: ' . filesize($fullPath));
             header('Content-Disposition: inline; filename="' . basename($fullPath) . '"');
             header('Cache-Control: private, max-age=3600');
             
+            error_log("VIEW_FILE - Headers set, reading file");
+            
             // Leer y enviar el archivo
-            readfile($fullPath);
+            $result = readfile($fullPath);
+            if ($result === false) {
+                error_log("VIEW_FILE ERROR - Failed to read file");
+                http_response_code(500);
+                echo "Error al leer el archivo";
+                exit;
+            }
+            
+            error_log("VIEW_FILE - File served successfully");
             exit;
 
         // Rutas del Administrador
