@@ -556,7 +556,19 @@ function initializeEOFDirectly(container) {
     if (processBtn) {
         processBtn.addEventListener('click', function() {
             console.log('=== PROCESS BUTTON CLICKED ===');
-            if (uploadedFiles.length === 0) {
+            
+            // Verificar si hay archivos no procesados en la lista
+            const ofertaItems = document.querySelectorAll('.oferta-item');
+            let hasUnprocessedFiles = false;
+            
+            ofertaItems.forEach(item => {
+                const procesadoBadge = item.querySelector('.procesado-badge');
+                if (!procesadoBadge) {
+                    hasUnprocessedFiles = true;
+                }
+            });
+            
+            if (!hasUnprocessedFiles) {
                 alert('No hay archivos para procesar');
                 return;
             }
@@ -602,6 +614,54 @@ function initializeEOFDirectly(container) {
     }
     
     console.log('EOF initialized successfully!');
+}
+
+// Función para actualizar la visibilidad del botón de subir archivos
+function updateUploadButtonVisibility() {
+    console.log('=== UPDATE UPLOAD BUTTON VISIBILITY ===');
+    
+    const uploadBtn = document.querySelector('#upload-btn');
+    const processBtn = document.querySelector('#process-btn');
+    const fileInput = document.querySelector('#file-input');
+    
+    if (!uploadBtn || !processBtn || !fileInput) {
+        console.log('Required elements not found for button visibility update');
+        return;
+    }
+    
+    // Verificar si hay archivos no procesados
+    const ofertaItems = document.querySelectorAll('.oferta-item');
+    let hasUnprocessedFiles = false;
+    
+    ofertaItems.forEach(item => {
+        const procesadoBadge = item.querySelector('.procesado-badge');
+        if (!procesadoBadge) {
+            hasUnprocessedFiles = true;
+        }
+    });
+    
+    console.log('Has unprocessed files:', hasUnprocessedFiles);
+    console.log('File input has files:', fileInput.files.length > 0);
+    
+    // Mostrar botón de subir archivos si:
+    // 1. Hay archivos no procesados O
+    // 2. Hay archivos seleccionados en el input
+    if (hasUnprocessedFiles || fileInput.files.length > 0) {
+        uploadBtn.style.display = 'inline-block';
+        console.log('Showing upload button');
+    } else {
+        uploadBtn.style.display = 'none';
+        console.log('Hiding upload button');
+    }
+    
+    // Mostrar botón de procesar si hay archivos no procesados
+    if (hasUnprocessedFiles) {
+        processBtn.style.display = 'inline-block';
+        console.log('Showing process button');
+    } else {
+        processBtn.style.display = 'none';
+        console.log('Hiding process button');
+    }
 }
 
 function uploadFilesDirectly(files) {
@@ -746,6 +806,9 @@ function displayOfertasDirectly(ofertas) {
     html += '</div>';
     
     listaOfertas.innerHTML = html;
+    
+    // Actualizar visibilidad de botones después de mostrar ofertas
+    updateUploadButtonVisibility();
 }
 
 window.deleteOfertaDirectly = function(fileId) {
@@ -772,6 +835,8 @@ window.deleteOfertaDirectly = function(fileId) {
             console.log('Delete response:', data);
             if (data.success) {
                 loadOfertasDirectly();
+                // Después de eliminar, verificar si debemos mostrar el botón de subir archivos
+                updateUploadButtonVisibility();
             } else {
                 alert('Error al eliminar: ' + data.message);
             }
