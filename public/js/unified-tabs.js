@@ -108,8 +108,9 @@ function loadPhaseContent(phase) {
     // Construir URL para la fase
     const productId = getProductIdFromURL();
     
-    // Detectar si estamos en producción (URL contiene index.php)
-    const isProduction = window.location.pathname.includes('index.php');
+    // Detectar si estamos en producción (URL contiene index.php o estamos en dominio de producción)
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
     
     let url;
     if (isProduction) {
@@ -120,7 +121,14 @@ function loadPhaseContent(phase) {
         url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
     }
     
-    console.log('Loading content from:', url);
+    console.log('=== PHASE LOADING DEBUG ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Current pathname:', window.location.pathname);
+    console.log('Is production detected:', isProduction);
+    console.log('Phase:', phase);
+    console.log('Product ID:', productId);
+    console.log('Generated URL:', url);
+    console.log('================================');
     
     fetch(url, {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -237,7 +245,8 @@ function loadPreguntas(page) {
     const productId = getProductIdFromURL();
     
     // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php');
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
     
     let url;
     if (isProduction) {
@@ -282,7 +291,8 @@ function submitPregunta(pregunta) {
     const productId = getProductIdFromURL();
     
     // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php');
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
     
     let url;
     if (isProduction) {

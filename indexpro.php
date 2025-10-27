@@ -63,6 +63,10 @@ $action = $_GET['action'] ?? 'login';
 
 // Log de routing para debugging
 error_log("NEW ROUTING - Action: $action, Session ID: " . session_id());
+error_log("REQUEST_URI: " . $_SERVER['REQUEST_URI']);
+error_log("QUERY_STRING: " . $_SERVER['QUERY_STRING']);
+error_log("GET params: " . print_r($_GET, true));
+error_log("Is AJAX: " . (isAjaxRequest() ? 'YES' : 'NO'));
 
 try {
     switch ($action) {
