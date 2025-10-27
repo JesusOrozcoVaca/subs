@@ -24,10 +24,19 @@
 </div>
 
 <script>
-// Ejecutar con timeout para asegurar que el DOM esté listo
-setTimeout(function() {
-    console.log('=== EOF SCRIPT STARTING ===');
-    console.log('Current URL:', window.location.href);
+// SOLUCIÓN RADICAL: Event Delegation + Polling
+console.log('=== EOF SCRIPT STARTING (NEW APPROACH) ===');
+
+// Variables globales para el estado
+window.eofState = {
+    uploadedFiles: [],
+    isProcessed: false,
+    initialized: false
+};
+
+// Función para inicializar cuando el contenido esté listo
+function initializeEOF() {
+    console.log('=== INITIALIZING EOF ===');
     
     const form = document.getElementById('oferta-form');
     const fileInput = document.getElementById('file-input');
@@ -41,30 +50,25 @@ setTimeout(function() {
     console.log('File input element:', fileInput);
     console.log('Upload button element:', uploadBtn);
     
-    if (!form) {
-        console.error('FORM NOT FOUND!');
-        return;
+    if (!form || !fileInput || !uploadBtn) {
+        console.log('Elements not ready yet, will retry...');
+        return false;
     }
     
-    if (!fileInput) {
-        console.error('FILE INPUT NOT FOUND!');
-        return;
-    }
+    console.log('All elements found, setting up event listeners...');
     
-    if (!uploadBtn) {
-        console.error('UPLOAD BUTTON NOT FOUND!');
-        return;
-    }
-    
-    let uploadedFiles = [];
-    let isProcessed = false;
+    // Marcar como inicializado
+    window.eofState.initialized = true;
     
     // Validación de archivos
     fileInput.addEventListener('change', function() {
+        console.log('File input changed');
         const files = Array.from(this.files);
         const maxFiles = 5;
         const maxSize = 512 * 1024; // 512KB
         const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        
+        console.log('Files selected:', files.length);
         
         // Validar cantidad
         if (files.length > maxFiles) {
@@ -113,7 +117,7 @@ setTimeout(function() {
         e.preventDefault();
         console.log('Default prevented');
         
-        if (isProcessed) {
+        if (window.eofState.isProcessed) {
             console.log('Already processed, showing alert');
             alert('Ya se ha procesado la entrega de ofertas');
             return;
@@ -133,201 +137,251 @@ setTimeout(function() {
         uploadFiles(files);
     });
     
-    console.log('Upload button event listener added successfully');
-    
-    // Procesar entrega
-    processBtn.addEventListener('click', function() {
-        if (uploadedFiles.length === 0) {
-            alert('No hay archivos para procesar');
-            return;
-        }
-        
-        // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const processUrl = isProduction ? 
-            '/subs/index.php?action=participant_process_offer' : 
-            '/subs/participant/process-offer';
-        
-        fetch(processUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: `producto_id=<?php echo $product['id']; ?>`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                isProcessed = true;
-                processBtn.style.display = 'none';
-                uploadBtn.style.display = 'none';
-                fileInput.disabled = true;
-                alert('Entrega de ofertas procesada exitosamente');
-                loadOfertas();
-            } else {
-                alert('Error al procesar: ' + data.message);
+    // Event listener del botón de procesar
+    if (processBtn) {
+        processBtn.addEventListener('click', function() {
+            console.log('=== PROCESS BUTTON CLICKED ===');
+            if (window.eofState.uploadedFiles.length === 0) {
+                alert('No hay archivos para procesar');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al procesar la entrega');
-        });
-    });
-    
-    // Subir archivos
-    function uploadFiles(files) {
-        let uploadCount = 0;
-        const totalFiles = files.length;
-        
-        files.forEach((file, index) => {
-            const formData = new FormData();
-            formData.append('producto_id', '<?php echo $product['id']; ?>');
-            formData.append('documento_oferta', file);
             
             // Detectar si estamos en producción
             const isProduction = window.location.pathname.includes('index.php') || 
                                 window.location.hostname.includes('hjconsulting.com.ec');
             
-            const uploadUrl = isProduction ? 
-                '/subs/index.php?action=participant_upload_offer' : 
-                '/subs/participant/upload-offer';
+            const processUrl = isProduction ? 
+                '/subs/index.php?action=participant_process_offer' : 
+                '/subs/participant/process-offer';
             
-            fetch(uploadUrl, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                uploadCount++;
-                
-                if (data.success) {
-                    uploadedFiles.push({
-                        id: data.file_id,
-                        name: file.name,
-                        size: file.size
-                    });
-                } else {
-                    alert(`Error al subir "${file.name}": ${data.message}`);
-                }
-                
-                // Si es el último archivo
-                if (uploadCount === totalFiles) {
-                    if (uploadedFiles.length > 0) {
-                        processBtn.style.display = 'inline-block';
-                        uploadBtn.style.display = 'none';
-                        loadOfertas();
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert(`Error al subir "${file.name}"`);
-            });
-        });
-    }
-    
-    // Cargar ofertas
-    function loadOfertas() {
-        // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const getOffersUrl = isProduction ? 
-            `/subs/index.php?action=participant_get_offers&producto_id=<?php echo $product['id']; ?>` : 
-            `/subs/participant/get-offers?producto_id=<?php echo $product['id']; ?>`;
-        
-        fetch(getOffersUrl, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayOfertas(data.ofertas);
-            } else {
-                listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
-        });
-    }
-    
-    // Mostrar ofertas
-    function displayOfertas(ofertas) {
-        if (ofertas.length === 0) {
-            listaOfertas.innerHTML = '<p>No hay archivos subidos aún</p>';
-            return;
-        }
-        
-        let html = '<div class="ofertas-grid">';
-        ofertas.forEach(oferta => {
-            html += `
-                <div class="oferta-item">
-                    <div class="oferta-info">
-                        <strong>${oferta.nombre_archivo}</strong>
-                        <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
-                    </div>
-                    <div class="oferta-actions">
-                        <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
-                        ${!oferta.procesado ? `<button onclick="deleteOferta(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        
-        listaOfertas.innerHTML = html;
-    }
-    
-    // Eliminar oferta
-    window.deleteOferta = function(fileId) {
-        if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
-            // Detectar si estamos en producción
-            const isProduction = window.location.pathname.includes('index.php') || 
-                                window.location.hostname.includes('hjconsulting.com.ec');
+            console.log('Processing offer at:', processUrl);
             
-            const deleteUrl = isProduction ? 
-                '/subs/index.php?action=participant_delete_offer' : 
-                '/subs/participant/delete-offer';
-            
-            fetch(deleteUrl, {
+            fetch(processUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `file_id=${fileId}`
+                body: `producto_id=<?php echo $product['id']; ?>`
             })
             .then(response => response.json())
             .then(data => {
+                console.log('Process response:', data);
                 if (data.success) {
+                    window.eofState.isProcessed = true;
+                    processBtn.style.display = 'none';
+                    uploadBtn.style.display = 'none';
+                    fileInput.disabled = true;
+                    alert('Entrega de ofertas procesada exitosamente');
                     loadOfertas();
                 } else {
-                    alert('Error al eliminar: ' + data.message);
+                    alert('Error al procesar: ' + data.message);
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Error al eliminar el archivo');
+                console.error('Process error:', error);
+                alert('Error al procesar la entrega');
             });
+        });
+    }
+    
+    console.log('Upload button event listener added successfully');
+    
+    return true; // Inicialización exitosa
+}
+
+// Función para subir archivos
+function uploadFiles(files) {
+    console.log('=== UPLOAD FILES FUNCTION CALLED ===');
+    let uploadCount = 0;
+    const totalFiles = files.length;
+    
+    files.forEach((file, index) => {
+        const formData = new FormData();
+        formData.append('producto_id', '<?php echo $product['id']; ?>');
+        formData.append('documento_oferta', file);
+        
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const uploadUrl = isProduction ? 
+            '/subs/index.php?action=participant_upload_offer' : 
+            '/subs/participant/upload-offer';
+        
+        console.log('Uploading file:', file.name, 'to:', uploadUrl);
+        
+        fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            uploadCount++;
+            console.log('Upload response:', data);
+            
+            if (data.success) {
+                window.eofState.uploadedFiles.push({
+                    id: data.file_id,
+                    name: file.name,
+                    size: file.size
+                });
+                console.log('File uploaded successfully:', file.name);
+            } else {
+                alert(`Error al subir "${file.name}": ${data.message}`);
+            }
+            
+            // Si es el último archivo
+            if (uploadCount === totalFiles) {
+                if (window.eofState.uploadedFiles.length > 0) {
+                    const processBtn = document.getElementById('process-btn');
+                    const uploadBtn = document.getElementById('upload-btn');
+                    if (processBtn) processBtn.style.display = 'inline-block';
+                    if (uploadBtn) uploadBtn.style.display = 'none';
+                    loadOfertas();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            alert(`Error al subir "${file.name}"`);
+        });
+    });
+}
+
+// Función para cargar ofertas
+function loadOfertas() {
+    console.log('=== LOAD OFFERS FUNCTION CALLED ===');
+    // Detectar si estamos en producción
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
+    
+    const getOffersUrl = isProduction ? 
+        `/subs/index.php?action=participant_get_offers&producto_id=<?php echo $product['id']; ?>` : 
+        `/subs/participant/get-offers?producto_id=<?php echo $product['id']; ?>`;
+    
+    console.log('Loading offers from:', getOffersUrl);
+    
+    fetch(getOffersUrl, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
         }
-    };
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Offers response:', data);
+        if (data.success) {
+            displayOfertas(data.ofertas);
+        } else {
+            const listaOfertas = document.getElementById('lista-ofertas');
+            if (listaOfertas) {
+                listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading offers:', error);
+        const listaOfertas = document.getElementById('lista-ofertas');
+        if (listaOfertas) {
+            listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
+        }
+    });
+}
+
+// Función para mostrar ofertas
+function displayOfertas(ofertas) {
+    console.log('=== DISPLAY OFFERS FUNCTION CALLED ===');
+    const listaOfertas = document.getElementById('lista-ofertas');
+    if (!listaOfertas) {
+        console.error('Lista ofertas element not found');
+        return;
+    }
     
-    // Cargar ofertas al inicio
-    console.log('Loading initial offers...');
+    if (ofertas.length === 0) {
+        listaOfertas.innerHTML = '<p>No hay archivos subidos aún</p>';
+        return;
+    }
+    
+    let html = '<div class="ofertas-grid">';
+    ofertas.forEach(oferta => {
+        html += `
+            <div class="oferta-item">
+                <div class="oferta-info">
+                    <strong>${oferta.nombre_archivo}</strong>
+                    <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
+                </div>
+                <div class="oferta-actions">
+                    <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
+                    ${!oferta.procesado ? `<button onclick="deleteOferta(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    listaOfertas.innerHTML = html;
+}
+
+// Función para eliminar oferta
+window.deleteOferta = function(fileId) {
+    console.log('=== DELETE OFFER FUNCTION CALLED ===', fileId);
+    if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const deleteUrl = isProduction ? 
+            '/subs/index.php?action=participant_delete_offer' : 
+            '/subs/participant/delete-offer';
+        
+        fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `file_id=${fileId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Delete response:', data);
+            if (data.success) {
+                loadOfertas();
+            } else {
+                alert('Error al eliminar: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('Error al eliminar el archivo');
+        });
+    }
+};
+
+// POLLING: Intentar inicializar cada 200ms hasta que funcione
+let initAttempts = 0;
+const maxAttempts = 50; // 10 segundos máximo
+
+const initInterval = setInterval(function() {
+    initAttempts++;
+    console.log(`Initialization attempt ${initAttempts}/${maxAttempts}`);
+    
+    if (initializeEOF()) {
+        console.log('EOF initialized successfully!');
+        clearInterval(initInterval);
+    } else if (initAttempts >= maxAttempts) {
+        console.error('Failed to initialize EOF after maximum attempts');
+        clearInterval(initInterval);
+    }
+}, 200);
+
+// Cargar ofertas al inicio
+setTimeout(function() {
     loadOfertas();
-    
-    console.log('=== EOF SCRIPT COMPLETED SUCCESSFULLY ===');
-}, 100); // Ejecutar después de 100ms para asegurar que el DOM esté listo
+}, 500);
 </script>
 
 <style>
@@ -343,22 +397,19 @@ setTimeout(function() {
     margin-bottom: 15px;
 }
 
-.file-input {
-    display: none;
-}
-
 .file-label {
     display: block;
     padding: 20px;
-    border: 2px dashed #ddd;
+    border: 2px dashed #007bff;
     border-radius: 5px;
     text-align: center;
     cursor: pointer;
-    transition: border-color 0.3s;
+    background-color: #f8f9fa;
+    transition: background-color 0.3s;
 }
 
 .file-label:hover {
-    border-color: #007bff;
+    background-color: #e9ecef;
 }
 
 .file-icon {
@@ -368,21 +419,68 @@ setTimeout(function() {
 }
 
 .file-text {
-    font-size: 14px;
-    color: #666;
+    font-size: 16px;
+    color: #007bff;
+    font-weight: 500;
 }
 
 .file-info {
     margin-top: 10px;
-    font-size: 12px;
-    color: #666;
     display: flex;
     justify-content: space-between;
+    font-size: 14px;
+    color: #666;
 }
 
 .form-actions {
     text-align: center;
     margin-top: 15px;
+}
+
+.btn {
+    padding: 10px 20px;
+    margin: 0 5px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #1e7e34;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 12px;
+    margin: 0 2px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
 }
 
 .ofertas-lista {
@@ -391,17 +489,17 @@ setTimeout(function() {
 
 .ofertas-grid {
     display: grid;
-    gap: 15px;
+    gap: 10px;
 }
 
 .oferta-item {
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #fff;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
 }
 
 .oferta-info {
@@ -420,19 +518,10 @@ setTimeout(function() {
 
 .oferta-actions {
     display: flex;
-    gap: 10px;
+    gap: 5px;
 }
 
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
+.hidden {
+    display: none !important;
 }
 </style>
