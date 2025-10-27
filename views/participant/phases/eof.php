@@ -24,7 +24,8 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// Ejecutar inmediatamente ya que este contenido se carga dinámicamente
+(function() {
     const form = document.getElementById('oferta-form');
     const fileInput = document.getElementById('file-input');
     const fileCount = document.getElementById('file-count');
@@ -288,7 +289,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cargar ofertas al inicio
     loadOfertas();
-});
+})(); // Cerrar función anónima inmediatamente ejecutada
 </script>
 
 <style>
