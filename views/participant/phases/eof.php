@@ -172,6 +172,17 @@ function initializeEOF() {
                     processBtn.style.display = 'none';
                     uploadBtn.style.display = 'none';
                     fileInput.disabled = true;
+                    
+                    // Ocultar también el área de selección de archivos
+                    const fileUploadSection = document.querySelector('.file-upload-section');
+                    if (fileUploadSection) {
+                        fileUploadSection.style.display = 'none';
+                        console.log('Hiding file upload section - all files processed (point of no return)');
+                    }
+                    
+                    // Limpiar archivos seleccionados
+                    fileInput.value = '';
+                    
                     alert('Entrega de ofertas procesada exitosamente');
                     loadOfertas();
                 } else {

@@ -641,6 +641,7 @@ function updateUploadButtonVisibility() {
     const uploadBtn = document.querySelector('#upload-btn');
     const processBtn = document.querySelector('#process-btn');
     const fileInput = document.querySelector('#file-input');
+    const fileUploadSection = document.querySelector('.file-upload-section');
     
     if (!uploadBtn || !processBtn || !fileInput) {
         console.log('Required elements not found for button visibility update');
@@ -671,16 +672,38 @@ function updateUploadButtonVisibility() {
     const hasSelectedFiles = fileInput.files.length > 0;
     
     if (allFilesProcessed) {
-        // Si todos los archivos están procesados, ocultar ambos botones (punto de no retorno)
+        // Si todos los archivos están procesados, ocultar ambos botones Y el área de carga (punto de no retorno)
         uploadBtn.style.display = 'none';
         processBtn.style.display = 'none';
-        console.log('Hiding both buttons - all files processed (point of no return)');
-    } else if (hasUnprocessedFiles || hasSelectedFiles) {
-        uploadBtn.style.display = 'inline-block';
-        console.log('Showing upload button - hasUnprocessedFiles:', hasUnprocessedFiles, 'hasSelectedFiles:', hasSelectedFiles);
+        
+        // Ocultar también el área de selección de archivos
+        if (fileUploadSection) {
+            fileUploadSection.style.display = 'none';
+            console.log('Hiding file upload section - all files processed (point of no return)');
+        }
+        
+        // Deshabilitar el input de archivos
+        fileInput.disabled = true;
+        fileInput.value = '';
+        
+        console.log('Hiding both buttons and file upload section - all files processed (point of no return)');
     } else {
-        uploadBtn.style.display = 'none';
-        console.log('Hiding upload button - no unprocessed files and no selected files');
+        // Si no todos los archivos están procesados, mostrar el área de carga
+        if (fileUploadSection) {
+            fileUploadSection.style.display = 'block';
+            console.log('Showing file upload section - files can still be uploaded');
+        }
+        
+        // Habilitar el input de archivos
+        fileInput.disabled = false;
+        
+        if (hasUnprocessedFiles || hasSelectedFiles) {
+            uploadBtn.style.display = 'inline-block';
+            console.log('Showing upload button - hasUnprocessedFiles:', hasUnprocessedFiles, 'hasSelectedFiles:', hasSelectedFiles);
+        } else {
+            uploadBtn.style.display = 'none';
+            console.log('Hiding upload button - no unprocessed files and no selected files');
+        }
     }
     
     // El botón de procesar ya se maneja en la lógica principal arriba
