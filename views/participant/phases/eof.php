@@ -26,6 +26,9 @@
 <script>
 // Ejecutar inmediatamente ya que este contenido se carga dinámicamente
 (function() {
+    console.log('=== EOF SCRIPT STARTING ===');
+    console.log('Current URL:', window.location.href);
+    
     const form = document.getElementById('oferta-form');
     const fileInput = document.getElementById('file-input');
     const fileCount = document.getElementById('file-count');
@@ -33,6 +36,25 @@
     const uploadBtn = document.getElementById('upload-btn');
     const processBtn = document.getElementById('process-btn');
     const listaOfertas = document.getElementById('lista-ofertas');
+    
+    console.log('Form element:', form);
+    console.log('File input element:', fileInput);
+    console.log('Upload button element:', uploadBtn);
+    
+    if (!form) {
+        console.error('FORM NOT FOUND!');
+        return;
+    }
+    
+    if (!fileInput) {
+        console.error('FILE INPUT NOT FOUND!');
+        return;
+    }
+    
+    if (!uploadBtn) {
+        console.error('UPLOAD BUTTON NOT FOUND!');
+        return;
+    }
     
     let uploadedFiles = [];
     let isProcessed = false;
@@ -82,23 +104,36 @@
     });
     
     // Envío del formulario
+    console.log('Adding submit event listener to form');
     form.addEventListener('submit', function(e) {
+        console.log('=== FORM SUBMIT EVENT TRIGGERED ===');
+        console.log('Event:', e);
+        console.log('Files selected:', fileInput.files.length);
+        
         e.preventDefault();
+        console.log('Default prevented');
         
         if (isProcessed) {
+            console.log('Already processed, showing alert');
             alert('Ya se ha procesado la entrega de ofertas');
             return;
         }
         
         const files = Array.from(fileInput.files);
+        console.log('Files array:', files);
+        
         if (files.length === 0) {
+            console.log('No files selected, showing alert');
             alert('Por favor, seleccione al menos un archivo');
             return;
         }
         
+        console.log('Starting file upload process');
         // Subir archivos uno por uno
         uploadFiles(files);
     });
+    
+    console.log('Form event listener added successfully');
     
     // Procesar entrega
     processBtn.addEventListener('click', function() {
@@ -288,7 +323,10 @@
     };
     
     // Cargar ofertas al inicio
+    console.log('Loading initial offers...');
     loadOfertas();
+    
+    console.log('=== EOF SCRIPT COMPLETED SUCCESSFULLY ===');
 })(); // Cerrar función anónima inmediatamente ejecutada
 </script>
 
