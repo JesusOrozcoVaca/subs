@@ -516,6 +516,12 @@ function initializeEOFDirectly(container) {
         console.log('=== UPLOAD BUTTON CLICKED ===');
         e.preventDefault();
         
+        // Prevenir clicks múltiples
+        if (uploadBtn.disabled) {
+            console.log('Upload button is disabled, ignoring click');
+            return;
+        }
+        
         if (isProcessed) {
             alert('Ya se ha procesado la entrega de ofertas');
             return;
@@ -526,6 +532,10 @@ function initializeEOFDirectly(container) {
             alert('Por favor, seleccione al menos un archivo');
             return;
         }
+        
+        // Deshabilitar botón durante la subida
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Subiendo...';
         
         console.log('Starting file upload process');
         uploadFilesDirectly(files);
@@ -693,6 +703,13 @@ function uploadFilesDirectly(files) {
                 
                 if (processBtn) processBtn.style.display = 'inline-block';
                 
+                // Re-habilitar botón de subir archivos
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Subir Archivos';
+                    console.log('Upload button re-enabled after upload completion');
+                }
+                
                 // Limpiar el input de archivos después de subir exitosamente
                 if (fileInput) {
                     fileInput.value = '';
@@ -712,6 +729,14 @@ function uploadFilesDirectly(files) {
         .catch(error => {
             console.error('Upload error:', error);
             alert(`Error al subir "${file.name}"`);
+            
+            // Re-habilitar botón en caso de error
+            const uploadBtn = document.querySelector('#upload-btn');
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Subir Archivos';
+                console.log('Upload button re-enabled after error');
+            }
         });
     });
 }
