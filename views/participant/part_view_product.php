@@ -10,9 +10,9 @@
 <body>
     <header class="main-header">
         <div class="logo-container">
-            <img src="<?php echo image('logo-left.png'); ?>" alt="Logo Izquierdo" class="logo">
+            <img src="<?php echo image('logoHJ.png'); ?>" alt="Logo Izquierdo" class="logo">
             <h1>Sistema de Simulación de Contratación Pública</h1>
-            <img src="<?php echo image('logo-right.png'); ?>" alt="Logo Derecho" class="logo">
+            <img src="<?php echo image('logoHJ.png'); ?>" alt="Logo Derecho" class="logo">
         </div>
         <div class="user-info">
             <span><?php echo date('Y-m-d H:i:s'); ?></span>
