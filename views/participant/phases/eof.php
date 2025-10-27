@@ -319,16 +319,18 @@ function displayOfertas(ofertas) {
         return;
     }
     
-    // Detectar si estamos en producción para generar URL correcta
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
+    // Usar función helper para generar URLs dinámicas (siguiendo documentación)
+    function generateUrl(path) {
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        const baseUrl = isProduction ? '/subs/' : '/subs/';
+        return `${baseUrl}index.php?action=view_file&path=${encodeURIComponent(path)}`;
+    }
     
     let html = '<div class="ofertas-grid">';
     ofertas.forEach(oferta => {
-        // Generar URL usando la ruta view_file
-        const fileUrl = isProduction 
-            ? `/subs/index.php?action=view_file&path=${encodeURIComponent(oferta.ruta_archivo)}`
-            : `/subs/index.php?action=view_file&path=${encodeURIComponent(oferta.ruta_archivo)}`;
+        // Generar URL usando función helper dinámica
+        const fileUrl = generateUrl(oferta.ruta_archivo);
         console.log('Generating file URL (eof.php):', fileUrl, 'for file:', oferta.nombre_archivo);
         
         html += `
