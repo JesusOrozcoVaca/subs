@@ -319,8 +319,18 @@ function displayOfertas(ofertas) {
         return;
     }
     
+    // Detectar si estamos en producción para generar URL correcta
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
+    
+    // Generar URL base según el entorno
+    const baseUrl = isProduction ? '/subs/' : '/subs/';
+    
     let html = '<div class="ofertas-grid">';
     ofertas.forEach(oferta => {
+        const fileUrl = baseUrl + oferta.ruta_archivo;
+        console.log('Generating file URL (eof.php):', fileUrl, 'for file:', oferta.nombre_archivo);
+        
         html += `
             <div class="oferta-item">
                 <div class="oferta-info">
@@ -328,7 +338,7 @@ function displayOfertas(ofertas) {
                     <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
                 </div>
                 <div class="oferta-actions">
-                    <a href="/subs/${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
+                    <a href="${fileUrl}" target="_blank" class="btn btn-small">Ver</a>
                     ${!oferta.procesado ? `<button onclick="deleteOferta(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
                 </div>
             </div>
