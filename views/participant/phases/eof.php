@@ -24,8 +24,8 @@
 </div>
 
 <script>
-// Ejecutar inmediatamente ya que este contenido se carga dinámicamente
-(function() {
+// Ejecutar con timeout para asegurar que el DOM esté listo
+setTimeout(function() {
     console.log('=== EOF SCRIPT STARTING ===');
     console.log('Current URL:', window.location.href);
     
@@ -327,7 +327,7 @@
     loadOfertas();
     
     console.log('=== EOF SCRIPT COMPLETED SUCCESSFULLY ===');
-})(); // Cerrar función anónima inmediatamente ejecutada
+}, 100); // Ejecutar después de 100ms para asegurar que el DOM esté listo
 </script>
 
 <style>
