@@ -607,6 +607,14 @@ function initializeEOFDirectly(container) {
                     processBtn.style.display = 'none';
                     uploadBtn.style.display = 'none';
                     fileInput.disabled = true;
+                    
+                    // Limpiar archivos seleccionados después de procesar
+                    fileInput.value = '';
+                    const fileCount = document.querySelector('#file-count');
+                    const fileSize = document.querySelector('#file-size');
+                    if (fileCount) fileCount.textContent = '0 archivo(s) seleccionado(s)';
+                    if (fileSize) fileSize.textContent = 'Tamaño total: 0 KB';
+                    
                     alert('Entrega de ofertas procesada exitosamente');
                     loadOfertasDirectly();
                 } else {
@@ -653,12 +661,21 @@ function updateUploadButtonVisibility() {
     console.log('Has unprocessed files:', hasUnprocessedFiles);
     console.log('File input has files:', fileInput.files.length > 0);
     
+    // Verificar si todos los archivos están procesados
+    const allFilesProcessed = ofertaItems.length > 0 && !hasUnprocessedFiles;
+    
     // Mostrar botón de subir archivos si:
     // 1. Hay archivos no procesados O
     // 2. Hay archivos seleccionados en el input
+    // PERO NO si todos los archivos ya están procesados (punto de no retorno)
     const hasSelectedFiles = fileInput.files.length > 0;
     
-    if (hasUnprocessedFiles || hasSelectedFiles) {
+    if (allFilesProcessed) {
+        // Si todos los archivos están procesados, ocultar ambos botones (punto de no retorno)
+        uploadBtn.style.display = 'none';
+        processBtn.style.display = 'none';
+        console.log('Hiding both buttons - all files processed (point of no return)');
+    } else if (hasUnprocessedFiles || hasSelectedFiles) {
         uploadBtn.style.display = 'inline-block';
         console.log('Showing upload button - hasUnprocessedFiles:', hasUnprocessedFiles, 'hasSelectedFiles:', hasSelectedFiles);
     } else {
@@ -666,14 +683,7 @@ function updateUploadButtonVisibility() {
         console.log('Hiding upload button - no unprocessed files and no selected files');
     }
     
-    // Mostrar botón de procesar si hay archivos no procesados
-    if (hasUnprocessedFiles) {
-        processBtn.style.display = 'inline-block';
-        console.log('Showing process button');
-    } else {
-        processBtn.style.display = 'none';
-        console.log('Hiding process button');
-    }
+    // El botón de procesar ya se maneja en la lógica principal arriba
 }
 
 function uploadFilesDirectly(files) {
