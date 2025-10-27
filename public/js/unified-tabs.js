@@ -603,6 +603,9 @@ function initializeEOFDirectly(container) {
     }
     
     console.log('EOF initialized successfully!');
+    
+    // Cargar ofertas existentes al inicializar
+    loadOfertasDirectly();
 }
 
 // Función para actualizar la visibilidad del botón de subir archivos
@@ -657,6 +660,14 @@ function updateUploadButtonVisibility() {
 
 function uploadFilesDirectly(files) {
     console.log('=== UPLOAD FILES DIRECTLY ===');
+    
+    // Validar cantidad de archivos
+    const maxFiles = 5;
+    if (files.length > maxFiles) {
+        alert(`Solo se permiten máximo ${maxFiles} archivos`);
+        return;
+    }
+    
     let uploadCount = 0;
     const totalFiles = files.length;
     
