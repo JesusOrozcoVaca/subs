@@ -452,4 +452,312 @@ function initializeEOFContent(container) {
         console.error('No script element found in EOF content');
         console.log('Available elements:', container.querySelectorAll('*'));
     }
+    
+    // SOLUCIÓN ALTERNATIVA: Inicializar directamente desde aquí
+    console.log('=== FALLBACK: Initializing EOF directly ===');
+    initializeEOFDirectly(container);
 }
+
+function initializeEOFDirectly(container) {
+    console.log('=== INITIALIZING EOF DIRECTLY ===');
+    
+    const form = container.querySelector('#oferta-form');
+    const fileInput = container.querySelector('#file-input');
+    const fileCount = container.querySelector('#file-count');
+    const fileSize = container.querySelector('#file-size');
+    const uploadBtn = container.querySelector('#upload-btn');
+    const processBtn = container.querySelector('#process-btn');
+    const listaOfertas = container.querySelector('#lista-ofertas');
+    
+    console.log('Form element:', form);
+    console.log('File input element:', fileInput);
+    console.log('Upload button element:', uploadBtn);
+    
+    if (!form || !fileInput || !uploadBtn) {
+        console.error('Required elements not found!');
+        return;
+    }
+    
+    console.log('All elements found, setting up event listeners...');
+    
+    // Variables de estado
+    let uploadedFiles = [];
+    let isProcessed = false;
+    
+    // Event listener para cambio de archivos
+    fileInput.addEventListener('change', function() {
+        console.log('File input changed');
+        const files = Array.from(this.files);
+        const maxFiles = 5;
+        const maxSize = 512 * 1024; // 512KB
+        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+        
+        console.log('Files selected:', files.length);
+        
+        // Validar cantidad
+        if (files.length > maxFiles) {
+            alert(`Solo se permiten máximo ${maxFiles} archivos`);
+            this.value = '';
+            return;
+        }
+        
+        // Validar tipos y tamaños
+        let totalSize = 0;
+        for (let file of files) {
+            if (!allowedTypes.includes(file.type)) {
+                alert(`El archivo "${file.name}" no es un tipo permitido (PDF, JPG, PNG)`);
+                this.value = '';
+                return;
+            }
+            
+            if (file.size > maxSize) {
+                alert(`El archivo "${file.name}" excede el tamaño máximo de 512KB`);
+                this.value = '';
+                return;
+            }
+            
+            totalSize += file.size;
+        }
+        
+        // Actualizar información
+        if (fileCount) fileCount.textContent = `${files.length} archivo(s) seleccionado(s)`;
+        if (fileSize) fileSize.textContent = `Tamaño total: ${(totalSize / 1024).toFixed(1)} KB`;
+        
+        // Mostrar/ocultar botones
+        if (files.length > 0) {
+            uploadBtn.style.display = 'inline-block';
+        } else {
+            uploadBtn.style.display = 'none';
+        }
+    });
+    
+    // Event listener para botón de subir archivos
+    uploadBtn.addEventListener('click', function(e) {
+        console.log('=== UPLOAD BUTTON CLICKED ===');
+        e.preventDefault();
+        
+        if (isProcessed) {
+            alert('Ya se ha procesado la entrega de ofertas');
+            return;
+        }
+        
+        const files = Array.from(fileInput.files);
+        if (files.length === 0) {
+            alert('Por favor, seleccione al menos un archivo');
+            return;
+        }
+        
+        console.log('Starting file upload process');
+        uploadFilesDirectly(files);
+    });
+    
+    // Event listener para botón de procesar
+    if (processBtn) {
+        processBtn.addEventListener('click', function() {
+            console.log('=== PROCESS BUTTON CLICKED ===');
+            if (uploadedFiles.length === 0) {
+                alert('No hay archivos para procesar');
+                return;
+            }
+            
+            // Detectar si estamos en producción
+            const isProduction = window.location.pathname.includes('index.php') || 
+                                window.location.hostname.includes('hjconsulting.com.ec');
+            
+            const processUrl = isProduction ? 
+                '/subs/index.php?action=participant_process_offer' : 
+                '/subs/participant/process-offer';
+            
+            console.log('Processing offer at:', processUrl);
+            
+            fetch(processUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: `producto_id=${getProductIdFromURL()}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Process response:', data);
+                if (data.success) {
+                    isProcessed = true;
+                    processBtn.style.display = 'none';
+                    uploadBtn.style.display = 'none';
+                    fileInput.disabled = true;
+                    alert('Entrega de ofertas procesada exitosamente');
+                    loadOfertasDirectly();
+                } else {
+                    alert('Error al procesar: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Process error:', error);
+                alert('Error al procesar la entrega');
+            });
+        });
+    }
+    
+    console.log('EOF initialized successfully!');
+}
+
+function uploadFilesDirectly(files) {
+    console.log('=== UPLOAD FILES DIRECTLY ===');
+    let uploadCount = 0;
+    const totalFiles = files.length;
+    
+    files.forEach((file, index) => {
+        const formData = new FormData();
+        formData.append('producto_id', getProductIdFromURL());
+        formData.append('documento_oferta', file);
+        
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const uploadUrl = isProduction ? 
+            '/subs/index.php?action=participant_upload_offer' : 
+            '/subs/participant/upload-offer';
+        
+        console.log('Uploading file:', file.name, 'to:', uploadUrl);
+        
+        fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            uploadCount++;
+            console.log('Upload response:', data);
+            
+            if (data.success) {
+                console.log('File uploaded successfully:', file.name);
+            } else {
+                alert(`Error al subir "${file.name}": ${data.message}`);
+            }
+            
+            // Si es el último archivo
+            if (uploadCount === totalFiles) {
+                const processBtn = document.querySelector('#process-btn');
+                const uploadBtn = document.querySelector('#upload-btn');
+                if (processBtn) processBtn.style.display = 'inline-block';
+                if (uploadBtn) uploadBtn.style.display = 'none';
+                loadOfertasDirectly();
+            }
+        })
+        .catch(error => {
+            console.error('Upload error:', error);
+            alert(`Error al subir "${file.name}"`);
+        });
+    });
+}
+
+function loadOfertasDirectly() {
+    console.log('=== LOAD OFFERS DIRECTLY ===');
+    // Detectar si estamos en producción
+    const isProduction = window.location.pathname.includes('index.php') || 
+                        window.location.hostname.includes('hjconsulting.com.ec');
+    
+    const getOffersUrl = isProduction ? 
+        `/subs/index.php?action=participant_get_offers&producto_id=${getProductIdFromURL()}` : 
+        `/subs/participant/get-offers?producto_id=${getProductIdFromURL()}`;
+    
+    console.log('Loading offers from:', getOffersUrl);
+    
+    fetch(getOffersUrl, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Offers response:', data);
+        if (data.success) {
+            displayOfertasDirectly(data.ofertas);
+        } else {
+            const listaOfertas = document.querySelector('#lista-ofertas');
+            if (listaOfertas) {
+                listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading offers:', error);
+        const listaOfertas = document.querySelector('#lista-ofertas');
+        if (listaOfertas) {
+            listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
+        }
+    });
+}
+
+function displayOfertasDirectly(ofertas) {
+    console.log('=== DISPLAY OFFERS DIRECTLY ===');
+    const listaOfertas = document.querySelector('#lista-ofertas');
+    if (!listaOfertas) {
+        console.error('Lista ofertas element not found');
+        return;
+    }
+    
+    if (ofertas.length === 0) {
+        listaOfertas.innerHTML = '<p>No hay archivos subidos aún</p>';
+        return;
+    }
+    
+    let html = '<div class="ofertas-grid">';
+    ofertas.forEach(oferta => {
+        html += `
+            <div class="oferta-item">
+                <div class="oferta-info">
+                    <strong>${oferta.nombre_archivo}</strong>
+                    <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
+                </div>
+                <div class="oferta-actions">
+                    <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
+                    ${!oferta.procesado ? `<button onclick="deleteOfertaDirectly(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    listaOfertas.innerHTML = html;
+}
+
+window.deleteOfertaDirectly = function(fileId) {
+    console.log('=== DELETE OFFER DIRECTLY ===', fileId);
+    if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const deleteUrl = isProduction ? 
+            '/subs/index.php?action=participant_delete_offer' : 
+            '/subs/participant/delete-offer';
+        
+        fetch(deleteUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: `file_id=${fileId}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Delete response:', data);
+            if (data.success) {
+                loadOfertasDirectly();
+            } else {
+                alert('Error al eliminar: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            alert('Error al eliminar el archivo');
+        });
+    }
+};
