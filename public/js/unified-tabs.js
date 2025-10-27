@@ -430,33 +430,12 @@ function initializeEOFContent(container) {
     console.log('Container:', container);
     console.log('Container HTML:', container.innerHTML.substring(0, 200) + '...');
     
-    // SOLUCIÓN ALTERNATIVA: Inicializar directamente desde aquí PRIMERO
-    console.log('=== FALLBACK: Initializing EOF directly ===');
+    // SOLUCIÓN PRINCIPAL: Inicializar directamente desde aquí
+    console.log('=== INITIALIZING EOF DIRECTLY (MAIN SOLUTION) ===');
     initializeEOFDirectly(container);
     
-    // Buscar el script dentro del contenido cargado
-    const scriptElement = container.querySelector('script');
-    console.log('Script element found:', scriptElement);
-    
-    if (scriptElement) {
-        console.log('Found script element, executing...');
-        console.log('Script content length:', scriptElement.textContent.length);
-        console.log('Script content preview:', scriptElement.textContent.substring(0, 100) + '...');
-        
-        try {
-            // Crear un nuevo script element y ejecutarlo
-            const newScript = document.createElement('script');
-            newScript.textContent = scriptElement.textContent;
-            document.head.appendChild(newScript);
-            
-            console.log('EOF script executed successfully');
-        } catch (error) {
-            console.error('Error executing EOF script:', error);
-        }
-    } else {
-        console.error('No script element found in EOF content');
-        console.log('Available elements:', container.querySelectorAll('*'));
-    }
+    // NO ejecutar el script de eof.php para evitar duplicación de funcionalidad
+    console.log('Skipping eof.php script execution to prevent conflicts');
 }
 
 function initializeEOFDirectly(container) {

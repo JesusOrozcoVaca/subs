@@ -9,6 +9,23 @@ class Document {
     }
 
     public function uploadDocument($productoId, $usuarioId, $file) {
+        // Verificar si ya existe un archivo con el mismo nombre para este usuario y producto
+        $checkQuery = "SELECT COUNT(*) as count FROM documentos_producto 
+                      WHERE producto_id = :producto_id AND usuario_id = :usuario_id 
+                      AND nombre_archivo = :nombre_archivo AND procesado = 0";
+        
+        $checkStmt = $this->db->prepare($checkQuery);
+        $checkStmt->execute([
+            'producto_id' => $productoId,
+            'usuario_id' => $usuarioId,
+            'nombre_archivo' => $file['name']
+        ]);
+        
+        $result = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        if ($result['count'] > 0) {
+            return ['success' => false, 'message' => 'Ya existe un archivo con el mismo nombre. Elimine el archivo existente antes de subir uno nuevo.'];
+        }
+        
         // Crear directorio si no existe
         $uploadDir = BASE_PATH . '/uploads/offers/';
         if (!file_exists($uploadDir)) {
