@@ -858,7 +858,7 @@ function displayOfertasDirectly(ofertas) {
                     ${isProcessed ? '<span class="procesado-badge">Procesado</span>' : ''}
                 </div>
                 <div class="oferta-actions">
-                    <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
+                    <a href="/subs/${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
                     ${!isProcessed ? `<button onclick="deleteOfertaDirectly(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
                 </div>
             </div>

@@ -328,7 +328,7 @@ function displayOfertas(ofertas) {
                     <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
                 </div>
                 <div class="oferta-actions">
-                    <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
+                    <a href="/subs/${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
                     ${!oferta.procesado ? `<button onclick="deleteOferta(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
                 </div>
             </div>
