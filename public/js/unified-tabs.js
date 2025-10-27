@@ -182,9 +182,24 @@ function initializeContentSpecificFunctionality(phase, container) {
 }
 
 function getProductIdFromURL() {
+    // Primero intentar extraer de parámetros de URL (para producción)
+    const urlParams = new URLSearchParams(window.location.search);
+    const productIdFromParams = urlParams.get('id');
+    
+    if (productIdFromParams) {
+        return productIdFromParams;
+    }
+    
+    // Si no hay parámetros, intentar extraer del pathname (para local)
     const pathParts = window.location.pathname.split('/');
-    const productId = pathParts[pathParts.length - 1];
-    return productId || '1'; // Fallback
+    const productIdFromPath = pathParts[pathParts.length - 1];
+    
+    // Verificar que sea un número (ID válido)
+    if (productIdFromPath && !isNaN(productIdFromPath)) {
+        return productIdFromPath;
+    }
+    
+    return '1'; // Fallback
 }
 
 // Sistema PYR específico
