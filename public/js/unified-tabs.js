@@ -584,6 +584,7 @@ function initializeEOFDirectly(container) {
                 console.log('Process response:', data);
                 if (data.success) {
                     isProcessed = true;
+                    // Solo después de procesar se ocultan ambos botones
                     processBtn.style.display = 'none';
                     uploadBtn.style.display = 'none';
                     fileInput.disabled = true;
@@ -646,7 +647,8 @@ function uploadFilesDirectly(files) {
                 const processBtn = document.querySelector('#process-btn');
                 const uploadBtn = document.querySelector('#upload-btn');
                 if (processBtn) processBtn.style.display = 'inline-block';
-                if (uploadBtn) uploadBtn.style.display = 'none';
+                // NO ocultar el botón de subir archivos - debe mantenerse visible
+                // if (uploadBtn) uploadBtn.style.display = 'none';
                 loadOfertasDirectly();
             }
         })
@@ -726,15 +728,17 @@ function displayOfertasDirectly(ofertas) {
     
     let html = '<div class="ofertas-grid">';
     ofertas.forEach(oferta => {
+        const isProcessed = oferta.procesado == 1 || oferta.procesado === true;
         html += `
             <div class="oferta-item">
                 <div class="oferta-info">
                     <strong>${oferta.nombre_archivo}</strong>
                     <span class="oferta-fecha">${new Date(oferta.fecha_carga).toLocaleString()}</span>
+                    ${isProcessed ? '<span class="procesado-badge">Procesado</span>' : ''}
                 </div>
                 <div class="oferta-actions">
                     <a href="${oferta.ruta_archivo}" target="_blank" class="btn btn-small">Ver</a>
-                    ${!oferta.procesado ? `<button onclick="deleteOfertaDirectly(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
+                    ${!isProcessed ? `<button onclick="deleteOfertaDirectly(${oferta.id})" class="btn btn-small btn-danger">Eliminar</button>` : ''}
                 </div>
             </div>
         `;
