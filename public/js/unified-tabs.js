@@ -427,5 +427,19 @@ function displayPagination(pagination) {
 
 function initializeEOFContent(container) {
     console.log('Initializing EOF content in container');
-    // Implementar funcionalidad EOF aquí
+    
+    // Buscar el script dentro del contenido cargado
+    const scriptElement = container.querySelector('script');
+    if (scriptElement) {
+        console.log('Found script element, executing...');
+        
+        // Crear un nuevo script element y ejecutarlo
+        const newScript = document.createElement('script');
+        newScript.textContent = scriptElement.textContent;
+        document.head.appendChild(newScript);
+        
+        console.log('EOF script executed successfully');
+    } else {
+        console.error('No script element found in EOF content');
+    }
 }
