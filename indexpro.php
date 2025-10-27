@@ -82,8 +82,12 @@ try {
 
         case 'view_file':
             // Servir archivos estáticos (uploads)
+            error_log("VIEW_FILE START - Processing file request");
             $filePath = $_GET['path'] ?? '';
+            error_log("VIEW_FILE - File path from GET: " . $filePath);
+            
             if (empty($filePath)) {
+                error_log("VIEW_FILE ERROR - No file path specified");
                 http_response_code(400);
                 echo "Archivo no especificado";
                 exit;
@@ -92,9 +96,17 @@ try {
             // Validar que el archivo esté dentro del directorio uploads
             $fullPath = __DIR__ . '/' . $filePath;
             $uploadsDir = __DIR__ . '/uploads/';
+            error_log("VIEW_FILE - Full path: " . $fullPath);
+            error_log("VIEW_FILE - Uploads dir: " . $uploadsDir);
             
             // Verificar que el archivo esté dentro del directorio uploads
-            if (!str_starts_with(realpath($fullPath), realpath($uploadsDir))) {
+            $realFullPath = realpath($fullPath);
+            $realUploadsDir = realpath($uploadsDir);
+            error_log("VIEW_FILE - Real full path: " . ($realFullPath ?: 'FALSE'));
+            error_log("VIEW_FILE - Real uploads dir: " . ($realUploadsDir ?: 'FALSE'));
+            
+            if (!$realFullPath || !$realUploadsDir || strpos($realFullPath, $realUploadsDir) !== 0) {
+                error_log("VIEW_FILE ERROR - Access denied. RealFullPath: " . ($realFullPath ?: 'FALSE') . ", RealUploadsDir: " . ($realUploadsDir ?: 'FALSE'));
                 http_response_code(403);
                 echo "Acceso denegado";
                 exit;
@@ -102,10 +114,13 @@ try {
             
             // Verificar que el archivo existe
             if (!file_exists($fullPath)) {
+                error_log("VIEW_FILE ERROR - File does not exist: " . $fullPath);
                 http_response_code(404);
                 echo "Archivo no encontrado";
                 exit;
             }
+            
+            error_log("VIEW_FILE - File exists, proceeding to serve");
             
             // Determinar el tipo MIME
             $mimeType = mime_content_type($fullPath);
