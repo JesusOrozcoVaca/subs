@@ -107,7 +107,18 @@ function loadPhaseContent(phase) {
     
     // Construir URL para la fase
     const productId = getProductIdFromURL();
-    const url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
+    
+    // Detectar si estamos en producción (URL contiene index.php)
+    const isProduction = window.location.pathname.includes('index.php');
+    
+    let url;
+    if (isProduction) {
+        // En producción: usar query parameters
+        url = `/subs/index.php?action=participant_phase&phase=${phase}&producto_id=${productId}`;
+    } else {
+        // En local: usar URLs amigables
+        url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
+    }
     
     console.log('Loading content from:', url);
     
@@ -224,7 +235,16 @@ function initializePYRContent(container) {
 function loadPreguntas(page) {
     console.log('Loading preguntas, page:', page);
     const productId = getProductIdFromURL();
-    const url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
+    
+    // Detectar si estamos en producción
+    const isProduction = window.location.pathname.includes('index.php');
+    
+    let url;
+    if (isProduction) {
+        url = `/subs/index.php?action=participant_get_questions&producto_id=${productId}&page=${page}&limit=5`;
+    } else {
+        url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
+    }
     
     fetch(url, {
         method: 'GET',
@@ -260,7 +280,16 @@ function loadPreguntas(page) {
 function submitPregunta(pregunta) {
     console.log('Submitting pregunta:', pregunta);
     const productId = getProductIdFromURL();
-    const url = '/subs/participant/submit-question';
+    
+    // Detectar si estamos en producción
+    const isProduction = window.location.pathname.includes('index.php');
+    
+    let url;
+    if (isProduction) {
+        url = '/subs/index.php?action=participant_submit_question';
+    } else {
+        url = '/subs/participant/submit-question';
+    }
     
     fetch(url, {
         method: 'POST',
