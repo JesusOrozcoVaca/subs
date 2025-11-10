@@ -1,5 +1,8 @@
 # Documentación del Proyecto - Sistema de Subastas Inversas
 
+
+**Considerar este archivo como regla general
+
 ## 📋 Índice
 1. [Información General](#información-general)
 2. [Arquitectura del Sistema](#arquitectura-del-sistema)
@@ -1127,3 +1130,4 @@ RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 **Última actualización:** Octubre 2025  
 **Versión del documento:** 2.0  
 **Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
+
