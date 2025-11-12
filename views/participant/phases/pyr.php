@@ -13,10 +13,22 @@ $isReadOnly = false;
 if ($currentStateCode != 1) { // Si no es "Preguntas y Respuestas"
     $isReadOnly = true;
 }
+
+$actaRelativePath = 'uploads/pyr_actas/acta_pyr_producto_' . (int)$product['id'] . '.pdf';
+$actaFullPath = BASE_PATH . '/' . $actaRelativePath;
+$actaExists = file_exists($actaFullPath);
+$actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlencode($actaRelativePath) : '';
 ?>
 
 <div class="preguntas-respuestas">
-    <h3>Preguntas y Respuestas</h3>
+    <div class="pyr-header">
+        <h3>Preguntas y Respuestas</h3>
+        <?php if ($actaExists): ?>
+            <a href="<?php echo $actaUrl; ?>" class="btn-acta-pyr" target="_blank" rel="noopener">
+                Descargar acta PyR
+            </a>
+        <?php endif; ?>
+    </div>
     
     <div class="pyr-layout">
         <!-- Lista de preguntas realizadas (izquierda) -->

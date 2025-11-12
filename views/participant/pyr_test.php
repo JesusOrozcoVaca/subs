@@ -16,6 +16,11 @@ if ($currentStateCode != 1) { // Si no es "Preguntas y Respuestas"
 
 // Obtener ID del producto
 $productId = isset($product['id']) ? $product['id'] : '1';
+
+$actaRelativePath = 'uploads/pyr_actas/acta_pyr_producto_' . (int)$productId . '.pdf';
+$actaFullPath = BASE_PATH . '/' . $actaRelativePath;
+$actaExists = file_exists($actaFullPath);
+$actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlencode($actaRelativePath) : '';
 ?>
 
 <!DOCTYPE html>
@@ -168,6 +173,25 @@ $productId = isset($product['id']) ? $product['id'] : '1';
             margin-top: 10px;
             font-size: 0.8em;
         }
+        .acta-download-bar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+        }
+        .acta-download-bar a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #17a2b8;
+            color: #fff;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .acta-download-bar a:hover {
+            background-color: #138496;
+        }
     </style>
 </head>
 <body>
@@ -178,6 +202,11 @@ $productId = isset($product['id']) ? $product['id'] : '1';
         </div>
 
         <div class="preguntas-respuestas" id="pyr-container">
+            <?php if ($actaExists): ?>
+            <div class="acta-download-bar">
+                <a href="<?php echo $actaUrl; ?>" target="_blank" rel="noopener">Descargar acta PyR</a>
+            </div>
+            <?php endif; ?>
             <div class="debug-info">
                 <h4>Debug PYR System</h4>
                 <button id="debug-get-btn" class="btn-debug">Test GET Questions</button>

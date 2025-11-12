@@ -3,6 +3,7 @@ require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/Product.php';
 require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/ProductState.php';
+require_once BASE_PATH . '/services/PyrPdfGenerator.php';
 
 class AdminController {
     private $userModel;
@@ -408,7 +409,10 @@ class AdminController {
         
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
             $answersJson = $_POST['answers'] ?? '';
+            $productId = isset($_POST['producto_id']) ? (int)$_POST['producto_id'] : null;
+
             error_log("Answers JSON received: " . $answersJson);
+            error_log("Product ID for acta generation (admin): " . ($productId ?? 'null'));
             
             $answers = json_decode($answersJson, true);
             error_log("Answers decoded: " . print_r($answers, true));
@@ -418,15 +422,54 @@ class AdminController {
                 $this->sendJsonResponse(false, "No hay respuestas para procesar");
                 return;
             }
-            
+
             require_once BASE_PATH . '/models/Question.php';
             $questionModel = new Question();
+
+            if (!$productId) {
+                $firstQuestionId = null;
+                foreach ($answers as $questionId => $value) {
+                    $firstQuestionId = $questionId;
+                    break;
+                }
+                if ($firstQuestionId) {
+                    $questionData = $questionModel->getQuestionById($firstQuestionId);
+                    if ($questionData && isset($questionData['producto_id'])) {
+                        $productId = (int)$questionData['producto_id'];
+                        error_log("Product ID deduced from question {$firstQuestionId} (admin): {$productId}");
+                    } else {
+                        error_log("Unable to deduce product ID from question {$firstQuestionId} (admin)");
+                    }
+                }
+            }
             
             $result = $questionModel->answerMultiple($answers);
             error_log("Answer multiple result: " . ($result ? 'SUCCESS' : 'FAILED'));
             
             if ($result) {
-                $this->sendJsonResponse(true, "Respuestas publicadas exitosamente");
+                $actaInfo = null;
+
+                if ($productId) {
+                    $product = $this->productModel->getProductById($productId);
+                    $questions = $questionModel->getAllQuestions($productId);
+
+                    if ($product && $questions !== false) {
+                        $answeredQuestions = array_values(array_filter($questions, function ($question) {
+                            return !empty($question['respuesta']);
+                        }));
+
+                        if (!empty($answeredQuestions)) {
+                            $actaInfo = PyrPdfGenerator::generate($product, $answeredQuestions);
+                            error_log("Acta generation result (admin): " . print_r($actaInfo, true));
+                        } else {
+                            error_log("Acta generation skipped (admin): no answered questions for product {$productId}");
+                        }
+                    }
+                }
+
+                $this->sendJsonResponse(true, "Respuestas publicadas exitosamente", [
+                    'acta' => $actaInfo
+                ]);
             } else {
                 $this->sendJsonResponse(false, "Error al publicar las respuestas");
             }

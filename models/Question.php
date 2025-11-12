@@ -81,6 +81,16 @@ class Question {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getQuestionById($questionId) {
+        $query = "SELECT pr.*, u.nombre_completo as nombre_usuario 
+                  FROM preguntas_respuestas pr
+                  LEFT JOIN usuarios u ON pr.usuario_id = u.id
+                  WHERE pr.id = :questionId LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['questionId' => $questionId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function getAllQuestions($productId) {
         $query = "SELECT pr.*, u.nombre_completo as nombre_usuario 
                   FROM preguntas_respuestas pr

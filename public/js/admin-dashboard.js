@@ -473,6 +473,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    let currentAnswersProductId = null;
+
     // Manejar botón "Responder Preguntas"
     function initAnswerQuestionsButtons() {
         document.querySelectorAll('.btn-answer-questions').forEach(button => {
@@ -493,6 +495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.setAttribute('data-product-id', productId);
+        currentAnswersProductId = productId;
         overlay.style.cssText = `
             position: fixed;
             top: 0;
@@ -539,6 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Cerrar modal
         const closeModal = () => {
             document.body.removeChild(overlay);
+            currentAnswersProductId = null;
         };
 
         overlay.querySelectorAll('.close-modal').forEach(btn => {
@@ -648,6 +652,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target && e.target.id === 'save-answers') {
             const answers = {};
             const textareas = document.querySelectorAll('textarea[name^="answer_"]');
+            const overlay = document.querySelector('.modal-overlay');
+            let productId = overlay ? overlay.getAttribute('data-product-id') : '';
+            if (!productId && currentAnswersProductId) {
+                productId = currentAnswersProductId;
+            }
             
             console.log('Textareas found:', textareas.length);
             textareas.forEach(textarea => {
@@ -665,9 +674,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
+            if (!productId) {
+                alert('No se pudo identificar el producto para generar el acta de PyR.');
+                return;
+            }
+
             const answerUrl = generateUrl('admin_answer_questions');
+            const payload = new URLSearchParams();
+            payload.append('producto_id', productId);
+            payload.append('answers', JSON.stringify(answers));
+
             console.log('Sending POST request to:', answerUrl);
-            console.log('Request body:', `answers=${encodeURIComponent(JSON.stringify(answers))}`);
+            console.log('Request body:', payload.toString());
             
             fetch(answerUrl, {
                 method: 'POST',
@@ -675,7 +693,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: `answers=${encodeURIComponent(JSON.stringify(answers))}`
+                body: payload.toString()
             })
             .then(response => {
                 console.log('Response status:', response.status);
@@ -689,10 +707,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Recargar las preguntas para mostrar las respuestas actualizadas
                     const overlay = document.querySelector('.modal-overlay');
                     if (overlay) {
-                        const productId = overlay.getAttribute('data-product-id');
-                        console.log('Reloading questions for product:', productId);
-                        if (productId) {
-                            loadQuestions(productId);
+                        let overlayProductId = overlay.getAttribute('data-product-id');
+                        if (!overlayProductId && currentAnswersProductId) {
+                            overlayProductId = currentAnswersProductId;
+                        }
+                        console.log('Reloading questions for product:', overlayProductId);
+                        if (overlayProductId) {
+                            loadQuestions(overlayProductId);
                         }
                     } else {
                         console.log('Modal overlay not found');
