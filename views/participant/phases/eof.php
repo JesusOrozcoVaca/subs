@@ -18,6 +18,10 @@
         </div>
     </form>
     
+    <div id="offer-summary" class="offer-summary hidden">
+        <!-- Resumen de oferta procesada -->
+    </div>
+
     <div id="lista-ofertas" class="ofertas-lista">
         <!-- Aquí se mostrarán las ofertas subidas -->
     </div>
@@ -31,8 +35,146 @@ console.log('=== EOF SCRIPT STARTING (NEW APPROACH) ===');
 window.eofState = {
     uploadedFiles: [],
     isProcessed: false,
-    initialized: false
+    initialized: false,
+    offerSummary: null
 };
+
+function escapeHtml(string) {
+    if (typeof string !== 'string') {
+        return '';
+    }
+    return string
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderOfferSummary(summary) {
+    const summaryContainer = document.getElementById('offer-summary');
+    if (!summaryContainer) {
+        return;
+    }
+
+    if (summary) {
+        summaryContainer.classList.remove('hidden');
+        summaryContainer.innerHTML = `
+            <h3>Resumen de la oferta procesada</h3>
+            <ul>
+                <li><strong>Tiempo de entrega:</strong> ${escapeHtml(summary.tiempo_entrega || '')}</li>
+                <li><strong>Plazo de la oferta:</strong> ${escapeHtml(summary.plazo_oferta || '')}</li>
+                <li><strong>Descripción:</strong> ${escapeHtml(summary.descripcion || '')}</li>
+                <li><strong>Fecha de registro:</strong> ${summary.created_at ? new Date(summary.created_at).toLocaleString() : 'N/D'}</li>
+            </ul>
+        `;
+    } else {
+        summaryContainer.classList.add('hidden');
+        summaryContainer.innerHTML = '';
+    }
+}
+
+function updateProcessedUI(processed, summary) {
+    window.eofState.isProcessed = !!processed;
+    window.eofState.offerSummary = summary || null;
+
+    const processBtn = document.getElementById('process-btn');
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('file-input');
+    const fileUploadSection = document.querySelector('.file-upload-section');
+
+    if (processed) {
+        if (processBtn) processBtn.style.display = 'none';
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (fileInput) fileInput.disabled = true;
+        if (fileUploadSection) fileUploadSection.style.display = 'none';
+    } else {
+        if (processBtn) {
+            processBtn.style.display = window.eofState.uploadedFiles.length > 0 ? 'inline-block' : 'none';
+        }
+        if (uploadBtn) {
+            uploadBtn.style.display = window.eofState.uploadedFiles.length > 0 ? 'none' : 'inline-block';
+        }
+        if (fileInput) fileInput.disabled = false;
+        if (fileUploadSection) fileUploadSection.style.display = 'block';
+    }
+
+    renderOfferSummary(summary);
+}
+
+function openOfferDetailsModal(existingData = null, onSubmit = null) {
+    const overlay = document.createElement('div');
+    overlay.className = 'offer-modal-overlay';
+
+    const initialTiempo = existingData && existingData.tiempo_entrega ? existingData.tiempo_entrega : '';
+    const initialPlazo = existingData && existingData.plazo_oferta ? existingData.plazo_oferta : '';
+    const initialDescripcion = existingData && existingData.descripcion ? existingData.descripcion : '';
+
+    overlay.innerHTML = `
+        <div class="offer-modal">
+            <h3>Confirmar entrega de oferta</h3>
+            <p>Ingrese la información solicitada. Una vez que procese la oferta no podrá modificar estos datos ni los archivos.</p>
+            <label for="modal-tiempo-entrega">Tiempo de entrega</label>
+            <input type="text" id="modal-tiempo-entrega" maxlength="100" value="${escapeHtml(initialTiempo)}" />
+            <label for="modal-plazo-oferta">Plazo de la oferta</label>
+            <input type="text" id="modal-plazo-oferta" maxlength="100" value="${escapeHtml(initialPlazo)}" />
+            <label for="modal-descripcion">Descripción</label>
+            <textarea id="modal-descripcion" maxlength="1000">${escapeHtml(initialDescripcion)}</textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
+                <button type="button" class="btn btn-success modal-confirm">Confirmar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const tiempoField = overlay.querySelector('#modal-tiempo-entrega');
+    if (tiempoField) {
+        tiempoField.focus();
+    }
+
+    const cleanup = () => {
+        if (document.body.contains(overlay)) {
+            document.body.removeChild(overlay);
+        }
+    };
+
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => {
+        cleanup();
+    });
+
+    overlay.querySelector('.modal-confirm').addEventListener('click', () => {
+        const tiempoEntrega = overlay.querySelector('#modal-tiempo-entrega').value.trim();
+        const plazoOferta = overlay.querySelector('#modal-plazo-oferta').value.trim();
+        const descripcion = overlay.querySelector('#modal-descripcion').value.trim();
+
+        if (!tiempoEntrega || !plazoOferta || !descripcion) {
+            alert('Todos los campos son obligatorios.');
+            return;
+        }
+
+        if (tiempoEntrega.length > 100 || plazoOferta.length > 100) {
+            alert('Los campos de tiempo de entrega y plazo de la oferta no pueden exceder 100 caracteres.');
+            return;
+        }
+
+        if (descripcion.length > 1000) {
+            alert('La descripción no puede exceder 1000 caracteres.');
+            return;
+        }
+
+        cleanup();
+
+        if (typeof onSubmit === 'function') {
+            onSubmit({
+                tiempoEntrega,
+                plazoOferta,
+                descripcion
+            });
+        }
+    });
+}
 
 // Función para inicializar cuando el contenido esté listo
 function initializeEOF() {
@@ -156,48 +298,48 @@ function initializeEOF() {
             
             console.log('Processing offer at:', processUrl);
             
-            fetch(processUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: `producto_id=<?php echo $product['id']; ?>`
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Process response:', data);
-                if (data.success) {
-                    window.eofState.isProcessed = true;
-                    processBtn.style.display = 'none';
-                    uploadBtn.style.display = 'none';
-                    fileInput.disabled = true;
-                    
-                    // Ocultar también el área de selección de archivos
-                    const fileUploadSection = document.querySelector('.file-upload-section');
-                    if (fileUploadSection) {
-                        fileUploadSection.style.display = 'none';
-                        console.log('Hiding file upload section - all files processed (point of no return)');
-                    }
-                    
-                    // Limpiar archivos seleccionados
-                    fileInput.value = '';
-                    
-                    alert('Entrega de ofertas procesada exitosamente');
-                    loadOfertas();
-                } else {
-                    alert('Error al procesar: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Process error:', error);
-                alert('Error al procesar la entrega');
-            });
+            setTimeout(() => {
+                openOfferDetailsModal(window.eofState.offerSummary, (formValues) => {
+                    const payload = new URLSearchParams();
+                    payload.append('producto_id', '<?php echo $product['id']; ?>');
+                    payload.append('tiempo_entrega', formValues.tiempoEntrega);
+                    payload.append('plazo_oferta', formValues.plazoOferta);
+                    payload.append('descripcion', formValues.descripcion);
+
+                    fetch(processUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: payload.toString()
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Process response:', data);
+                        if (data.success) {
+                            const summary = data.data ? data.data.offer_summary : null;
+                            updateProcessedUI(true, summary);
+                            fileInput.value = '';
+                            alert('Entrega de ofertas procesada exitosamente');
+                            loadOfertas();
+                        } else {
+                            alert('Error al procesar: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Process error:', error);
+                        alert('Error al procesar la entrega');
+                    });
+                });
+            }, 50);
         });
     }
     
     console.log('Upload button event listener added successfully');
     
+    updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
+
     return true; // Inicialización exitosa
 }
 
@@ -285,10 +427,13 @@ function loadOfertas() {
     .then(data => {
         console.log('Offers response:', data);
         if (data.success) {
-            // La estructura correcta es data.data.ofertas
-            const ofertas = data.data && data.data.ofertas ? data.data.ofertas : [];
+            const payload = data.data || {};
+            const ofertas = payload.ofertas ? payload.ofertas : [];
+            const processed = payload.processed || false;
+            const summary = payload.offer_summary || null;
             console.log('Ofertas to display (eof.php):', ofertas);
             displayOfertas(ofertas);
+            updateProcessedUI(processed, summary);
         } else {
             const listaOfertas = document.getElementById('lista-ofertas');
             if (listaOfertas) {
@@ -326,6 +471,7 @@ function displayOfertas(ofertas) {
     }
     
     if (ofertas.length === 0) {
+        window.eofState.uploadedFiles = [];
         listaOfertas.innerHTML = '<p>No hay archivos subidos aún</p>';
         return;
     }
@@ -339,6 +485,8 @@ function displayOfertas(ofertas) {
     }
     
     let html = '<div class="ofertas-grid">';
+    window.eofState.uploadedFiles = ofertas.slice();
+
     ofertas.forEach(oferta => {
         // Generar URL usando función helper dinámica
         const fileUrl = generateUrl(oferta.ruta_archivo);
@@ -520,8 +668,42 @@ setTimeout(function() {
     background-color: #c82333;
 }
 
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
 .ofertas-lista {
     margin-top: 20px;
+}
+
+.offer-summary {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #17a2b8;
+    border-radius: 5px;
+    background-color: #e9f7fb;
+}
+
+.offer-summary h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #0c5460;
+}
+
+.offer-summary ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.offer-summary li {
+    margin-bottom: 5px;
+    color: #0c5460;
 }
 
 .ofertas-grid {
@@ -556,6 +738,67 @@ setTimeout(function() {
 .oferta-actions {
     display: flex;
     gap: 5px;
+}
+
+.offer-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.offer-modal {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.offer-modal h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.offer-modal p {
+    margin-top: 0;
+    color: #555;
+}
+
+.offer-modal label {
+    display: block;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+.offer-modal input,
+.offer-modal textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-top: 5px;
+    box-sizing: border-box;
+}
+
+.offer-modal textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .hidden {

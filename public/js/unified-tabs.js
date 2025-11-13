@@ -438,6 +438,121 @@ function initializeEOFContent(container) {
     console.log('Skipping eof.php script execution to prevent conflicts');
 }
 
+// === Helper functions for EOF modal/process flow ===
+let eofDirectUploadedFiles = [];
+let eofDirectIsProcessed = false;
+let eofDirectOfferSummary = null;
+let eofDirectIsProcessing = false;
+
+function escapeHtmlDirect(text) {
+    if (typeof text !== 'string') {
+        return '';
+    }
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function renderOfferSummaryDirectly(summary) {
+    const summaryContainer = document.querySelector('#offer-summary');
+    if (!summaryContainer) {
+        return;
+    }
+
+    if (summary) {
+        summaryContainer.classList.remove('hidden');
+        summaryContainer.innerHTML = `
+            <h3>Resumen de la oferta procesada</h3>
+            <ul>
+                <li><strong>Tiempo de entrega:</strong> ${escapeHtmlDirect(summary.tiempo_entrega || '')}</li>
+                <li><strong>Plazo de la oferta:</strong> ${escapeHtmlDirect(summary.plazo_oferta || '')}</li>
+                <li><strong>Descripción:</strong> ${escapeHtmlDirect(summary.descripcion || '')}</li>
+                <li><strong>Fecha de registro:</strong> ${summary.created_at ? new Date(summary.created_at).toLocaleString() : 'N/D'}</li>
+            </ul>
+        `;
+    } else {
+        summaryContainer.classList.add('hidden');
+        summaryContainer.innerHTML = '';
+    }
+}
+
+function openOfferDetailsModalDirect(existingData, onSubmit) {
+    const overlay = document.createElement('div');
+    overlay.className = 'offer-modal-overlay';
+
+    const initialTiempo = existingData && existingData.tiempo_entrega ? existingData.tiempo_entrega : '';
+    const initialPlazo = existingData && existingData.plazo_oferta ? existingData.plazo_oferta : '';
+    const initialDescripcion = existingData && existingData.descripcion ? existingData.descripcion : '';
+
+    overlay.innerHTML = `
+        <div class="offer-modal">
+            <h3>Confirmar entrega de oferta</h3>
+            <p>Ingrese la información solicitada. Una vez que procese la oferta no podrá modificar estos datos ni los archivos.</p>
+            <label for="modal-tiempo-entrega">Tiempo de entrega</label>
+            <input type="text" id="modal-tiempo-entrega" maxlength="100" value="${escapeHtmlDirect(initialTiempo)}" />
+            <label for="modal-plazo-oferta">Plazo de la oferta</label>
+            <input type="text" id="modal-plazo-oferta" maxlength="100" value="${escapeHtmlDirect(initialPlazo)}" />
+            <label for="modal-descripcion">Descripción</label>
+            <textarea id="modal-descripcion" maxlength="1000">${escapeHtmlDirect(initialDescripcion)}</textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary modal-cancel">Cancelar</button>
+                <button type="button" class="btn btn-success modal-confirm">Confirmar</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const tiempoField = overlay.querySelector('#modal-tiempo-entrega');
+    if (tiempoField) {
+        tiempoField.focus();
+    }
+
+    const cleanup = () => {
+        if (document.body.contains(overlay)) {
+            document.body.removeChild(overlay);
+        }
+    };
+
+    overlay.querySelector('.modal-cancel').addEventListener('click', () => {
+        cleanup();
+    });
+
+    overlay.querySelector('.modal-confirm').addEventListener('click', () => {
+        const tiempoEntrega = overlay.querySelector('#modal-tiempo-entrega').value.trim();
+        const plazoOferta = overlay.querySelector('#modal-plazo-oferta').value.trim();
+        const descripcion = overlay.querySelector('#modal-descripcion').value.trim();
+
+        if (!tiempoEntrega || !plazoOferta || !descripcion) {
+            alert('Todos los campos son obligatorios.');
+            return;
+        }
+
+        if (tiempoEntrega.length > 100 || plazoOferta.length > 100) {
+            alert('Los campos de tiempo de entrega y plazo de la oferta no pueden exceder 100 caracteres.');
+            return;
+        }
+
+        if (descripcion.length > 1000) {
+            alert('La descripción no puede exceder 1000 caracteres.');
+            return;
+        }
+
+        cleanup();
+
+        if (typeof onSubmit === 'function') {
+            onSubmit({
+                tiempoEntrega,
+                plazoOferta,
+                descripcion
+            });
+        }
+    });
+}
+
 function initializeEOFDirectly(container) {
     console.log('=== INITIALIZING EOF DIRECTLY ===');
     
@@ -461,8 +576,10 @@ function initializeEOFDirectly(container) {
     console.log('All elements found, setting up event listeners...');
     
     // Variables de estado
-    let uploadedFiles = [];
-    let isProcessed = false;
+    eofDirectUploadedFiles = [];
+    eofDirectIsProcessed = false;
+    eofDirectOfferSummary = null;
+    eofDirectIsProcessing = false;
     
     // Event listener para cambio de archivos
     fileInput.addEventListener('change', function() {
@@ -522,7 +639,7 @@ function initializeEOFDirectly(container) {
             return;
         }
         
-        if (isProcessed) {
+        if (eofDirectIsProcessed) {
             alert('Ya se ha procesado la entrega de ofertas');
             return;
         }
@@ -554,6 +671,10 @@ function initializeEOFDirectly(container) {
     if (processBtn) {
         processBtn.addEventListener('click', function() {
             console.log('=== PROCESS BUTTON CLICKED ===');
+            if (eofDirectIsProcessing) {
+                console.log('Process already running, ignoring click');
+                return;
+            }
             
             // Verificar si hay archivos no procesados en la lista
             const ofertaItems = document.querySelectorAll('.oferta-item');
@@ -590,40 +711,58 @@ function initializeEOFDirectly(container) {
             
             console.log('Processing offer at:', processUrl);
             
-            fetch(processUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: `producto_id=${getProductIdFromURL()}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Process response:', data);
-                if (data.success) {
-                    isProcessed = true;
-                    // Solo después de procesar se ocultan ambos botones
-                    processBtn.style.display = 'none';
-                    uploadBtn.style.display = 'none';
-                    fileInput.disabled = true;
-                    
-                    // Limpiar archivos seleccionados después de procesar
-                    fileInput.value = '';
-                    const fileCount = document.querySelector('#file-count');
-                    const fileSize = document.querySelector('#file-size');
-                    if (fileCount) fileCount.textContent = '0 archivo(s) seleccionado(s)';
-                    if (fileSize) fileSize.textContent = 'Tamaño total: 0 KB';
-                    
-                    alert('Entrega de ofertas procesada exitosamente');
-                    loadOfertasDirectly();
-                } else {
-                    alert('Error al procesar: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Process error:', error);
-                alert('Error al procesar la entrega');
+            openOfferDetailsModalDirect(eofDirectOfferSummary, (formValues) => {
+                const payload = new URLSearchParams();
+                payload.append('producto_id', getProductIdFromURL());
+                payload.append('tiempo_entrega', formValues.tiempoEntrega);
+                payload.append('plazo_oferta', formValues.plazoOferta);
+                payload.append('descripcion', formValues.descripcion);
+
+                eofDirectIsProcessing = true;
+                processBtn.disabled = true;
+                processBtn.textContent = 'Procesando...';
+
+                fetch(processUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: payload.toString()
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Process response:', data);
+                    if (data.success) {
+                        eofDirectIsProcessed = true;
+                        eofDirectOfferSummary = data.data ? data.data.offer_summary : null;
+                        renderOfferSummaryDirectly(eofDirectOfferSummary);
+
+                        processBtn.style.display = 'none';
+                        uploadBtn.style.display = 'none';
+                        fileInput.disabled = true;
+
+                        fileInput.value = '';
+                        const fileCount = document.querySelector('#file-count');
+                        const fileSize = document.querySelector('#file-size');
+                        if (fileCount) fileCount.textContent = '0 archivo(s) seleccionado(s)';
+                        if (fileSize) fileSize.textContent = 'Tamaño total: 0 KB';
+
+                        alert('Entrega de ofertas procesada exitosamente');
+                        loadOfertasDirectly();
+                    } else {
+                        alert('Error al procesar: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Process error:', error);
+                    alert('Error al procesar la entrega');
+                })
+                .finally(() => {
+                    eofDirectIsProcessing = false;
+                    processBtn.disabled = false;
+                    processBtn.textContent = 'Procesar';
+                });
             });
         });
     }
@@ -826,10 +965,54 @@ function loadOfertasDirectly() {
         console.log('Data structure:', JSON.stringify(data, null, 2));
         
         if (data.success) {
-            // La estructura correcta es data.data.ofertas
-            const ofertas = data.data && data.data.ofertas ? data.data.ofertas : [];
-            console.log('Ofertas to display:', ofertas);
-            displayOfertasDirectly(ofertas);
+            const payload = data.data || {};
+            eofDirectUploadedFiles = Array.isArray(payload.ofertas) ? payload.ofertas.slice() : [];
+            eofDirectIsProcessed = !!payload.processed;
+            eofDirectOfferSummary = payload.offer_summary || null;
+
+            console.log('Ofertas to display:', eofDirectUploadedFiles);
+            displayOfertasDirectly(eofDirectUploadedFiles);
+            renderOfferSummaryDirectly(eofDirectOfferSummary);
+
+            const processBtn = document.querySelector('#process-btn');
+            const uploadBtn = document.querySelector('#upload-btn');
+            const fileInput = document.querySelector('#file-input');
+            const fileUploadSection = document.querySelector('.file-upload-section');
+
+            if (eofDirectIsProcessed) {
+                if (processBtn) {
+                    processBtn.style.display = 'none';
+                    processBtn.disabled = true;
+                }
+                if (uploadBtn) {
+                    uploadBtn.style.display = 'none';
+                    uploadBtn.disabled = true;
+                }
+                if (fileInput) {
+                    fileInput.disabled = true;
+                    fileInput.value = '';
+                }
+                if (fileUploadSection) {
+                    fileUploadSection.style.display = 'none';
+                }
+            } else {
+                if (processBtn) {
+                    processBtn.disabled = false;
+                    processBtn.textContent = 'Procesar';
+                    processBtn.style.display = eofDirectUploadedFiles.length > 0 ? 'inline-block' : 'none';
+                }
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Subir Archivos';
+                }
+                if (fileInput) {
+                    fileInput.disabled = false;
+                }
+                if (fileUploadSection) {
+                    fileUploadSection.style.display = 'block';
+                }
+                updateUploadButtonVisibility();
+            }
         } else {
             const listaOfertas = document.querySelector('#lista-ofertas');
             if (listaOfertas) {
@@ -904,7 +1087,21 @@ function displayOfertasDirectly(ofertas) {
     listaOfertas.innerHTML = html;
     
     // Actualizar visibilidad de botones después de mostrar ofertas
-    updateUploadButtonVisibility();
+    if (eofDirectIsProcessed) {
+        const uploadBtn = document.querySelector('#upload-btn');
+        const processBtn = document.querySelector('#process-btn');
+        const fileInput = document.querySelector('#file-input');
+        const fileUploadSection = document.querySelector('.file-upload-section');
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (processBtn) processBtn.style.display = 'none';
+        if (fileInput) {
+            fileInput.disabled = true;
+            fileInput.value = '';
+        }
+        if (fileUploadSection) fileUploadSection.style.display = 'none';
+    } else {
+        updateUploadButtonVisibility();
+    }
 }
 
 window.deleteOfertaDirectly = function(fileId) {

@@ -2,6 +2,7 @@
 require_once BASE_PATH . '/models/Product.php';
 require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/CPC.php';
+require_once BASE_PATH . '/models/OfferSubmission.php';
 
 class ParticipantController {
     private $productModel;
@@ -539,10 +540,17 @@ class ParticipantController {
             
             require_once BASE_PATH . '/models/Document.php';
             $documentModel = new Document();
+            $offerSubmissionModel = new OfferSubmission();
             
             $ofertas = $documentModel->getUserDocuments($productoId, $usuarioId);
+            $isProcessed = $documentModel->isOfferProcessed($productoId, $usuarioId);
+            $summary = $offerSubmissionModel->getByProductAndUser($productoId, $usuarioId);
             
-            $this->sendJsonResponse(true, "", ['ofertas' => $ofertas]);
+            $this->sendJsonResponse(true, "", [
+                'ofertas' => $ofertas,
+                'processed' => $isProcessed,
+                'offer_summary' => $summary
+            ]);
         } else {
             $this->sendJsonResponse(false, "Método no permitido");
         }
@@ -577,21 +585,85 @@ class ParticipantController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
             $productoId = $_POST['producto_id'] ?? null;
             $usuarioId = $_SESSION['user_id'];
+            $tiempoEntrega = trim($_POST['tiempo_entrega'] ?? '');
+            $plazoOferta = trim($_POST['plazo_oferta'] ?? '');
+            $descripcion = trim($_POST['descripcion'] ?? '');
             
             if (!$productoId) {
                 $this->sendJsonResponse(false, "ID de producto requerido");
                 return;
             }
+
+            if ($tiempoEntrega === '' || $plazoOferta === '' || $descripcion === '') {
+                $this->sendJsonResponse(false, "Debe completar todos los datos solicitados");
+                return;
+            }
+
+            if (strlen($tiempoEntrega) > 100 || strlen($plazoOferta) > 100) {
+                $this->sendJsonResponse(false, "Los campos de tiempo de entrega y plazo de la oferta no pueden exceder 100 caracteres");
+                return;
+            }
+
+            if (strlen($descripcion) > 1000) {
+                $this->sendJsonResponse(false, "La descripción no puede exceder 1000 caracteres");
+                return;
+            }
             
             require_once BASE_PATH . '/models/Document.php';
+            require_once BASE_PATH . '/config/database.php';
             $documentModel = new Document();
-            
-            $result = $documentModel->processOffer($productoId, $usuarioId);
-            
-            if ($result) {
-                $this->sendJsonResponse(true, "Entrega de ofertas procesada exitosamente");
-            } else {
-                $this->sendJsonResponse(false, "Error al procesar la entrega");
+            $offerSubmissionModel = new OfferSubmission();
+            $connection = Database::getInstance()->getConnection();
+
+            if ($documentModel->isOfferProcessed($productoId, $usuarioId)) {
+                $this->sendJsonResponse(false, "La oferta ya fue procesada previamente");
+                return;
+            }
+
+            $ofertasActuales = $documentModel->getUserDocuments($productoId, $usuarioId);
+            if (!$ofertasActuales || count($ofertasActuales) === 0) {
+                $this->sendJsonResponse(false, "Debe subir al menos un documento antes de procesar la oferta");
+                return;
+            }
+
+            if ($offerSubmissionModel->exists($productoId, $usuarioId)) {
+                $this->sendJsonResponse(false, "Ya existe un registro de oferta procesada para este producto");
+                return;
+            }
+
+            try {
+                $connection->beginTransaction();
+
+                $created = $offerSubmissionModel->create(
+                    $productoId,
+                    $usuarioId,
+                    $tiempoEntrega,
+                    $plazoOferta,
+                    $descripcion
+                );
+
+                if (!$created) {
+                    throw new Exception("No se pudo guardar la información adicional de la oferta");
+                }
+
+                $result = $documentModel->processOffer($productoId, $usuarioId);
+
+                if (!$result) {
+                    throw new Exception("No se pudo marcar la oferta como procesada");
+                }
+
+                $connection->commit();
+
+                $summary = $offerSubmissionModel->getByProductAndUser($productoId, $usuarioId);
+                $this->sendJsonResponse(true, "Entrega de ofertas procesada exitosamente", [
+                    'offer_summary' => $summary,
+                    'processed' => true
+                ]);
+            } catch (Exception $e) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack();
+                }
+                $this->sendJsonResponse(false, "Error al procesar la entrega: " . $e->getMessage());
             }
         } else {
             $this->sendJsonResponse(false, "Método no permitido");

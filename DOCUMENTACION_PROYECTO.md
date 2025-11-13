@@ -728,6 +728,14 @@ CREATE TABLE preguntas_respuestas (
 - **Visibilidad:** Preguntas visibles para todos los participantes del CPC
 - **Control de estado:** Preguntas se deshabilitan cuando cambia el estado del producto
 
+#### Acta PDF de Preguntas y Respuestas
+- **Servicio:** `services/PyrPdfGenerator.php`
+- **Ubicación de los archivos generados:** `uploads/pyr_actas/acta_pyr_producto_{ID}.pdf`
+- **Generación automática:** ocurre cuando un moderador o administrador publica las respuestas desde el modal “Responder Preguntas”. Se genera (o actualiza) el PDF solo si el proceso tiene al menos una pregunta con respuesta.
+- **Visibilidad en el participante:** la fase PyR muestra el botón `Descargar acta PyR` únicamente si existe el PDF; el simple ingreso a la fase no crea el archivo.
+- **Backfill:** para procesos con respuestas previas, basta con volver a pulsar “Publicar Respuestas” para crear el acta.
+- **Contenido:** código y detalles del producto, cada pregunta con su autor, fecha de registro, respuesta y fecha de respuesta.
+
 ### 🎯 Sistema de Popups Dinámicos
 
 #### Event Delegation Pattern
