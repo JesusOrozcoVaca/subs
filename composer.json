@@ -1,0 +1,14 @@
+{
+    "name": "subs/pdf-generator",
+    "description": "Sistema de Subastas Inversas - Generador de PDFs",
+    "require": {
+        "php": ">=7.4",
+        "dompdf/dompdf": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "": "services/"
+        }
+    }
+}
+

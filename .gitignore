@@ -59,3 +59,4 @@ utils/replace_urls.php
 # Archivos subidos por usuarios (no versionar)
 uploads/
 *.zip
+*.md

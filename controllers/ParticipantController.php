@@ -717,4 +717,101 @@ class ParticipantController {
         $productId = end($pathParts);
         return is_numeric($productId) ? $productId : null;
     }
+
+    public function downloadOfferPdf() {
+        $productoId = $_GET['producto_id'] ?? null;
+        $usuarioId = $_SESSION['user_id'];
+        
+        if (!$productoId) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        require_once BASE_PATH . '/models/OfferSubmission.php';
+        require_once BASE_PATH . '/services/OfferPdfGenerator.php';
+        
+        $offerSubmissionModel = new OfferSubmission();
+        $offerDetail = $offerSubmissionModel->getByProductAndUser($productoId, $usuarioId);
+        
+        if (!$offerDetail) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "No se encontró información de oferta procesada");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $product = $this->productModel->getProductById($productoId);
+        if (!$product) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Producto no encontrado");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $user = $this->userModel->getUserById($usuarioId);
+        if (!$user) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Usuario no encontrado");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $cpc = $this->cpcModel->getCPCById($product['cpc_id']);
+        if (!$cpc) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "CPC no encontrado");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $pdfInfo = OfferPdfGenerator::generate($product, $user, $cpc, $offerDetail);
+        
+        if (!$pdfInfo) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Error al generar el PDF");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        // Servir el archivo PDF
+        $fullPath = $pdfInfo['full_path'];
+        
+        if (!file_exists($fullPath)) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "El archivo PDF no existe");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        // Limpiar cualquier output buffer
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        // Establecer headers para descargar el PDF
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . $pdfInfo['file_name'] . '"');
+        header('Cache-Control: private, max-age=3600');
+
+        // Leer y enviar el archivo
+        readfile($fullPath);
+        exit;
+    }
 }

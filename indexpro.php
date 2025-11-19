@@ -381,6 +381,12 @@ try {
             $controller->processOffer();
             break;
 
+        case 'participant_download_offer_pdf':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->downloadOfferPdf();
+            break;
+
         // Rutas del Moderador
         case 'moderator_dashboard':
             checkAccess(2);

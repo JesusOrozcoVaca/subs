@@ -59,6 +59,15 @@ function renderOfferSummary(summary) {
 
     if (summary) {
         summaryContainer.classList.remove('hidden');
+        
+        // Detectar si estamos en producción
+        const isProduction = window.location.pathname.includes('index.php') || 
+                            window.location.hostname.includes('hjconsulting.com.ec');
+        
+        const downloadUrl = isProduction ? 
+            `/subs/index.php?action=participant_download_offer_pdf&producto_id=<?php echo $product['id']; ?>` : 
+            `/subs/participant/download-offer-pdf?producto_id=<?php echo $product['id']; ?>`;
+        
         summaryContainer.innerHTML = `
             <h3>Resumen de la oferta procesada</h3>
             <ul>
@@ -68,6 +77,11 @@ function renderOfferSummary(summary) {
                 <li><strong>Descripción:</strong> ${escapeHtml(summary.descripcion || '')}</li>
                 <li><strong>Fecha de registro:</strong> ${summary.created_at ? new Date(summary.created_at).toLocaleString() : 'N/D'}</li>
             </ul>
+            <div style="margin-top: 15px;">
+                <a href="${downloadUrl}" id="download-offer-pdf-btn" class="btn btn-primary" style="text-decoration: none; display: inline-block;" target="_blank">
+                    Descargar PDF de Oferta
+                </a>
+            </div>
         `;
     } else {
         summaryContainer.classList.add('hidden');
