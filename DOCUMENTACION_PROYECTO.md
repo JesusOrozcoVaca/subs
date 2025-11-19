@@ -1135,7 +1135,51 @@ RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 
 ---
 
-**Última actualización:** Octubre 2025  
-**Versión del documento:** 2.0  
-**Estado del proyecto:** Funcional en local y producción con sistema avanzado de gestión de estados y popups dinámicos
+---
+
+### 📦 Entrega de Ofertas – Captura de datos adicionales (Nov/2025)
+
+- Al pulsar `Procesar`, el sistema muestra un **modal** solicitando:
+  - `Tiempo de entrega`
+  - `Plazo de la oferta`
+  - `Descripción de la oferta`
+- La confirmación del modal ejecuta el POST a:
+  - `/subs/participant/process-offer` (entorno local sin `index.php`)
+  - `/subs/index.php?action=participant_process_offer` (modo legacy)
+- Se guarda un registro en `ofertas_detalle` y se marca la oferta como procesada.
+- La UI se bloquea (oculta área de carga) y se renderiza un resumen de la oferta en modo lectura.
+- Si la oferta ya estaba procesada, el modal no se muestra y solo se presenta el resumen.
+
+#### Archivos clave
+- `models/OfferSubmission.php` – Acceso a la nueva tabla.
+- `controllers/ParticipantController.php::processOffer()` – Valida, usa transacción y devuelve `offer_summary`.
+- `views/participant/phases/eof.php` – Modal, resumen y lógica JS para entornos que cargan la vista directamente.
+- `public/js/unified-tabs.js` – Flujo equivalente cuando la fase se carga vía `initializeEOFDirectly`.
+
+#### Tabla `ofertas_detalle`
+```sql
+CREATE TABLE ofertas_detalle (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    producto_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    tiempo_entrega VARCHAR(100) NOT NULL,
+    plazo_oferta VARCHAR(100) NOT NULL,
+    descripcion TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_ofertas_detalle_producto_usuario (producto_id, usuario_id),
+    CONSTRAINT fk_ofertas_detalle_producto FOREIGN KEY (producto_id) REFERENCES productos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ofertas_detalle_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+**Notas:**
+- Ejecutar la sentencia anterior en cada entorno antes de desplegar la funcionalidad.
+- Si existen ofertas procesadas antes de la migración, poblar `ofertas_detalle` manualmente para evitar inconsistencias.
+
+---
+
+**Última actualización:** Noviembre 2025  
+**Versión del documento:** 2.1  
+**Estado del proyecto:** Funcional en local y producción con oferta procesada y resumen bloqueado tras la confirmación del modal
 

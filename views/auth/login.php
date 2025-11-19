@@ -12,7 +12,9 @@
         <div class="login-box">
             <div class="login-image">
                 <h2>Simulador de Subasta Inversa Electrónica</h2>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                <p>Desarrollado por:<br> <strong>HJ Consulting Management C.Ltda.</strong></p>
+                <p>Chat con nosotros: <a href="https://wa.link/hnolju">Whatsapp</a></p>
+                <img src="<?php echo BASE_URL . 'public/images/whatsapp_qr.png'; ?>" alt="QR de whatsapp" width="100" height="100">
             </div>
             <div class="login-form">
                 <h2>Iniciar Sesión</h2>
@@ -21,7 +23,7 @@
                 <?php endif; ?>
                 <form action="<?php echo login_url(); ?>" method="POST" id="loginForm">
                     <div class="form-group">
-                        <label for="username">Usuario o Correo Electrónico</label>
+                        <label for="username">Correo Electrónico</label>
                         <input type="text" id="username" name="username" required>
                     </div>
                     <div class="form-group">
