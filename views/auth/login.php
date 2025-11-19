@@ -14,7 +14,7 @@
                 <h2>Simulador de Subasta Inversa Electrónica</h2>
                 <div class="login-image-bottom">
                     <center><img src="<?php echo BASE_URL . 'public/images/whatsapp_qr.png'; ?>" alt="QR de whatsapp" width="100" height="100"></center>
-                    <p>Chat con nosotros: <a href="https://wa.link/hnolju">Whatsapp</a></p>
+                    <p>Chat con nosotros: <a href="https://wa.link/hnolju" target="_blank">Whatsapp</a></p>
                 </div>
             </div>
             <div class="login-form">
