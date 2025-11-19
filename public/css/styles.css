@@ -17,7 +17,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: calc(100vh - 120px);
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .login-box {
@@ -1091,4 +1093,51 @@ button:hover {
 
 .btn-small:not(.btn-danger):hover {
     background: #0056b3;
+}
+
+/* Estilos específicos para página de login - Prevenir barras laterales */
+body.login-page {
+    display: block !important;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+body.login-page * {
+    box-sizing: border-box;
+}
+
+body.login-page .sidebar,
+body.login-page .dashboard-container,
+body.login-page aside.sidebar,
+body.login-page .process-phases {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+}
+
+body.login-page .login-container {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+}
+
+/* Footer específico para login */
+body.login-page footer {
+    position: relative;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+    padding: 10px 20px;
+}
+
+/* Prevenir cualquier overflow horizontal */
+body.login-page,
+body.login-page html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
 }
