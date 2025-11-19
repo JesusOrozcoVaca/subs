@@ -587,6 +587,7 @@ class ParticipantController {
             $usuarioId = $_SESSION['user_id'];
             $tiempoEntrega = trim($_POST['tiempo_entrega'] ?? '');
             $plazoOferta = trim($_POST['plazo_oferta'] ?? '');
+            $ofertaInicialUser = trim($_POST['oferta_inicial_user'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
             
             if (!$productoId) {
@@ -594,13 +595,18 @@ class ParticipantController {
                 return;
             }
 
-            if ($tiempoEntrega === '' || $plazoOferta === '' || $descripcion === '') {
+            if ($tiempoEntrega === '' || $plazoOferta === '' || $ofertaInicialUser === '' || $descripcion === '') {
                 $this->sendJsonResponse(false, "Debe completar todos los datos solicitados");
                 return;
             }
 
             if (strlen($tiempoEntrega) > 100 || strlen($plazoOferta) > 100) {
                 $this->sendJsonResponse(false, "Los campos de tiempo de entrega y plazo de la oferta no pueden exceder 100 caracteres");
+                return;
+            }
+
+            if (!is_numeric($ofertaInicialUser) || floatval($ofertaInicialUser) < 0) {
+                $this->sendJsonResponse(false, "La oferta inicial debe ser un número válido mayor o igual a 0");
                 return;
             }
 
@@ -639,6 +645,7 @@ class ParticipantController {
                     $usuarioId,
                     $tiempoEntrega,
                     $plazoOferta,
+                    floatval($ofertaInicialUser),
                     $descripcion
                 );
 

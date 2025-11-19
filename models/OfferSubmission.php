@@ -19,9 +19,9 @@ class OfferSubmission {
         return $stmt->fetchColumn() > 0;
     }
 
-    public function create($productoId, $usuarioId, $tiempoEntrega, $plazoOferta, $descripcion) {
-        $query = "INSERT INTO ofertas_detalle (producto_id, usuario_id, tiempo_entrega, plazo_oferta, descripcion, created_at, updated_at)
-                  VALUES (:producto_id, :usuario_id, :tiempo_entrega, :plazo_oferta, :descripcion, NOW(), NOW())";
+    public function create($productoId, $usuarioId, $tiempoEntrega, $plazoOferta, $ofertaInicialUser, $descripcion) {
+        $query = "INSERT INTO ofertas_detalle (producto_id, usuario_id, tiempo_entrega, plazo_oferta, oferta_inicial_user, descripcion, created_at, updated_at)
+                  VALUES (:producto_id, :usuario_id, :tiempo_entrega, :plazo_oferta, :oferta_inicial_user, :descripcion, NOW(), NOW())";
 
         $stmt = $this->db->prepare($query);
         return $stmt->execute([
@@ -29,12 +29,13 @@ class OfferSubmission {
             'usuario_id' => $usuarioId,
             'tiempo_entrega' => $tiempoEntrega,
             'plazo_oferta' => $plazoOferta,
+            'oferta_inicial_user' => $ofertaInicialUser,
             'descripcion' => $descripcion
         ]);
     }
 
     public function getByProductAndUser($productoId, $usuarioId) {
-        $query = "SELECT producto_id, usuario_id, tiempo_entrega, plazo_oferta, descripcion, created_at, updated_at
+        $query = "SELECT producto_id, usuario_id, tiempo_entrega, plazo_oferta, oferta_inicial_user, descripcion, created_at, updated_at
                   FROM ofertas_detalle
                   WHERE producto_id = :producto_id AND usuario_id = :usuario_id";
 

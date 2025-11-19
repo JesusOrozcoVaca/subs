@@ -64,6 +64,7 @@ function renderOfferSummary(summary) {
             <ul>
                 <li><strong>Tiempo de entrega:</strong> ${escapeHtml(summary.tiempo_entrega || '')}</li>
                 <li><strong>Plazo de la oferta:</strong> ${escapeHtml(summary.plazo_oferta || '')}</li>
+                <li><strong>Oferta inicial:</strong> $${parseFloat(summary.oferta_inicial_user || 0).toLocaleString('es-ES', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</li>
                 <li><strong>Descripción:</strong> ${escapeHtml(summary.descripcion || '')}</li>
                 <li><strong>Fecha de registro:</strong> ${summary.created_at ? new Date(summary.created_at).toLocaleString() : 'N/D'}</li>
             </ul>
@@ -109,6 +110,7 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
     const initialTiempo = existingData && existingData.tiempo_entrega ? existingData.tiempo_entrega : '';
     const initialPlazo = existingData && existingData.plazo_oferta ? existingData.plazo_oferta : '';
     const initialDescripcion = existingData && existingData.descripcion ? existingData.descripcion : '';
+    const initialOfertaInicial = existingData && existingData.oferta_inicial_user ? existingData.oferta_inicial_user : '';
 
     overlay.innerHTML = `
         <div class="offer-modal">
@@ -118,6 +120,8 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
             <input type="text" id="modal-tiempo-entrega" maxlength="100" value="${escapeHtml(initialTiempo)}" />
             <label for="modal-plazo-oferta">Plazo de la oferta</label>
             <input type="text" id="modal-plazo-oferta" maxlength="100" value="${escapeHtml(initialPlazo)}" />
+            <label for="modal-oferta-inicial">Oferta inicial</label>
+            <input type="number" id="modal-oferta-inicial" step="0.01" min="0" value="${escapeHtml(initialOfertaInicial)}" />
             <label for="modal-descripcion">Descripción</label>
             <textarea id="modal-descripcion" maxlength="1000">${escapeHtml(initialDescripcion)}</textarea>
             <div class="modal-actions">
@@ -147,15 +151,21 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
     overlay.querySelector('.modal-confirm').addEventListener('click', () => {
         const tiempoEntrega = overlay.querySelector('#modal-tiempo-entrega').value.trim();
         const plazoOferta = overlay.querySelector('#modal-plazo-oferta').value.trim();
+        const ofertaInicial = overlay.querySelector('#modal-oferta-inicial').value.trim();
         const descripcion = overlay.querySelector('#modal-descripcion').value.trim();
 
-        if (!tiempoEntrega || !plazoOferta || !descripcion) {
+        if (!tiempoEntrega || !plazoOferta || !ofertaInicial || !descripcion) {
             alert('Todos los campos son obligatorios.');
             return;
         }
 
         if (tiempoEntrega.length > 100 || plazoOferta.length > 100) {
             alert('Los campos de tiempo de entrega y plazo de la oferta no pueden exceder 100 caracteres.');
+            return;
+        }
+
+        if (isNaN(parseFloat(ofertaInicial)) || parseFloat(ofertaInicial) < 0) {
+            alert('La oferta inicial debe ser un número válido mayor o igual a 0.');
             return;
         }
 
@@ -170,6 +180,7 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
             onSubmit({
                 tiempoEntrega,
                 plazoOferta,
+                ofertaInicial,
                 descripcion
             });
         }
@@ -304,6 +315,7 @@ function initializeEOF() {
                     payload.append('producto_id', '<?php echo $product['id']; ?>');
                     payload.append('tiempo_entrega', formValues.tiempoEntrega);
                     payload.append('plazo_oferta', formValues.plazoOferta);
+                    payload.append('oferta_inicial_user', formValues.ofertaInicial);
                     payload.append('descripcion', formValues.descripcion);
 
                     fetch(processUrl, {
