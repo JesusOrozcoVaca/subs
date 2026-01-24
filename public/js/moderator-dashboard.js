@@ -388,7 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Crear overlay
         const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
+        overlay.className = 'modal-overlay offer-ratings-overlay';
         overlay.setAttribute('data-product-id', productId);
         currentAnswersProductId = productId;
         overlay.style.cssText = `
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target && e.target.id === 'save-answers') {
             const answers = {};
             const textareas = document.querySelectorAll('textarea[name^="answer_"]');
-            const overlay = document.querySelector('.modal-overlay');
+            const overlay = e.target.closest('.offer-ratings-overlay');
             let productId = overlay ? overlay.getAttribute('data-product-id') : '';
             if (!productId && currentAnswersProductId) {
                 productId = currentAnswersProductId;
@@ -619,6 +619,222 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 alert('Error al publicar las respuestas');
             });
+        }
+    });
+
+    // ===================== CALIFICAR OFERTAS =====================
+    let currentOfferRatingsProductId = null;
+
+    function openOfferRatingsModal(productId, productCode) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.setAttribute('data-product-id', productId);
+        currentOfferRatingsProductId = productId;
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        `;
+
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 90%;
+            max-height: 90%;
+            width: 800px;
+            overflow-y: auto;
+            position: relative;
+        `;
+
+        modal.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>Calificar Ofertas - ${productCode}</h3>
+                <button class="close-modal" style="background: none; border: none; font-size: 24px; cursor: pointer;">&times;</button>
+            </div>
+            <div id="offer-ratings-container">
+                Cargando calificaciones...
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn btn-secondary close-modal">Cerrar</button>
+            </div>
+        `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        const closeModal = () => {
+            document.body.removeChild(overlay);
+            currentOfferRatingsProductId = null;
+        };
+
+        overlay.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', closeModal);
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) closeModal();
+        });
+
+        loadOfferRatings(productId);
+    }
+
+    function loadOfferRatings(productId) {
+        const url = generateUrl('moderator_get_offer_ratings', {producto_id: productId});
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('offer-ratings-container');
+            if (!container) {
+                return;
+            }
+
+            if (data.success && data.data && Array.isArray(data.data.ratings)) {
+                if (data.data.ratings.length === 0) {
+                    container.innerHTML = '<p>No hay ofertas registradas para este producto.</p>';
+                    return;
+                }
+
+                let html = '';
+                data.data.ratings.forEach(item => {
+                    const comment = item.comentario ? item.comentario : '';
+                    const rating = item.calificacion ? item.calificacion : '';
+                    const isReadOnly = rating !== '';
+                    html += `
+                        <div class="offer-rating-item" data-user-id="${item.usuario_id}" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                            <div style="margin-bottom: 10px;">
+                                <strong>${item.nombre_completo}</strong>
+                                <span style="color: #666; font-size: 12px; margin-left: 10px;">${item.cedula}</span>
+                            </div>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Calificación:</label>
+                            <select class="offer-rating-status" style="width: 100%; max-width: 300px; margin-bottom: 10px;" ${isReadOnly ? 'disabled' : ''}>
+                                <option value="">Seleccione</option>
+                                <option value="Cumple" ${rating === 'Cumple' ? 'selected' : ''}>Cumple</option>
+                                <option value="No Cumple" ${rating === 'No Cumple' ? 'selected' : ''}>No cumple</option>
+                            </select>
+                            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Comentario (máx 300 caracteres):</label>
+                            <textarea class="offer-rating-comment" maxlength="300" style="width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 3px; resize: vertical;" ${isReadOnly ? 'readonly' : ''}>${comment}</textarea>
+                            <div style="margin-top: 10px;">
+                                <button type="button" class="btn btn-primary save-offer-rating" ${isReadOnly ? 'style="display: none;"' : ''}>Guardar calificación</button>
+                                <button type="button" class="btn btn-secondary edit-offer-rating" ${isReadOnly ? '' : 'style="display: none;"'}>Editar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = '<p>Error al cargar las ofertas.</p>';
+            }
+        })
+        .catch(() => {
+            const container = document.getElementById('offer-ratings-container');
+            if (container) {
+                container.innerHTML = '<p>Error al cargar las ofertas.</p>';
+            }
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('btn-rate-offers')) {
+            e.preventDefault();
+            const productId = e.target.getAttribute('data-product-id');
+            const productCode = e.target.getAttribute('data-product-code');
+            openOfferRatingsModal(productId, productCode);
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('save-offer-rating')) {
+            const item = e.target.closest('.offer-rating-item');
+            const overlay = document.querySelector('.modal-overlay');
+            let productId = overlay ? overlay.getAttribute('data-product-id') : '';
+            if (!productId && currentOfferRatingsProductId) {
+                productId = currentOfferRatingsProductId;
+            }
+
+            if (!item || !productId) {
+                alert('No se pudo identificar el producto.');
+                return;
+            }
+
+            const usuarioId = item.getAttribute('data-user-id');
+            const statusField = item.querySelector('.offer-rating-status');
+            const commentField = item.querySelector('.offer-rating-comment');
+            const calificacion = statusField ? statusField.value.trim() : '';
+            const comentario = commentField ? commentField.value.trim() : '';
+
+            if (!calificacion) {
+                alert('Seleccione una calificación.');
+                return;
+            }
+
+            if (comentario.length > 300) {
+                alert('El comentario no puede exceder 300 caracteres.');
+                return;
+            }
+
+            const url = generateUrl('moderator_save_offer_rating');
+            const payload = new URLSearchParams();
+            payload.append('producto_id', productId);
+            payload.append('usuario_id', usuarioId);
+            payload.append('calificacion', calificacion);
+            payload.append('comentario', comentario);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: payload.toString()
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Calificación guardada exitosamente');
+                    if (statusField) statusField.disabled = true;
+                    if (commentField) commentField.readOnly = true;
+                    const saveBtn = item.querySelector('.save-offer-rating');
+                    const editBtn = item.querySelector('.edit-offer-rating');
+                    if (saveBtn) saveBtn.style.display = 'none';
+                    if (editBtn) editBtn.style.display = 'inline-block';
+                } else {
+                    alert(data.message || 'Error al guardar la calificación');
+                }
+            })
+            .catch(() => {
+                alert('Error al guardar la calificación');
+            });
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('edit-offer-rating')) {
+            const item = e.target.closest('.offer-rating-item');
+            if (!item) {
+                return;
+            }
+            const statusField = item.querySelector('.offer-rating-status');
+            const commentField = item.querySelector('.offer-rating-comment');
+            const saveBtn = item.querySelector('.save-offer-rating');
+            const editBtn = item.querySelector('.edit-offer-rating');
+            if (statusField) statusField.disabled = false;
+            if (commentField) commentField.readOnly = false;
+            if (saveBtn) saveBtn.style.display = 'inline-block';
+            if (editBtn) editBtn.style.display = 'none';
         }
     });
 

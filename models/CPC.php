@@ -14,6 +14,21 @@ class CPC {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getCpcsPaginated($limit, $offset) {
+        $query = "SELECT * FROM cpc ORDER BY id ASC LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getCpcsCount() {
+        $query = "SELECT COUNT(*) FROM cpc";
+        $stmt = $this->db->query($query);
+        return (int)$stmt->fetchColumn();
+    }
+
     public function getCPCById($id) {
         $query = "SELECT * FROM cpc WHERE id = :id";
         $stmt = $this->db->prepare($query);

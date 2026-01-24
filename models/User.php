@@ -1,5 +1,6 @@
 <?php
 require_once BASE_PATH . '/config/database.php';
+require_once BASE_PATH . '/utils/logger.php';
 
 class User {
     private $db;
@@ -14,6 +15,21 @@ class User {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getUsersPaginated($limit, $offset) {
+        $query = "SELECT * FROM usuarios ORDER BY id ASC LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getUsersCount() {
+        $query = "SELECT COUNT(*) FROM usuarios";
+        $stmt = $this->db->query($query);
+        return (int)$stmt->fetchColumn();
+    }
+
     public function getUserById($id) {
         $query = "SELECT * FROM usuarios WHERE id = :id";
         $stmt = $this->db->prepare($query);
@@ -21,13 +37,60 @@ class User {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getUserByEmail($email) {
+        $query = "SELECT * FROM usuarios WHERE correo_electronico = :email";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['email' => $email]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function emailExists($email, $excludeId = null) {
+        $query = "SELECT id FROM usuarios WHERE correo_electronico = :email";
+        $params = ['email' => $email];
+
+        if ($excludeId !== null) {
+            $query .= " AND id != :excludeId";
+            $params['excludeId'] = $excludeId;
+        }
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function phoneExists($phone, $excludeId = null) {
+        $query = "SELECT id FROM usuarios WHERE telefono = :telefono";
+        $params = ['telefono' => $phone];
+
+        if ($excludeId !== null) {
+            $query .= " AND id != :excludeId";
+            $params['excludeId'] = $excludeId;
+        }
+
+        $stmt = $this->db->prepare($query);
+        $stmt->execute($params);
+        return (bool)$stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function createUser($data) {
         $query = "INSERT INTO usuarios (cedula, nombre_completo, correo_electronico, telefono, contrasena, nivel_acceso) 
                   VALUES (:cedula, :nombre_completo, :correo_electronico, :telefono, :contrasena, :nivel_acceso)";
         
-        $stmt = $this->db->prepare($query);
-        $data['contrasena'] = password_hash($data['contrasena'], PASSWORD_DEFAULT);
-        return $stmt->execute($data);
+        try {
+            $stmt = $this->db->prepare($query);
+            $data['contrasena'] = password_hash($data['contrasena'], PASSWORD_DEFAULT);
+            $result = $stmt->execute($data);
+            app_log('User.createUser executed', [
+                'result' => $result
+            ]);
+            return $result;
+        } catch (PDOException $e) {
+            app_log('User.createUser PDOException', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            throw $e;
+        }
     }
 
     public function updateUser($id, $data) {

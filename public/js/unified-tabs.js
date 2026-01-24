@@ -451,11 +451,16 @@ function initializeEOFContent(container) {
     console.log('=== INITIALIZING EOF CONTENT ===');
     console.log('Container:', container);
     console.log('Container HTML:', container.innerHTML.substring(0, 200) + '...');
-    
+
+    if (window.eofInlineInitialized) {
+        console.log('EOF inline script already initialized, skipping direct init');
+        return;
+    }
+
     // SOLUCIÓN PRINCIPAL: Inicializar directamente desde aquí
     console.log('=== INITIALIZING EOF DIRECTLY (MAIN SOLUTION) ===');
     initializeEOFDirectly(container);
-    
+
     // NO ejecutar el script de eof.php para evitar duplicación de funcionalidad
     console.log('Skipping eof.php script execution to prevent conflicts');
 }

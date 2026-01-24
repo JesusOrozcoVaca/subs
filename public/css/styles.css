@@ -754,6 +754,57 @@ body {
     background-color: #e9e9e9;
 }
 
+/* Paginación general */
+.pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 18px;
+    flex-wrap: wrap;
+}
+
+.pagination-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 15px;
+    padding: 6px 12px;
+    border: 1px solid #4e73df;
+    border-radius: 6px;
+    background-color: #4e73df;
+    color: #fff;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pagination-link:hover {
+    background-color: #2e59d9;
+    border-color: #2e59d9;
+    color: #fff; /* asegurar contraste */
+}
+
+.pagination-link:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.25);
+}
+
+.pagination-link.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f1f3f5;
+    border-color: #e1e4e8;
+    color: #6c757d;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: #666;
+    padding: 4px 2px;
+}
+
 .read-only-message {
     padding: 15px;
     background-color: #fff3cd;

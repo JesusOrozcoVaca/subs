@@ -15,11 +15,11 @@
         </div>
         <div class="form-group">
             <label for="correo_electronico">Correo Electrónico:</label>
-            <input type="email" id="correo_electronico" name="correo_electronico" value="<?php echo htmlspecialchars($user['correo_electronico']); ?>" required>
+        <input type="email" id="correo_electronico" name="correo_electronico" value="<?php echo htmlspecialchars($user['correo_electronico']); ?>" required>
         </div>
         <div class="form-group">
-            <label for="telefono">Número de Teléfono:</label>
-            <input type="tel" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono']); ?>" required>
+        <label for="telefono">Número de Teléfono:</label>
+        <input type="tel" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono']); ?>" required maxlength="10" pattern="\d{10}" inputmode="numeric" title="Debe contener exactamente 10 dígitos numéricos">
         </div>
         <button type="submit" class="btn">Actualizar Perfil</button>
     </form>

@@ -27,6 +27,18 @@ class AuthController {
 
             $user = $this->userModel->authenticate($username, $password);
             if ($user) {
+                if (isset($user['estado']) && $user['estado'] !== 'activo') {
+                    $message = "Usuario inactivo, contacte con el administrador";
+                    if ($this->isAjaxRequest()) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'message' => $message]);
+                        exit();
+                    } else {
+                        $error = $message;
+                        require_once BASE_PATH . '/views/auth/login.php';
+                        return;
+                    }
+                }
                 $this->createSession($user);
                 if ($this->isAjaxRequest()) {
                     header('Content-Type: application/json');

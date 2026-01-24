@@ -11,9 +11,29 @@ class Product {
     public function getAllProducts() {
         $query = "SELECT p.*, ep.descripcion as estado_descripcion 
                   FROM productos p 
-                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id";
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id
+                  ORDER BY p.id DESC";
         $stmt = $this->db->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getProductsPaginated($limit, $offset) {
+        $query = "SELECT p.*, ep.descripcion as estado_descripcion 
+                  FROM productos p 
+                  LEFT JOIN estados_producto ep ON p.estado_id = ep.id
+                  ORDER BY p.id DESC
+                  LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($query);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getProductsCount() {
+        $query = "SELECT COUNT(*) FROM productos";
+        $stmt = $this->db->query($query);
+        return (int)$stmt->fetchColumn();
     }
 
     public function getAllActive() {

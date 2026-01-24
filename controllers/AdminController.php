@@ -1,5 +1,7 @@
 <?php
 require_once BASE_PATH . '/models/User.php';
+require_once BASE_PATH . '/utils/logger.php';
+require_once BASE_PATH . '/models/OfferRating.php';
 require_once BASE_PATH . '/models/Product.php';
 require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/ProductState.php';
@@ -10,19 +12,51 @@ class AdminController {
     private $productModel;
     private $cpcModel;
     private $productStateModel;
+    private $offerRatingModel;
 
     public function __construct() {
         $this->userModel = new User();
         $this->productModel = new Product();
         $this->cpcModel = new CPC();
         $this->productStateModel = new ProductState();
+        $this->offerRatingModel = new OfferRating();
     }
 
     public function dashboard() {
         try {
-            $users = $this->userModel->getAllUsers();
-            $products = $this->productModel->getAllProducts();
-            $cpcs = $this->cpcModel->getAllCPCs();
+            $perPage = 5;
+            $usersPage = max(1, (int)($_GET['users_page'] ?? 1));
+            $productsPage = max(1, (int)($_GET['products_page'] ?? 1));
+            $cpcsPage = max(1, (int)($_GET['cpcs_page'] ?? 1));
+
+            $usersTotal = $this->userModel->getUsersCount();
+            $productsTotal = $this->productModel->getProductsCount();
+            $cpcsTotal = $this->cpcModel->getCpcsCount();
+
+            $usersTotalPages = max(1, (int)ceil($usersTotal / $perPage));
+            $productsTotalPages = max(1, (int)ceil($productsTotal / $perPage));
+            $cpcsTotalPages = max(1, (int)ceil($cpcsTotal / $perPage));
+
+            $usersPage = min($usersPage, $usersTotalPages);
+            $productsPage = min($productsPage, $productsTotalPages);
+            $cpcsPage = min($cpcsPage, $cpcsTotalPages);
+
+            $users = $this->userModel->getUsersPaginated($perPage, ($usersPage - 1) * $perPage);
+            $products = $this->productModel->getProductsPaginated($perPage, ($productsPage - 1) * $perPage);
+            $cpcs = $this->cpcModel->getCpcsPaginated($perPage, ($cpcsPage - 1) * $perPage);
+
+            $usersPagination = [
+                'page' => $usersPage,
+                'total_pages' => $usersTotalPages
+            ];
+            $productsPagination = [
+                'page' => $productsPage,
+                'total_pages' => $productsTotalPages
+            ];
+            $cpcsPagination = [
+                'page' => $cpcsPage,
+                'total_pages' => $cpcsTotalPages
+            ];
             
             if ($this->isAjaxRequest()) {
                 require BASE_PATH . '/views/admin/dashboard_content.php';
@@ -66,8 +100,61 @@ class AdminController {
     public function createUser() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
+                app_log('AdminController.createUser POST start', [
+                    'is_ajax' => $this->isAjaxRequest(),
+                    'post_keys' => array_keys($_POST),
+                    'post_data' => $_POST
+                ]);
+                $correo = isset($_POST['correo_electronico']) ? trim((string)$_POST['correo_electronico']) : '';
+                if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                    $message = "Correo electrónico inválido. Verifica el formato.";
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, $message);
+                    } else {
+                        $_SESSION['error_message'] = $message;
+                        header('Location: ' . url('admin/dashboard'));
+                        exit;
+                    }
+                }
+
+                if ($this->userModel->emailExists($correo)) {
+                    $message = "El correo electrónico ya existe y no puede ser duplicado.\nCorreo: {$correo}";
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, $message);
+                    } else {
+                        $_SESSION['error_message'] = $message;
+                        header('Location: ' . url('admin/dashboard'));
+                        exit;
+                    }
+                }
+
+                $telefono = isset($_POST['telefono']) ? trim((string)$_POST['telefono']) : '';
+                if ($telefono === '' || !preg_match('/^\d{10}$/', $telefono)) {
+                    $message = "Teléfono inválido. Asegúrate de haber ingresado el teléfono correcto.";
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, $message);
+                    } else {
+                        $_SESSION['error_message'] = $message;
+                        header('Location: ' . url('admin/dashboard'));
+                        exit;
+                    }
+                }
+
+                if ($this->userModel->phoneExists($telefono)) {
+                    $message = "El teléfono ya existe y no puede ser duplicado.\nTeléfono: {$telefono}";
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, $message);
+                    } else {
+                        $_SESSION['error_message'] = $message;
+                        header('Location: ' . url('admin/dashboard'));
+                        exit;
+                    }
+                }
                 $result = $this->userModel->createUser($_POST);
                 if ($result) {
+                    app_log('AdminController.createUser POST success', [
+                        'is_ajax' => $this->isAjaxRequest()
+                    ]);
                     if ($this->isAjaxRequest()) {
                         $this->sendJsonResponse(true, "Usuario creado exitosamente.");
                     } else {
@@ -78,7 +165,33 @@ class AdminController {
                 } else {
                     throw new Exception("Error al crear el usuario.");
                 }
+            } catch (PDOException $e) {
+                $isDuplicate = stripos($e->getMessage(), 'Duplicate entry') !== false
+                    && stripos($e->getMessage(), 'cedula') !== false;
+                $cedula = isset($_POST['cedula']) ? trim((string)$_POST['cedula']) : '';
+                $cedulaValue = $cedula !== '' ? $cedula : 'N/D';
+                $message = $isDuplicate
+                    ? "El usuario ya existe y no puede ser creado como duplicado. Asegúrate de revisar los datos:\nCédula: {$cedulaValue}"
+                    : $e->getMessage();
+
+                app_log('AdminController.createUser POST error', [
+                    'message' => $e->getMessage(),
+                    'is_duplicate' => $isDuplicate,
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                if ($this->isAjaxRequest()) {
+                    $this->sendJsonResponse(false, $message);
+                } else {
+                    $_SESSION['error_message'] = $message;
+                    header('Location: ' . url('admin/dashboard'));
+                    exit;
+                }
             } catch (Exception $e) {
+                app_log('AdminController.createUser POST error', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 $this->handleError($e);
             }
         }
@@ -174,6 +287,24 @@ class AdminController {
     public function editUser($id) {
         try {
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                $correo = isset($_POST['correo_electronico']) ? trim((string)$_POST['correo_electronico']) : '';
+                if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                    $this->sendJsonResponse(false, "Correo electrónico inválido. Verifica el formato.");
+                    return;
+                }
+                if ($this->userModel->emailExists($correo, $id)) {
+                    $this->sendJsonResponse(false, "El correo electrónico ya existe y no puede ser duplicado.\nCorreo: {$correo}");
+                    return;
+                }
+                $telefono = isset($_POST['telefono']) ? trim((string)$_POST['telefono']) : '';
+                if ($telefono === '' || !preg_match('/^\d{10}$/', $telefono)) {
+                    $this->sendJsonResponse(false, "Teléfono inválido. Asegúrate de haber ingresado el teléfono correcto.");
+                    return;
+                }
+                if ($this->userModel->phoneExists($telefono, $id)) {
+                    $this->sendJsonResponse(false, "El teléfono ya existe y no puede ser duplicado.\nTeléfono: {$telefono}");
+                    return;
+                }
                 $result = $this->userModel->updateUser($id, $_POST);
                 if ($result) {
                     $this->sendJsonResponse(true, "Usuario actualizado exitosamente.");
@@ -475,6 +606,61 @@ class AdminController {
             }
         } else {
             error_log("Invalid request method or not AJAX");
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function getOfferRatings() {
+        if ($this->isAjaxRequest()) {
+            $productoId = $_GET['producto_id'] ?? null;
+
+            if (!$productoId || !is_numeric($productoId)) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            $ratings = $this->offerRatingModel->getProductOfferRatings((int)$productoId);
+            $this->sendJsonResponse(true, "", ['ratings' => $ratings]);
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function saveOfferRating() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
+            $productoId = $_POST['producto_id'] ?? null;
+            $usuarioId = $_POST['usuario_id'] ?? null;
+            $calificacion = trim($_POST['calificacion'] ?? '');
+            $comentario = trim($_POST['comentario'] ?? '');
+
+            if (!$productoId || !is_numeric($productoId) || !$usuarioId || !is_numeric($usuarioId)) {
+                $this->sendJsonResponse(false, "Datos incompletos para calificar");
+                return;
+            }
+
+            $allowed = ['Cumple', 'No Cumple'];
+            if (!in_array($calificacion, $allowed, true)) {
+                $this->sendJsonResponse(false, "Calificación no válida");
+                return;
+            }
+
+            if (strlen($comentario) > 300) {
+                $this->sendJsonResponse(false, "El comentario no puede exceder 300 caracteres");
+                return;
+            }
+
+            if (!$this->offerRatingModel->hasSubmission((int)$productoId, (int)$usuarioId)) {
+                $this->sendJsonResponse(false, "El usuario no tiene una oferta registrada en este producto");
+                return;
+            }
+
+            $result = $this->offerRatingModel->upsertRating((int)$productoId, (int)$usuarioId, $calificacion, $comentario);
+            if ($result) {
+                $this->sendJsonResponse(true, "Calificación guardada exitosamente");
+            } else {
+                $this->sendJsonResponse(false, "No se pudo guardar la calificación");
+            }
+        } else {
             $this->sendJsonResponse(false, "Método no permitido");
         }
     }

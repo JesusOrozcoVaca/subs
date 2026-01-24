@@ -369,6 +369,12 @@ try {
             $controller->getOffers();
             break;
 
+        case 'participant_get_offer_rating':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->getOfferRating();
+            break;
+
         case 'participant_delete_offer':
             checkAccess(3);
             $controller = loadController('ParticipantController');
@@ -489,6 +495,18 @@ try {
             checkAccess(2);
             $controller = loadController('ModeratorController');
             $controller->answerQuestions();
+            break;
+
+        case 'moderator_get_offer_ratings':
+            checkAccess(2);
+            $controller = loadController('ModeratorController');
+            $controller->getOfferRatings();
+            break;
+
+        case 'moderator_save_offer_rating':
+            checkAccess(2);
+            $controller = loadController('ModeratorController');
+            $controller->saveOfferRating();
             break;
 
         default:

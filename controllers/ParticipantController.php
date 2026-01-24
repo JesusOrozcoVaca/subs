@@ -3,6 +3,7 @@ require_once BASE_PATH . '/models/Product.php';
 require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/OfferSubmission.php';
+require_once BASE_PATH . '/models/OfferRating.php';
 
 class ParticipantController {
     private $productModel;
@@ -36,6 +37,24 @@ class ParticipantController {
 
                 switch ($action) {
                     case 'update_profile':
+                        $correo = isset($_POST['correo_electronico']) ? trim((string)$_POST['correo_electronico']) : '';
+                        if ($correo === '' || !filter_var($correo, FILTER_VALIDATE_EMAIL)) {
+                            $this->sendJsonResponse(false, "Correo electrónico inválido. Verifica el formato.");
+                            return;
+                        }
+                        if ($this->userModel->emailExists($correo, $userId)) {
+                            $this->sendJsonResponse(false, "El correo electrónico ya existe y no puede ser duplicado.\nCorreo: {$correo}");
+                            return;
+                        }
+                        $telefono = isset($_POST['telefono']) ? trim((string)$_POST['telefono']) : '';
+                        if ($telefono === '' || !preg_match('/^\d{10}$/', $telefono)) {
+                            $this->sendJsonResponse(false, "Teléfono inválido. Asegúrate de haber ingresado el teléfono correcto.");
+                            return;
+                        }
+                        if ($this->userModel->phoneExists($telefono, $userId)) {
+                            $this->sendJsonResponse(false, "El teléfono ya existe y no puede ser duplicado.\nTeléfono: {$telefono}");
+                            return;
+                        }
                         $result = $this->userModel->updateUser($userId, $_POST);
                         break;
                     case 'add_cpc':
@@ -556,6 +575,27 @@ class ParticipantController {
         }
     }
 
+    public function getOfferRating() {
+        if ($this->isAjaxRequest()) {
+            $productoId = $_GET['producto_id'] ?? null;
+            $usuarioId = $_SESSION['user_id'];
+
+            if (!$productoId || !is_numeric($productoId)) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            $offerRatingModel = new OfferRating();
+            $rating = $offerRatingModel->getUserOfferRating((int)$productoId, (int)$usuarioId);
+
+            $this->sendJsonResponse(true, "", [
+                'rating' => $rating
+            ]);
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
     public function deleteOffer() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
             $fileId = $_POST['file_id'] ?? null;
@@ -612,6 +652,45 @@ class ParticipantController {
 
             if (strlen($descripcion) > 1000) {
                 $this->sendJsonResponse(false, "La descripción no puede exceder 1000 caracteres");
+                return;
+            }
+
+            $product = $this->productModel->getProductById($productoId);
+            if (!$product || !isset($product['presupuesto_referencial'])) {
+                $this->sendJsonResponse(false, "No se pudo validar el presupuesto referencial del producto");
+                return;
+            }
+
+            $presupuestoCents = $this->toCents($product['presupuesto_referencial']);
+            $ofertaCents = $this->toCents($ofertaInicialUser);
+
+            if ($presupuestoCents === null || $ofertaCents === null) {
+                $this->sendJsonResponse(false, "No se pudo validar el valor de la oferta inicial");
+                return;
+            }
+
+            if ($ofertaCents >= $presupuestoCents) {
+                $this->sendJsonResponse(false, "La oferta inicial debe ser menor al presupuesto referencial del producto (al menos 0.01 menos).");
+                return;
+            }
+
+            $plazoEntregaProducto = $this->normalizeNumeric($product['plazo_entrega'] ?? null);
+            $vigenciaOfertaProducto = $this->normalizeNumeric($product['vigencia_oferta'] ?? null);
+            $plazoEntregaIngresado = $this->normalizeNumeric($tiempoEntrega);
+            $vigenciaOfertaIngresado = $this->normalizeNumeric($plazoOferta);
+
+            if ($plazoEntregaProducto === null || $vigenciaOfertaProducto === null) {
+                $this->sendJsonResponse(false, "No se pudo validar los plazos del producto");
+                return;
+            }
+
+            if ($plazoEntregaIngresado === null || $vigenciaOfertaIngresado === null) {
+                $this->sendJsonResponse(false, "Los valores de tiempo de entrega y plazo de la oferta deben ser numéricos");
+                return;
+            }
+
+            if ($plazoEntregaIngresado !== $plazoEntregaProducto || $vigenciaOfertaIngresado !== $vigenciaOfertaProducto) {
+                $this->sendJsonResponse(false, "Los valores de tiempo de entrega y plazo de la oferta deben coincidir con los definidos para el producto");
                 return;
             }
             
@@ -675,6 +754,31 @@ class ParticipantController {
         } else {
             $this->sendJsonResponse(false, "Método no permitido");
         }
+    }
+
+    private function toCents($value) {
+        if ($value === null) {
+            return null;
+        }
+        $normalized = str_replace([' ', ','], ['', '.'], (string)$value);
+        if (!is_numeric($normalized)) {
+            return null;
+        }
+        return (int)round(((float)$normalized) * 100);
+    }
+
+    private function normalizeNumeric($value) {
+        if ($value === null) {
+            return null;
+        }
+        $normalized = str_replace([' ', ','], ['', '.'], (string)$value);
+        if (!is_numeric($normalized)) {
+            return null;
+        }
+        if (strpos($normalized, '.') !== false) {
+            $normalized = rtrim(rtrim($normalized, '0'), '.');
+        }
+        return $normalized === '' ? '0' : $normalized;
     }
 
     public function submitConvalidation() {

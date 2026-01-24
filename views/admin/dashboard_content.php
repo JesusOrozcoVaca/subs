@@ -1,4 +1,18 @@
 <?php require_once BASE_PATH . '/utils/url_helpers.php'; ?>
+<?php
+function buildDashboardUrl($baseUrl, $params) {
+    $separator = (strpos($baseUrl, '?') === false) ? '?' : '&';
+    return $baseUrl . $separator . http_build_query($params);
+}
+
+$baseDashboardUrl = url('admin/dashboard');
+$usersPage = $usersPagination['page'] ?? 1;
+$usersTotalPages = $usersPagination['total_pages'] ?? 1;
+$productsPage = $productsPagination['page'] ?? 1;
+$productsTotalPages = $productsPagination['total_pages'] ?? 1;
+$cpcsPage = $cpcsPagination['page'] ?? 1;
+$cpcsTotalPages = $cpcsPagination['total_pages'] ?? 1;
+?>
 <section id="usuarios">
     <h2>Usuarios del Sistema</h2>
     <table class="data-table">
@@ -35,6 +49,25 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?php if ($usersTotalPages > 1): ?>
+        <div class="pagination">
+            <?php if ($usersPage > 1): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage - 1,
+                    'products_page' => $productsPage,
+                    'cpcs_page' => $cpcsPage
+                ])); ?>">Anterior</a>
+            <?php endif; ?>
+            <span class="pagination-info">Página <?php echo $usersPage; ?> de <?php echo $usersTotalPages; ?></span>
+            <?php if ($usersPage < $usersTotalPages): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage + 1,
+                    'products_page' => $productsPage,
+                    'cpcs_page' => $cpcsPage
+                ])); ?>">Siguiente</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </section>
 
 <section id="productos">
@@ -68,6 +101,25 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?php if ($productsTotalPages > 1): ?>
+        <div class="pagination">
+            <?php if ($productsPage > 1): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage,
+                    'products_page' => $productsPage - 1,
+                    'cpcs_page' => $cpcsPage
+                ])); ?>">Anterior</a>
+            <?php endif; ?>
+            <span class="pagination-info">Página <?php echo $productsPage; ?> de <?php echo $productsTotalPages; ?></span>
+            <?php if ($productsPage < $productsTotalPages): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage,
+                    'products_page' => $productsPage + 1,
+                    'cpcs_page' => $cpcsPage
+                ])); ?>">Siguiente</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </section>
 
 <section id="cpcs">
@@ -95,4 +147,23 @@
             <?php endforeach; ?>
         </tbody>
     </table>
+    <?php if ($cpcsTotalPages > 1): ?>
+        <div class="pagination">
+            <?php if ($cpcsPage > 1): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage,
+                    'products_page' => $productsPage,
+                    'cpcs_page' => $cpcsPage - 1
+                ])); ?>">Anterior</a>
+            <?php endif; ?>
+            <span class="pagination-info">Página <?php echo $cpcsPage; ?> de <?php echo $cpcsTotalPages; ?></span>
+            <?php if ($cpcsPage < $cpcsTotalPages): ?>
+                <a class="pagination-link" href="<?php echo htmlspecialchars(buildDashboardUrl($baseDashboardUrl, [
+                    'users_page' => $usersPage,
+                    'products_page' => $productsPage,
+                    'cpcs_page' => $cpcsPage + 1
+                ])); ?>">Siguiente</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </section>

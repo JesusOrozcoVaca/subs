@@ -10,6 +10,10 @@ error_log("Products count in view: " . count($products));
 ?>
 <section id="productos">
     <h2>Productos Activos</h2>
+    <div class="table-filter">
+        <label for="product-search">Buscar por Objeto del Proceso:</label>
+        <input type="search" id="product-search" placeholder="Escribe parte del objeto del proceso..." autocomplete="off">
+    </div>
     <table class="data-table">
         <thead>
             <tr>
@@ -45,3 +49,43 @@ error_log("Products count in view: " . count($products));
         </tbody>
     </table>
 </section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('product-search');
+    const table = document.querySelector('#productos table');
+    if (!searchInput || !table) {
+        return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'));
+    searchInput.addEventListener('input', function() {
+        const needle = this.value.trim().toLowerCase();
+        let visibleCount = 0;
+        rows.forEach(row => {
+            const objetoCell = row.cells[2];
+            if (!objetoCell) {
+                return;
+            }
+            const text = objetoCell.textContent.toLowerCase();
+            const visible = needle === '' || text.includes(needle);
+            row.style.display = visible ? '' : 'none';
+            if (visible) {
+                visibleCount++;
+            }
+        });
+
+        const noResults = table.querySelector('.no-results-row');
+        if (needle !== '' && visibleCount === 0) {
+            if (!noResults) {
+                const tr = document.createElement('tr');
+                tr.className = 'no-results-row';
+                tr.innerHTML = '<td colspan="5" style="text-align:center; padding: 16px;">No se encontraron procesos que coincidan.</td>';
+                table.tBodies[0].appendChild(tr);
+            }
+        } else if (noResults) {
+            noResults.remove();
+        }
+    });
+});
+</script>

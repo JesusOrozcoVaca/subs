@@ -31,7 +31,8 @@ console.log('[CONV] Script loaded');
 window.convalidationState = {
     submitted: false,
     summary: null,
-    files: []
+    files: [],
+    loading: false
 };
 
 function escapeHtml(string) {
@@ -136,10 +137,15 @@ function updateConvalidationUI(summary, files) {
     window.convalidationState.summary = summary || null;
     window.convalidationState.files = files || [];
     window.convalidationState.submitted = !!summary;
+    const isLoading = !!window.convalidationState.loading;
 
     const form = document.getElementById('convalidacion-form');
     if (form) {
-        form.style.display = summary ? 'none' : 'block';
+        if (isLoading) {
+            form.style.display = 'none';
+        } else {
+            form.style.display = summary ? 'none' : 'block';
+        }
     }
 
     renderSummary(summary);
@@ -148,6 +154,8 @@ function updateConvalidationUI(summary, files) {
 
 function loadConvalidation() {
     console.log('[CONV] loadConvalidation start');
+    window.convalidationState.loading = true;
+    updateConvalidationUI(window.convalidationState.summary, window.convalidationState.files);
     const isProduction = window.location.pathname.includes('index.php') ||
                         window.location.hostname.includes('hjconsulting.com.ec');
     const url = isProduction ?
@@ -164,15 +172,19 @@ function loadConvalidation() {
     })
     .then(data => {
         console.log('[CONV] loadConvalidation payload', data);
+        window.convalidationState.loading = false;
         if (data.success) {
             const payload = data.data || {};
             updateConvalidationUI(payload.summary || null, payload.files || []);
         } else {
             console.error('Error al cargar convalidación:', data.message || 'Error desconocido');
+            updateConvalidationUI(window.convalidationState.summary, window.convalidationState.files);
         }
     })
     .catch(error => {
         console.error('Error al cargar convalidación:', error);
+        window.convalidationState.loading = false;
+        updateConvalidationUI(window.convalidationState.summary, window.convalidationState.files);
     });
 }
 
@@ -188,14 +200,19 @@ function initializeConvalidation() {
         return false;
     }
 
-    fileInput.addEventListener('change', function() {
-        console.log('[CONV] file input changed', fileInput.files);
-        updateFileInfo(fileInput.files, fileCount, fileSize);
-    });
+    if (!fileInput.dataset.bound) {
+        fileInput.dataset.bound = 'true';
+        fileInput.addEventListener('change', function() {
+            console.log('[CONV] file input changed', fileInput.files);
+            updateFileInfo(fileInput.files, fileCount, fileSize);
+        });
+    }
 
-    form.addEventListener('submit', function(e) {
-        console.log('[CONV] form submit intercepted');
-        e.preventDefault();
+    if (!form.dataset.bound) {
+        form.dataset.bound = 'true';
+        form.addEventListener('submit', function(e) {
+            console.log('[CONV] form submit intercepted');
+            e.preventDefault();
 
         const detalle = (document.getElementById('convalidacion-texto').value || '').trim();
         console.log('[CONV] detalle length', detalle.length);
@@ -247,28 +264,30 @@ function initializeConvalidation() {
             console.error('Error al enviar convalidación:', error);
             alert('Error al enviar la convalidación');
         });
-    });
+        });
+    }
 
     return true;
 }
 
-let convInitAttempts = 0;
-const convInitInterval = setInterval(function() {
-    convInitAttempts++;
-    console.log('[CONV] init attempt', convInitAttempts);
+if (window.convInitInterval) {
+    clearInterval(window.convInitInterval);
+}
+window.convInitAttempts = 0;
+window.convInitInterval = setInterval(function() {
+    window.convInitAttempts++;
+    console.log('[CONV] init attempt', window.convInitAttempts);
     if (initializeConvalidation()) {
         console.log('[CONV] initializeConvalidation success');
-        clearInterval(convInitInterval);
-    } else if (convInitAttempts >= 50) {
+        clearInterval(window.convInitInterval);
+    } else if (window.convInitAttempts >= 50) {
         console.warn('[CONV] initializeConvalidation failed after max attempts');
-        clearInterval(convInitInterval);
+        clearInterval(window.convInitInterval);
     }
 }, 200);
 
-setTimeout(function() {
-    console.log('[CONV] delayed loadConvalidation');
-    loadConvalidation();
-}, 500);
+console.log('[CONV] loadConvalidation immediate');
+loadConvalidation();
 </script>
 
 <style>

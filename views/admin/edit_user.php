@@ -15,7 +15,7 @@
     </div>
     <div class="form-group">
         <label for="telefono">Número de Teléfono:</label>
-        <input type="tel" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono']); ?>" required>
+        <input type="tel" id="telefono" name="telefono" value="<?php echo htmlspecialchars($user['telefono']); ?>" required maxlength="10" pattern="\d{10}" inputmode="numeric" title="Debe contener exactamente 10 dígitos numéricos">
     </div>
     <div class="form-group">
         <label for="nivel_acceso">Nivel de Acceso:</label>

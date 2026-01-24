@@ -108,6 +108,12 @@ function generateUrl(action, params = {}) {
             case 'admin_answer_questions':
                 url = baseUrl + 'admin/answer-questions';
                 break;
+            case 'admin_get_offer_ratings':
+                url = baseUrl + 'admin/get-offer-ratings';
+                break;
+            case 'admin_save_offer_rating':
+                url = baseUrl + 'admin/save-offer-rating';
+                break;
             case 'moderator_dashboard':
                 url = baseUrl + 'moderator/dashboard';
                 break;
@@ -132,6 +138,12 @@ function generateUrl(action, params = {}) {
             case 'moderator_answer_questions':
                 url = baseUrl + 'moderator/answer-questions';
                 break;
+            case 'moderator_get_offer_ratings':
+                url = baseUrl + 'moderator/get-offer-ratings';
+                break;
+            case 'moderator_save_offer_rating':
+                url = baseUrl + 'moderator/save-offer-rating';
+                break;
             case 'participant_dashboard':
                 url = baseUrl + 'participant/dashboard';
                 break;
@@ -152,6 +164,9 @@ function generateUrl(action, params = {}) {
                 break;
             case 'participant_phase':
                 url = baseUrl + 'participant/phase/' + (params.phase || '');
+                break;
+            case 'participant_get_offer_rating':
+                url = baseUrl + 'participant/get-offer-rating';
                 break;
             default:
                 console.warn('Acción no reconocida:', action);
@@ -188,17 +203,22 @@ const URLS = {
     adminDeleteUser: () => generateUrl('admin_delete_user'),
     adminDeleteProduct: () => generateUrl('admin_delete_product'),
     adminDeleteCpc: () => generateUrl('admin_delete_cpc'),
+    adminGetOfferRatings: (producto_id) => generateUrl('admin_get_offer_ratings', { producto_id }),
+    adminSaveOfferRating: () => generateUrl('admin_save_offer_rating'),
     moderatorManageCpcs: () => generateUrl('moderator_manage_cpcs'),
     moderatorEditCpc: (id) => generateUrl('moderator_edit_cpc', { id }),
     moderatorManageQuestions: (id) => generateUrl('moderator_manage_questions', { id }),
     moderatorEvaluateParticipants: (id) => generateUrl('moderator_evaluate_participants', { id }),
     moderatorDeleteCpc: () => generateUrl('moderator_delete_cpc'),
+    moderatorGetOfferRatings: () => generateUrl('moderator_get_offer_ratings'),
+    moderatorSaveOfferRating: () => generateUrl('moderator_save_offer_rating'),
     participantViewProduct: (id) => generateUrl('participant_view_product', { id }),
     participantProfile: () => generateUrl('participant_profile'),
     participantSearchProcess: () => generateUrl('participant_search_process'),
     participantAddCpc: () => generateUrl('participant_add_cpc'),
     participantRemoveCpc: () => generateUrl('participant_remove_cpc'),
-    participantPhase: (phase) => generateUrl('participant_phase', { phase })
+    participantPhase: (phase) => generateUrl('participant_phase', { phase }),
+    participantGetOfferRating: () => generateUrl('participant_get_offer_rating')
 };
 
 // Exportar para uso global

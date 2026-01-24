@@ -29,15 +29,30 @@
 
 <script>
 // SOLUCIÓN RADICAL: Event Delegation + Polling
+window.eofInlineInitialized = true;
+
+window.eofInlineConfig = window.eofInlineConfig || {};
+window.eofInlineConfig.presupuestoReferencial = <?php echo json_encode((float)$product['presupuesto_referencial']); ?>;
+window.eofInlineConfig.plazoEntregaProducto = <?php echo json_encode($product['plazo_entrega'] ?? ''); ?>;
+window.eofInlineConfig.vigenciaOfertaProducto = <?php echo json_encode($product['vigencia_oferta'] ?? ''); ?>;
 console.log('=== EOF SCRIPT STARTING (NEW APPROACH) ===');
 
 // Variables globales para el estado
-window.eofState = {
-    uploadedFiles: [],
-    isProcessed: false,
-    initialized: false,
-    offerSummary: null
-};
+if (!window.eofState) {
+    window.eofState = {
+        uploadedFiles: [],
+        isProcessed: false,
+        initialized: false,
+        offerSummary: null,
+        loading: false
+    };
+} else {
+    window.eofState.uploadedFiles = [];
+    window.eofState.isProcessed = false;
+    window.eofState.initialized = false;
+    window.eofState.offerSummary = null;
+    window.eofState.loading = false;
+}
 
 function escapeHtml(string) {
     if (typeof string !== 'string') {
@@ -98,6 +113,15 @@ function updateProcessedUI(processed, summary) {
     const fileInput = document.getElementById('file-input');
     const fileUploadSection = document.querySelector('.file-upload-section');
 
+    if (window.eofState.loading) {
+        if (processBtn) processBtn.style.display = 'none';
+        if (uploadBtn) uploadBtn.style.display = 'none';
+        if (fileInput) fileInput.disabled = true;
+        if (fileUploadSection) fileUploadSection.style.display = 'none';
+        renderOfferSummary(summary);
+        return;
+    }
+
     if (processed) {
         if (processBtn) processBtn.style.display = 'none';
         if (uploadBtn) uploadBtn.style.display = 'none';
@@ -115,6 +139,29 @@ function updateProcessedUI(processed, summary) {
     }
 
     renderOfferSummary(summary);
+}
+
+var presupuestoReferencial = window.eofInlineConfig.presupuestoReferencial;
+var plazoEntregaProducto = window.eofInlineConfig.plazoEntregaProducto;
+var vigenciaOfertaProducto = window.eofInlineConfig.vigenciaOfertaProducto;
+var maxOfertaInicial = Math.max(0, (presupuestoReferencial * 100 - 1) / 100);
+
+function toCents(value) {
+    const normalized = String(value).replace(',', '.').trim();
+    const numberValue = Number(normalized);
+    if (Number.isNaN(numberValue)) {
+        return null;
+    }
+    return Math.round(numberValue * 100);
+}
+
+function normalizeNumeric(value) {
+    const normalized = String(value).replace(',', '.').trim();
+    if (normalized === '' || Number.isNaN(Number(normalized))) {
+        return null;
+    }
+    const cleaned = normalized.includes('.') ? normalized.replace(/\.?0+$/, '') : normalized;
+    return cleaned === '' ? '0' : cleaned;
 }
 
 function openOfferDetailsModal(existingData = null, onSubmit = null) {
@@ -135,7 +182,7 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
             <label for="modal-plazo-oferta">Plazo de la oferta</label>
             <input type="text" id="modal-plazo-oferta" maxlength="100" value="${escapeHtml(initialPlazo)}" />
             <label for="modal-oferta-inicial">Oferta inicial</label>
-            <input type="number" id="modal-oferta-inicial" step="0.01" min="0" value="${escapeHtml(initialOfertaInicial)}" />
+            <input type="number" id="modal-oferta-inicial" step="0.01" min="0" max="${maxOfertaInicial}" value="${escapeHtml(initialOfertaInicial)}" />
             <label for="modal-descripcion">Descripción</label>
             <textarea id="modal-descripcion" maxlength="1000">${escapeHtml(initialDescripcion)}</textarea>
             <div class="modal-actions">
@@ -178,8 +225,31 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
             return;
         }
 
+        const plazoEntregaNorm = normalizeNumeric(tiempoEntrega);
+        const vigenciaOfertaNorm = normalizeNumeric(plazoOferta);
+        const plazoEntregaProductoNorm = normalizeNumeric(plazoEntregaProducto);
+        const vigenciaOfertaProductoNorm = normalizeNumeric(vigenciaOfertaProducto);
+        if (!plazoEntregaNorm || !vigenciaOfertaNorm) {
+            alert('Los valores de tiempo de entrega y plazo de la oferta deben ser numéricos.');
+            return;
+        }
+        if (plazoEntregaNorm !== plazoEntregaProductoNorm || vigenciaOfertaNorm !== vigenciaOfertaProductoNorm) {
+            alert('Los valores de tiempo de entrega y plazo de la oferta deben coincidir con los definidos para el producto.');
+            return;
+        }
+
         if (isNaN(parseFloat(ofertaInicial)) || parseFloat(ofertaInicial) < 0) {
             alert('La oferta inicial debe ser un número válido mayor o igual a 0.');
+            return;
+        }
+        const ofertaCents = toCents(ofertaInicial);
+        const presupuestoCents = toCents(presupuestoReferencial);
+        if (ofertaCents === null || presupuestoCents === null) {
+            alert('No se pudo validar el valor de la oferta inicial.');
+            return;
+        }
+        if (ofertaCents >= presupuestoCents) {
+            alert('La oferta inicial debe ser menor al presupuesto referencial del producto (al menos 0.01 menos).');
             return;
         }
 
@@ -204,6 +274,11 @@ function openOfferDetailsModal(existingData = null, onSubmit = null) {
 // Función para inicializar cuando el contenido esté listo
 function initializeEOF() {
     console.log('=== INITIALIZING EOF ===');
+
+    if (window.eofState.initialized) {
+        console.log('EOF already initialized, skipping re-bind');
+        return true;
+    }
     
     const form = document.getElementById('oferta-form');
     const fileInput = document.getElementById('file-input');
@@ -224,11 +299,10 @@ function initializeEOF() {
     
     console.log('All elements found, setting up event listeners...');
     
-    // Marcar como inicializado
-    window.eofState.initialized = true;
-    
     // Validación de archivos
-    fileInput.addEventListener('change', function() {
+    if (!fileInput.dataset.bound) {
+        fileInput.dataset.bound = 'true';
+        fileInput.addEventListener('change', function() {
         console.log('File input changed');
         const files = Array.from(this.files);
         const maxFiles = 5;
@@ -272,11 +346,14 @@ function initializeEOF() {
         } else {
             uploadBtn.style.display = 'none';
         }
-    });
+        });
+    }
     
     // Event listener del botón de subir archivos
     console.log('Adding click event listener to upload button');
-    uploadBtn.addEventListener('click', function(e) {
+    if (!uploadBtn.dataset.bound) {
+        uploadBtn.dataset.bound = 'true';
+        uploadBtn.addEventListener('click', function(e) {
         console.log('=== UPLOAD BUTTON CLICKED ===');
         console.log('Event:', e);
         console.log('Files selected:', fileInput.files.length);
@@ -302,10 +379,12 @@ function initializeEOF() {
         console.log('Starting file upload process');
         // Subir archivos uno por uno
         uploadFiles(files);
-    });
+        });
+    }
     
     // Event listener del botón de procesar
-    if (processBtn) {
+    if (processBtn && !processBtn.dataset.bound) {
+        processBtn.dataset.bound = 'true';
         processBtn.addEventListener('click', function() {
             console.log('=== PROCESS BUTTON CLICKED ===');
             if (window.eofState.uploadedFiles.length === 0) {
@@ -365,6 +444,9 @@ function initializeEOF() {
     console.log('Upload button event listener added successfully');
     
     updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
+
+    // Marcar como inicializado
+    window.eofState.initialized = true;
 
     return true; // Inicialización exitosa
 }
@@ -434,6 +516,8 @@ function uploadFiles(files) {
 // Función para cargar ofertas
 function loadOfertas() {
     console.log('=== LOAD OFFERS FUNCTION CALLED ===');
+    window.eofState.loading = true;
+    updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
     // Detectar si estamos en producción
     const isProduction = window.location.pathname.includes('index.php') || 
                         window.location.hostname.includes('hjconsulting.com.ec');
@@ -452,6 +536,7 @@ function loadOfertas() {
     .then(response => response.json())
     .then(data => {
         console.log('Offers response:', data);
+        window.eofState.loading = false;
         if (data.success) {
             const payload = data.data || {};
             const ofertas = payload.ofertas ? payload.ofertas : [];
@@ -465,14 +550,17 @@ function loadOfertas() {
             if (listaOfertas) {
                 listaOfertas.innerHTML = '<p>Error al cargar las ofertas: ' + (data.message || 'Error desconocido') + '</p>';
             }
+            updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
         }
     })
     .catch(error => {
         console.error('Error loading offers:', error);
+        window.eofState.loading = false;
         const listaOfertas = document.getElementById('lista-ofertas');
         if (listaOfertas) {
             listaOfertas.innerHTML = '<p>Error al cargar las ofertas</p>';
         }
+        updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
     });
 }
 
@@ -573,26 +661,27 @@ window.deleteOferta = function(fileId) {
 };
 
 // POLLING: Intentar inicializar cada 200ms hasta que funcione
-let initAttempts = 0;
-const maxAttempts = 50; // 10 segundos máximo
+if (window.eofInitInterval) {
+    clearInterval(window.eofInitInterval);
+}
+window.eofInitAttempts = 0;
+window.eofMaxAttempts = 50; // 10 segundos máximo
 
-const initInterval = setInterval(function() {
-    initAttempts++;
-    console.log(`Initialization attempt ${initAttempts}/${maxAttempts}`);
+window.eofInitInterval = setInterval(function() {
+    window.eofInitAttempts++;
+    console.log(`Initialization attempt ${window.eofInitAttempts}/${window.eofMaxAttempts}`);
     
     if (initializeEOF()) {
         console.log('EOF initialized successfully!');
-        clearInterval(initInterval);
-    } else if (initAttempts >= maxAttempts) {
+        clearInterval(window.eofInitInterval);
+    } else if (window.eofInitAttempts >= window.eofMaxAttempts) {
         console.error('Failed to initialize EOF after maximum attempts');
-        clearInterval(initInterval);
+        clearInterval(window.eofInitInterval);
     }
 }, 200);
 
 // Cargar ofertas al inicio
-setTimeout(function() {
-    loadOfertas();
-}, 500);
+loadOfertas();
 </script>
 
 <style>

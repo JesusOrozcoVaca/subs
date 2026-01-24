@@ -22,6 +22,11 @@ if (!isset($estados)) {
         echo "<p><strong>Descripción:</strong> " . htmlspecialchars($product['descripcion']) . "</p>";
         echo "<p><strong>Estado:</strong> " . htmlspecialchars($product['estado_descripcion']) . "</p>";
         echo "<p><strong>Creado:</strong> " . date('d/m/Y H:i', strtotime($product['fecha_creacion'])) . "</p>";
+        echo "<p><strong>Presupuesto:</strong> $" . number_format((float)($product['presupuesto_referencial'] ?? 0), 2) . "</p>";
+        echo "<p><strong>Variación mínima:</strong> " . htmlspecialchars($product['variacion_minima'] ?? '') . " %</p>";
+        echo "<p><strong>Plazo de entrega:</strong> " . htmlspecialchars($product['plazo_entrega'] ?? '') . "</p>";
+        echo "<p><strong>Vigencia de la Oferta:</strong> " . htmlspecialchars($product['vigencia_oferta'] ?? '') . "</p>";
+        echo "<p><strong>Funcionario encargado:</strong> " . htmlspecialchars($product['funcionario_encargado'] ?? '') . "</p>";
         
         // Formulario para cambiar estado
         echo "<div class='change-status-section'>";
@@ -41,6 +46,7 @@ if (!isset($estados)) {
         echo "<div class='actions' style='display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;'>";
         echo "<a href='" . url('moderator/edit-product/' . $product['id']) . "' class='btn btn-edit'>Editar Producto</a>";
         echo "<button class='btn btn-info btn-answer-questions' data-product-id='" . htmlspecialchars($product['id']) . "' data-product-code='" . htmlspecialchars($product['codigo']) . "'>Responder Preguntas</button>";
+        echo "<button class='btn btn-info btn-rate-offers' data-product-id='" . htmlspecialchars($product['id']) . "' data-product-code='" . htmlspecialchars($product['codigo']) . "'>Calificar Ofertas</button>";
         echo "<a href='" . url('moderator/dashboard') . "' class='btn btn-secondary'>Volver al Dashboard</a>";
         echo "</div>";
         echo "</div>";

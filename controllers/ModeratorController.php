@@ -5,6 +5,7 @@ require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/Question.php';
 require_once BASE_PATH . '/models/Bid.php';
 require_once BASE_PATH . '/models/ProductState.php';
+require_once BASE_PATH . '/models/OfferRating.php';
 require_once BASE_PATH . '/services/PyrPdfGenerator.php';
 
 class ModeratorController {
@@ -14,6 +15,7 @@ class ModeratorController {
     private $questionModel;
     private $bidModel;
     private $productStateModel;
+    private $offerRatingModel;
 
     public function __construct() {
         $this->productModel = new Product();
@@ -22,6 +24,7 @@ class ModeratorController {
         $this->questionModel = new Question();
         $this->bidModel = new Bid();
         $this->productStateModel = new ProductState();
+        $this->offerRatingModel = new OfferRating();
     }
 
     private function isAjaxRequest() {
@@ -44,10 +47,22 @@ class ModeratorController {
     }
 
     public function dashboard() {
-        // Usar getAllProducts() en lugar de getAllActive() para mostrar todos los productos
-        $products = $this->productModel->getAllProducts();
+        // Paginación (8 por página) - mostrar primero los más recientes
+        $perPage = 8;
+        $productsPage = max(1, (int)($_GET['products_page'] ?? 1));
+        $productsTotal = $this->productModel->getProductsCount();
+        $productsTotalPages = max(1, (int)ceil($productsTotal / $perPage));
+        $productsPage = min($productsPage, $productsTotalPages);
+
+        // getProductsPaginated ya ordena por más recientes primero
+        $products = $this->productModel->getProductsPaginated($perPage, ($productsPage - 1) * $perPage);
+        $productsPagination = [
+            'page' => $productsPage,
+            'total_pages' => $productsTotalPages
+        ];
+
         error_log("=== MODERATOR DASHBOARD ===");
-        error_log("Products loaded: " . count($products));
+        error_log("Products loaded (paginated): " . count($products) . " / total: " . $productsTotal);
         
         if ($this->isAjaxRequest()) {
             require_once BASE_PATH . '/views/moderator/mod_dashboard_content.php';
@@ -410,6 +425,61 @@ class ModeratorController {
             }
         } else {
             error_log("Invalid request method or not AJAX");
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function getOfferRatings() {
+        if ($this->isAjaxRequest()) {
+            $productoId = $_GET['producto_id'] ?? null;
+
+            if (!$productoId || !is_numeric($productoId)) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            $ratings = $this->offerRatingModel->getProductOfferRatings((int)$productoId);
+            $this->sendJsonResponse(true, "", ['ratings' => $ratings]);
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function saveOfferRating() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
+            $productoId = $_POST['producto_id'] ?? null;
+            $usuarioId = $_POST['usuario_id'] ?? null;
+            $calificacion = trim($_POST['calificacion'] ?? '');
+            $comentario = trim($_POST['comentario'] ?? '');
+
+            if (!$productoId || !is_numeric($productoId) || !$usuarioId || !is_numeric($usuarioId)) {
+                $this->sendJsonResponse(false, "Datos incompletos para calificar");
+                return;
+            }
+
+            $allowed = ['Cumple', 'No Cumple'];
+            if (!in_array($calificacion, $allowed, true)) {
+                $this->sendJsonResponse(false, "Calificación no válida");
+                return;
+            }
+
+            if (strlen($comentario) > 300) {
+                $this->sendJsonResponse(false, "El comentario no puede exceder 300 caracteres");
+                return;
+            }
+
+            if (!$this->offerRatingModel->hasSubmission((int)$productoId, (int)$usuarioId)) {
+                $this->sendJsonResponse(false, "El usuario no tiene una oferta registrada en este producto");
+                return;
+            }
+
+            $result = $this->offerRatingModel->upsertRating((int)$productoId, (int)$usuarioId, $calificacion, $comentario);
+            if ($result) {
+                $this->sendJsonResponse(true, "Calificación guardada exitosamente");
+            } else {
+                $this->sendJsonResponse(false, "No se pudo guardar la calificación");
+            }
+        } else {
             $this->sendJsonResponse(false, "Método no permitido");
         }
     }
