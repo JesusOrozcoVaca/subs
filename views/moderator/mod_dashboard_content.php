@@ -7,12 +7,27 @@ if (!isset($products)) {
     return;
 }
 error_log("Products count in view: " . count($products));
+
+$estadoOptions = [];
+foreach ($products as $product) {
+    $estado = $product['estado_descripcion'] ?? 'Sin estado';
+    $estadoOptions[$estado] = true;
+}
+$estadoNames = array_keys($estadoOptions);
+sort($estadoNames, SORT_NATURAL | SORT_FLAG_CASE);
 ?>
 <section id="productos">
     <h2>Productos Activos</h2>
     <div class="table-filter">
         <label for="product-search">Buscar por Objeto del Proceso:</label>
         <input type="search" id="product-search" placeholder="Escribe parte del objeto del proceso..." autocomplete="off">
+        <label for="process-status-filter">Estado del Proceso:</label>
+        <select id="process-status-filter">
+            <option value="">Todos</option>
+            <?php foreach ($estadoNames as $estado): ?>
+                <option value="<?php echo htmlspecialchars($estado); ?>"><?php echo htmlspecialchars($estado); ?></option>
+            <?php endforeach; ?>
+        </select>
     </div>
     <table class="data-table">
         <thead>
@@ -53,22 +68,29 @@ error_log("Products count in view: " . count($products));
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('product-search');
+    const statusSelect = document.getElementById('process-status-filter');
     const table = document.querySelector('#productos table');
-    if (!searchInput || !table) {
+    if (!searchInput || !statusSelect || !table) {
         return;
     }
 
-    const rows = Array.from(table.querySelectorAll('tbody tr'));
-    searchInput.addEventListener('input', function() {
-        const needle = this.value.trim().toLowerCase();
+    const rows = Array.from(table.querySelectorAll('tbody tr')).filter(row => !row.classList.contains('no-results-row'));
+
+    const applyFilters = () => {
+        const needle = searchInput.value.trim().toLowerCase();
+        const estadoSeleccionado = statusSelect.value.trim();
         let visibleCount = 0;
         rows.forEach(row => {
             const objetoCell = row.cells[2];
-            if (!objetoCell) {
+            const estadoCell = row.cells[3];
+            if (!objetoCell || !estadoCell) {
                 return;
             }
-            const text = objetoCell.textContent.toLowerCase();
-            const visible = needle === '' || text.includes(needle);
+            const textoObjeto = objetoCell.textContent.toLowerCase();
+            const textoEstado = estadoCell.textContent.trim();
+            const coincideObjeto = needle === '' || textoObjeto.includes(needle);
+            const coincideEstado = estadoSeleccionado === '' || textoEstado === estadoSeleccionado;
+            const visible = coincideObjeto && coincideEstado;
             row.style.display = visible ? '' : 'none';
             if (visible) {
                 visibleCount++;
@@ -76,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         const noResults = table.querySelector('.no-results-row');
-        if (needle !== '' && visibleCount === 0) {
+        if ((needle !== '' || estadoSeleccionado !== '') && visibleCount === 0) {
             if (!noResults) {
                 const tr = document.createElement('tr');
                 tr.className = 'no-results-row';
@@ -86,6 +108,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (noResults) {
             noResults.remove();
         }
-    });
+    };
+
+    searchInput.addEventListener('input', applyFilters);
+    statusSelect.addEventListener('change', applyFilters);
 });
 </script>

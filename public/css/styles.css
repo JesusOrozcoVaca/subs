@@ -335,6 +335,32 @@ body {
     color: #fff;
 }
 
+.table-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.table-filter input[type="search"] {
+    width: 380px;
+    max-width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.table-filter select {
+    width: 220px;
+    max-width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+    box-sizing: border-box;
+}
+
 .data-table {
     width: 100%;
     border-collapse: collapse;
