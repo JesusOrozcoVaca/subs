@@ -193,6 +193,25 @@ class Product {
         ]);
     }
 
+    public function getEligiblePujaParticipants($productId) {
+        $query = "SELECT u.id, u.nombre_completo
+                  FROM usuarios u
+                  INNER JOIN ofertas_detalle od
+                          ON od.usuario_id = u.id
+                         AND od.producto_id = :productId
+                  INNER JOIN ofertas_calificaciones oc
+                          ON oc.usuario_id = u.id
+                         AND oc.producto_id = :productId
+                         AND oc.calificacion = 'Cumple'
+                  INNER JOIN ofertas_iniciales oi
+                          ON oi.usuario_id = u.id
+                         AND oi.producto_id = :productId
+                  ORDER BY u.nombre_completo";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute(['productId' => $productId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getParticipantProducts($userId) {
         error_log("=== GETPARTICIPANTPRODUCTS START ===");
         error_log("User ID: " . $userId);

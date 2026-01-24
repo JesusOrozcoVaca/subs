@@ -9,8 +9,8 @@ class Bid {
     }
 
     public function create($bidData) {
-        $query = "INSERT INTO pujas (producto_id, usuario_id, valor) 
-                  VALUES (:producto_id, :usuario_id, :valor)";
+        $query = "INSERT INTO pujas (producto_id, usuario_id, valor, fecha_puja_ms) 
+                  VALUES (:producto_id, :usuario_id, :valor, :fecha_puja_ms)";
         
         $stmt = $this->db->prepare($query);
         return $stmt->execute($bidData);
@@ -21,7 +21,7 @@ class Bid {
                   FROM pujas p
                   JOIN usuarios u ON p.usuario_id = u.id
                   WHERE p.producto_id = :productId
-                  ORDER BY p.valor ASC, p.fecha_puja ASC";
+                  ORDER BY p.valor ASC, p.fecha_puja_ms ASC, p.fecha_puja ASC";
         $stmt = $this->db->prepare($query);
         $stmt->execute(['productId' => $productId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -32,6 +32,46 @@ class Bid {
         $stmt = $this->db->prepare($query);
         $stmt->execute(['productId' => $productId]);
         return $stmt->fetch(PDO::FETCH_ASSOC)['lowest_bid'];
+    }
+
+    public function getUserLastBid($productId, $userId) {
+        $query = "SELECT valor, fecha_puja, fecha_puja_ms
+                  FROM pujas
+                  WHERE producto_id = :productId AND usuario_id = :userId
+                  ORDER BY fecha_puja_ms DESC, fecha_puja DESC
+                  LIMIT 1";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([
+            'productId' => $productId,
+            'userId' => $userId
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function getUserBids($productId, $userId) {
+        $query = "SELECT valor, fecha_puja, fecha_puja_ms
+                  FROM pujas
+                  WHERE producto_id = :productId AND usuario_id = :userId
+                  ORDER BY fecha_puja_ms DESC, fecha_puja DESC";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([
+            'productId' => $productId,
+            'userId' => $userId
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getBidsByProductAndUser($productId, $userId) {
+        $query = "SELECT valor, fecha_puja, fecha_puja_ms
+                  FROM pujas
+                  WHERE producto_id = :productId AND usuario_id = :userId
+                  ORDER BY fecha_puja_ms DESC, fecha_puja DESC";
+        $stmt = $this->db->prepare($query);
+        $stmt->execute([
+            'productId' => $productId,
+            'userId' => $userId
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function isValidBid($productId, $bidValue) {

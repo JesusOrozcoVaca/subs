@@ -5,6 +5,8 @@ require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/OfferSubmission.php';
 require_once BASE_PATH . '/models/OfferRating.php';
 require_once BASE_PATH . '/models/InitialOfferSubmission.php';
+require_once BASE_PATH . '/models/PujaConfig.php';
+require_once BASE_PATH . '/models/Bid.php';
 
 class ParticipantController {
     private $productModel;
@@ -343,6 +345,82 @@ class ParticipantController {
                             $offerDetail,
                             $initialOfferSubmission
                         );
+                    }
+                }
+            }
+
+            $pujaSchedule = null;
+            if ($phase === 'puja') {
+                $pujaConfigModel = new PujaConfig();
+                $pujaConfig = $pujaConfigModel->getByProductId($productId);
+                if ($pujaConfig && !empty($pujaConfig['hora_inicio'])) {
+                    $pujaSchedule = $this->buildPujaSchedule(
+                        $pujaConfig['hora_inicio'],
+                        $pujaConfig['duracion_minutos'] ?? 0,
+                        $pujaConfig['zona_horaria'] ?? 'UTC'
+                    );
+                }
+            }
+
+            $blockPuja = false;
+            $pujaBlockMessage = '';
+            $pujaSummary = null;
+            if ($phase === 'puja' && $userId) {
+                $pujaEligibility = $this->evaluatePujaEligibility($productId, $userId);
+                $blockPuja = !$pujaEligibility['eligible'];
+                $pujaBlockMessage = $pujaEligibility['message'];
+
+                if (!empty($pujaSchedule['end_ts_ms'])) {
+                    $nowMs = (int)round(microtime(true) * 1000);
+                    if ($nowMs > (int)$pujaSchedule['end_ts_ms']) {
+                        $timezone = $pujaSchedule['timezone'] ?? 'UTC';
+                        $participants = $this->productModel->getEligiblePujaParticipants($productId);
+                        $bidModel = new Bid();
+                        $columns = [];
+                        $maxEntries = 0;
+
+                        foreach ($participants as $participant) {
+                            $userBids = $bidModel->getUserBids($productId, $participant['id']);
+                            $rows = [];
+
+                            if (!empty($userBids)) {
+                                foreach ($userBids as $bid) {
+                                    $rows[] = [
+                                        'value' => '$ ' . number_format((float)$bid['valor'], 2, ',', '.'),
+                                        'time' => $this->formatPujaTimestamp(
+                                            $bid['fecha_puja_ms'] ?? 0,
+                                            $bid['fecha_puja'] ?? null,
+                                            $timezone
+                                        )
+                                    ];
+                                }
+                            }
+
+                            // Siempre agregar la oferta inicial al final (es la más antigua),
+                            // incluso si el participante hizo pujas durante la fase.
+                            $initialInfo = $offerSubmissionModel->getInitialOfferInfo($productId, $participant['id']);
+                            if ($initialInfo) {
+                                $rows[] = [
+                                    'value' => '$ ' . number_format((float)($initialInfo['oferta_inicial_user'] ?? 0), 2, ',', '.'),
+                                    'time' => $this->formatPujaTimestamp(
+                                        0,
+                                        $initialInfo['fecha_oferta_inicial'] ?? null,
+                                        $timezone
+                                    )
+                                ];
+                            }
+
+                            $maxEntries = max($maxEntries, count($rows));
+                            $columns[] = [
+                                'name' => $participant['nombre_completo'],
+                                'rows' => $rows
+                            ];
+                        }
+
+                        $pujaSummary = [
+                            'columns' => $columns,
+                            'max_entries' => $maxEntries
+                        ];
                     }
                 }
             }
@@ -1316,6 +1394,340 @@ class ParticipantController {
             $date = new DateTime('now', $timezone);
         }
         return $date->format('d/m/Y H:i');
+    }
+
+    private function buildPujaSchedule($horaInicioUtc, $duracionMinutos, $zonaHoraria) {
+        $zonaHoraria = trim((string)$zonaHoraria);
+        $tzName = $zonaHoraria !== '' ? $zonaHoraria : 'UTC';
+
+        try {
+            $localTz = new DateTimeZone($tzName);
+        } catch (Exception $e) {
+            $localTz = new DateTimeZone('UTC');
+            $tzName = 'UTC';
+        }
+
+        try {
+            $startUtc = new DateTime($horaInicioUtc, new DateTimeZone('UTC'));
+        } catch (Exception $e) {
+            return null;
+        }
+
+        $startLocal = clone $startUtc;
+        $startLocal->setTimezone($localTz);
+
+        $endLocal = clone $startLocal;
+        $endLocal->modify('+' . (int)$duracionMinutos . ' minutes');
+
+        return [
+            'timezone' => $tzName,
+            'start' => $startLocal->format('d/m/Y H:i:s'),
+            'end' => $endLocal->format('d/m/Y H:i:s'),
+            'duration' => (int)$duracionMinutos,
+            'start_ts_ms' => $startLocal->getTimestamp() * 1000,
+            'end_ts_ms' => $endLocal->getTimestamp() * 1000
+        ];
+    }
+
+    public function pujaWindow($productId = null) {
+        if (!$productId) {
+            $productId = $this->getProductIdFromURL();
+        }
+
+        if (!$productId) {
+            header('Location: ' . url('participant/dashboard'));
+            exit;
+        }
+
+        $product = $this->productModel->getProductById($productId);
+        if (!$product) {
+            header('Location: ' . url('participant/dashboard'));
+            exit;
+        }
+
+        $currentStateCode = $this->getCurrentStateCode($product);
+        $userId = $_SESSION['user_id'] ?? null;
+        $offerSubmissionModel = new OfferSubmission();
+        $offerDetail = $userId ? $offerSubmissionModel->getByProductAndUser($productId, $userId) : null;
+
+        $pujaEligibility = $userId ? $this->evaluatePujaEligibility($productId, $userId) : [
+            'eligible' => false,
+            'message' => 'Debe iniciar sesión para participar en la puja.'
+        ];
+        $blockPuja = !$pujaEligibility['eligible'];
+        $pujaBlockMessage = $pujaEligibility['message'];
+
+        $pujaSchedule = null;
+        $pujaConfigModel = new PujaConfig();
+        $pujaConfig = $pujaConfigModel->getByProductId($productId);
+        if ($pujaConfig && !empty($pujaConfig['hora_inicio'])) {
+            $pujaSchedule = $this->buildPujaSchedule(
+                $pujaConfig['hora_inicio'],
+                $pujaConfig['duracion_minutos'] ?? 0,
+                $pujaConfig['zona_horaria'] ?? 'UTC'
+            );
+        }
+
+        $bidModel = new Bid();
+        $lowestBid = $bidModel->getLowestBid($productId);
+        $userLastBid = $userId ? $bidModel->getUserLastBid($productId, $userId) : null;
+        $isUserBest = false;
+        if ($userLastBid && $lowestBid !== null) {
+            $isUserBest = abs((float)$userLastBid['valor'] - (float)$lowestBid) < 0.00001;
+        } elseif ($userLastBid && $lowestBid === null) {
+            $isUserBest = true;
+        }
+
+        $variationPercent = isset($product['variacion_minima']) ? (float)$product['variacion_minima'] : 0.0;
+        $initialOfferValue = $offerDetail && isset($offerDetail['oferta_inicial_user'])
+            ? (float)$offerDetail['oferta_inicial_user']
+            : 0.0;
+        $variationAmount = round($initialOfferValue * ($variationPercent / 100), 2);
+
+        $content = $this->renderView('puja_window.php', [
+            'product' => $product,
+            'currentStateCode' => $currentStateCode,
+            'blockPuja' => $blockPuja,
+            'pujaBlockMessage' => $pujaBlockMessage,
+            'pujaSchedule' => $pujaSchedule,
+            'userLastBid' => $userLastBid,
+            'lowestBid' => $lowestBid,
+            'isUserBest' => $isUserBest,
+            'variationAmount' => $variationAmount,
+            'initialOfferValue' => $initialOfferValue
+        ]);
+
+        echo $content;
+    }
+
+    public function submitBid() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$this->isAjaxRequest()) {
+            $this->sendJsonResponse(false, "Método no permitido.");
+            return;
+        }
+
+        $productId = $_POST['producto_id'] ?? null;
+        $valorRaw = $_POST['valor'] ?? '';
+        $userId = $_SESSION['user_id'] ?? null;
+
+        if (!$productId || !$userId) {
+            $this->sendJsonResponse(false, "Datos incompletos para registrar la puja.");
+            return;
+        }
+
+        $product = $this->productModel->getProductById($productId);
+        if (!$product) {
+            $this->sendJsonResponse(false, "Producto no encontrado.");
+            return;
+        }
+
+        $pujaConfigModel = new PujaConfig();
+        $pujaConfig = $pujaConfigModel->getByProductId($productId);
+        if ($pujaConfig && !empty($pujaConfig['hora_inicio'])) {
+            $startUtc = DateTime::createFromFormat('Y-m-d H:i:s', $pujaConfig['hora_inicio'], new DateTimeZone('UTC'));
+            if ($startUtc) {
+                $startTs = $startUtc->getTimestamp();
+                $endTs = $startTs + ((int)($pujaConfig['duracion_minutos'] ?? 0) * 60);
+                $nowTs = time();
+                if ($nowTs < $startTs) {
+                    $this->sendJsonResponse(false, "La puja aún no ha iniciado.");
+                    return;
+                }
+                if ($nowTs > $endTs) {
+                    $this->sendJsonResponse(false, "La puja ha finalizado.");
+                    return;
+                }
+            }
+        }
+
+        $currentStateCode = $this->getCurrentStateCode($product);
+        if ($currentStateCode !== 'puja') {
+            $this->sendJsonResponse(false, "La fase de puja no está activa.");
+            return;
+        }
+
+        $pujaEligibility = $this->evaluatePujaEligibility($productId, $userId);
+        if (!$pujaEligibility['eligible']) {
+            $this->sendJsonResponse(false, $pujaEligibility['message']);
+            return;
+        }
+
+        $valorRaw = trim((string)$valorRaw);
+        $valorSanitized = str_replace('.', '', $valorRaw);
+        $valorSanitized = str_replace(',', '.', $valorSanitized);
+
+        if ($valorSanitized === '' || !is_numeric($valorSanitized)) {
+            $this->sendJsonResponse(false, "El valor de la puja es inválido.");
+            return;
+        }
+
+        $valor = (float)$valorSanitized;
+        if ($valor <= 0) {
+            $this->sendJsonResponse(false, "El valor de la puja debe ser mayor a 0.");
+            return;
+        }
+
+        $offerSubmissionModel = new OfferSubmission();
+        $offerDetail = $offerSubmissionModel->getByProductAndUser($productId, $userId);
+        $initialOfferValue = $offerDetail && isset($offerDetail['oferta_inicial_user'])
+            ? (float)$offerDetail['oferta_inicial_user']
+            : 0.0;
+        $variationPercent = isset($product['variacion_minima']) ? (float)$product['variacion_minima'] : 0.0;
+        $variationAmount = round($initialOfferValue * ($variationPercent / 100), 2);
+
+        if (isset($product['presupuesto_referencial']) && $valor > (float)$product['presupuesto_referencial']) {
+            $this->sendJsonResponse(false, "El valor ingresado es mayor al presupuesto referencial.");
+            return;
+        }
+
+        $bidModel = new Bid();
+        $userLastBid = $bidModel->getUserLastBid($productId, $userId);
+        $baseBidValue = $userLastBid ? (float)$userLastBid['valor'] : $initialOfferValue;
+        if ($baseBidValue > 0 && $variationAmount > 0) {
+            $maxAllowedForUser = $baseBidValue - $variationAmount;
+            if ($valor > $maxAllowedForUser) {
+                $this->sendJsonResponse(false, "El valor ingresado no cumple la variación mínima permitida.");
+                return;
+            }
+        }
+
+        $lowestBid = $bidModel->getLowestBid($productId);
+        if ($lowestBid !== null && $valor >= (float)$lowestBid) {
+            $this->sendJsonResponse(false, "Ya existe una oferta con mejor valor ingresado.");
+            return;
+        }
+
+        $fechaMs = (int)round(microtime(true) * 1000);
+        $result = $bidModel->create([
+            'producto_id' => $productId,
+            'usuario_id' => $userId,
+            'valor' => $valor,
+            'fecha_puja_ms' => $fechaMs
+        ]);
+
+        if (!$result) {
+            $this->sendJsonResponse(false, "No se pudo registrar la puja.");
+            return;
+        }
+
+        $statusData = $this->buildPujaStatusData($productId, $userId);
+        $this->sendJsonResponse(true, "Puja registrada exitosamente.", $statusData);
+    }
+
+    public function getPujaStatus($productId = null) {
+        if (!$this->isAjaxRequest()) {
+            $this->sendJsonResponse(false, "Método no permitido.");
+            return;
+        }
+
+        if (!$productId) {
+            $productId = $_GET['producto_id'] ?? ($_GET['id'] ?? null);
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+
+        if (!$productId || !$userId) {
+            $this->sendJsonResponse(false, "Datos incompletos para obtener estado.");
+            return;
+        }
+
+        $pujaEligibility = $this->evaluatePujaEligibility($productId, $userId);
+        if (!$pujaEligibility['eligible']) {
+            $this->sendJsonResponse(false, $pujaEligibility['message']);
+            return;
+        }
+
+        $statusData = $this->buildPujaStatusData($productId, $userId);
+        $this->sendJsonResponse(true, "", $statusData);
+    }
+
+    private function buildPujaStatusData($productId, $userId) {
+        $bidModel = new Bid();
+        $lowestBid = $bidModel->getLowestBid($productId);
+        $userLastBid = $bidModel->getUserLastBid($productId, $userId);
+
+        $isUserBest = false;
+        if ($userLastBid && $lowestBid !== null) {
+            $isUserBest = abs((float)$userLastBid['valor'] - (float)$lowestBid) < 0.00001;
+        } elseif ($userLastBid && $lowestBid === null) {
+            $isUserBest = true;
+        }
+
+        return [
+            'user_last_bid' => $userLastBid ? (float)$userLastBid['valor'] : null,
+            'is_user_best' => $isUserBest
+        ];
+    }
+
+    private function formatPujaTimestamp($timestampMs, $fallbackDateTime, $timezone) {
+        $timezone = $timezone ?: 'UTC';
+        try {
+            $tz = new DateTimeZone($timezone);
+        } catch (Exception $e) {
+            $tz = new DateTimeZone('UTC');
+        }
+
+        if ($timestampMs) {
+            $seconds = (int)floor($timestampMs / 1000);
+            $msPart = (int)($timestampMs % 1000);
+            $msTwo = str_pad((string)floor($msPart / 10), 2, '0', STR_PAD_LEFT);
+            $dt = new DateTime('@' . $seconds);
+            $dt->setTimezone($tz);
+            return 'hora:' . $dt->format('H:i:s') . '.' . $msTwo;
+        }
+
+        if (!empty($fallbackDateTime)) {
+            try {
+                $dt = new DateTime($fallbackDateTime);
+                $dt->setTimezone($tz);
+                return 'hora:' . $dt->format('H:i:s') . '.00';
+            } catch (Exception $e) {
+                return '';
+            }
+        }
+
+        return '';
+    }
+
+    private function evaluatePujaEligibility($productId, $userId) {
+        $offerSubmissionModel = new OfferSubmission();
+        require_once BASE_PATH . '/models/Document.php';
+        $documentModel = new Document();
+        $userDocuments = $documentModel->getUserDocuments($productId, $userId);
+        $hasOffer = (!empty($userDocuments)) || $offerSubmissionModel->exists($productId, $userId);
+
+        $offerRatingModel = new OfferRating();
+        $rating = $offerRatingModel->getUserOfferRating($productId, $userId);
+        $hasRatingCumple = $rating && ($rating['calificacion'] === 'Cumple');
+
+        $initialOfferModel = new InitialOfferSubmission();
+        $initialOfferSubmission = $initialOfferModel->getByProductAndUser($productId, $userId);
+        $hasInitialOffer = (bool)$initialOfferSubmission;
+
+        if (!$hasOffer) {
+            return [
+                'eligible' => false,
+                'message' => 'Usted no cargo oferta para este proceso por lo tanto, no puede participar en el mismo.'
+            ];
+        }
+
+        if (!$hasRatingCumple) {
+            return [
+                'eligible' => false,
+                'message' => 'Usted no puede participar en la puja porque su oferta no fue calificada como Cumple.'
+            ];
+        }
+
+        if (!$hasInitialOffer) {
+            return [
+                'eligible' => false,
+                'message' => 'Usted no puede participar en la puja porque no ingresó su oferta inicial a tiempo.'
+            ];
+        }
+
+        return [
+            'eligible' => true,
+            'message' => ''
+        ];
     }
 
     public function downloadOfferPdf() {

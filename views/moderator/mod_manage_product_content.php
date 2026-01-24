@@ -36,7 +36,8 @@ if (!isset($estados)) {
         echo "<select name='estado_id' required>";
         foreach ($estados as $estado) {
             $selected = ($estado['id'] == $product['estado_id']) ? 'selected' : '';
-            echo "<option value='" . $estado['id'] . "' " . $selected . ">" . htmlspecialchars($estado['descripcion']) . "</option>";
+            $codigoEstado = htmlspecialchars($estado['codigo'] ?? '', ENT_QUOTES);
+            echo "<option value='" . $estado['id'] . "' data-codigo='" . $codigoEstado . "' " . $selected . ">" . htmlspecialchars($estado['descripcion']) . "</option>";
         }
         echo "</select>";
         echo "<button type='submit' class='btn btn-primary'>Actualizar Estado</button>";
@@ -58,61 +59,164 @@ if (!isset($estados)) {
 </div>
 
 <script>
-console.log('Product management content loaded');
-console.log('Form found:', document.querySelector('form'));
-
-// Interceptar el formulario directamente
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('change-status-form');
-    if (form) {
-        console.log('Form found and setting up listener');
-        form.addEventListener('submit', function(e) {
-            console.log('Form submit intercepted!');
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const formData = new FormData(this);
-            const formAction = this.getAttribute('action');
-            console.log('Form action URL:', formAction);
-            console.log('Form data:', Array.from(formData.entries()));
-            
-            // Mostrar mensaje de confirmación
-            if (confirm('¿Está seguro de que desea cambiar el estado del producto?')) {
-                // Enviar petición AJAX
-                fetch(formAction, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                .then(response => {
-                    console.log('Response status:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Response data:', data);
-                    if (data.success) {
-                        alert(data.message);
-                        // Redirigir al dashboard del moderador
-                        console.log('Redirecting to moderator dashboard...');
-                        window.location.href = '<?php echo url('moderator/dashboard'); ?>';
-                    } else {
-                        alert(data.message || 'Error al procesar la solicitud');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al procesar la solicitud: ' + error.message);
-                });
-            }
-        });
-    } else {
-        console.log('Form not found!');
+    if (!form) {
+        return;
     }
+
+    const openPujaConfigModal = () => {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: #ffffff;
+                width: min(520px, 92%);
+                padding: 20px;
+                border-radius: 10px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            `;
+
+            const browserTimeZone = (Intl && Intl.DateTimeFormat)
+                ? Intl.DateTimeFormat().resolvedOptions().timeZone
+                : '';
+
+            modal.innerHTML = `
+                <h3 style="margin-top: 0;">Configurar Puja</h3>
+                <label for="puja-duration">Duracion (minutos)</label>
+                <select id="puja-duration" style="width: 100%; margin-bottom: 12px;">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="15">15</option>
+                </select>
+                <label for="puja-start">Hora de inicio</label>
+                <input id="puja-start" type="datetime-local" style="width: 100%; margin-bottom: 12px;" required>
+                <label for="puja-timezone">Zona horaria</label>
+                <input id="puja-timezone" type="text" list="puja-timezone-list" placeholder="America/Guayaquil" style="width: 100%; margin-bottom: 8px;" required>
+                <datalist id="puja-timezone-list">
+                    <option value="America/Guayaquil"></option>
+                    <option value="America/Bogota"></option>
+                    <option value="America/Lima"></option>
+                    <option value="America/Mexico_City"></option>
+                    <option value="UTC"></option>
+                </datalist>
+                <div class="modal-error" style="display: none; color: #b00020; margin-top: 6px;"></div>
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px;">
+                    <button type="button" class="btn btn-secondary" data-action="cancel">Cancelar</button>
+                    <button type="button" class="btn btn-primary" data-action="confirm">Guardar</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const errorEl = modal.querySelector('.modal-error');
+            const durationEl = modal.querySelector('#puja-duration');
+            const startEl = modal.querySelector('#puja-start');
+            const tzEl = modal.querySelector('#puja-timezone');
+
+            if (browserTimeZone) {
+                tzEl.value = browserTimeZone;
+            }
+
+            const closeModal = (result) => {
+                document.body.removeChild(overlay);
+                resolve(result);
+            };
+
+            overlay.addEventListener('click', (event) => {
+                if (event.target === overlay) {
+                    closeModal(null);
+                }
+            });
+
+            modal.addEventListener('click', (event) => {
+                event.stopPropagation();
+            });
+
+            modal.querySelector('[data-action="cancel"]').addEventListener('click', () => {
+                closeModal(null);
+            });
+
+            modal.querySelector('[data-action="confirm"]').addEventListener('click', () => {
+                const durationValue = durationEl.value.trim();
+                const startValue = startEl.value.trim();
+                const tzValue = tzEl.value.trim();
+
+                if (!durationValue || !startValue || !tzValue) {
+                    errorEl.textContent = 'Debe completar todos los campos de la puja.';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+
+                closeModal({
+                    duration: durationValue,
+                    start: startValue,
+                    timezone: tzValue
+                });
+            });
+        });
+    };
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const formData = new FormData(this);
+        const formAction = this.getAttribute('action');
+        const estadoSelect = this.querySelector('select[name="estado_id"]');
+        const selectedOption = estadoSelect ? estadoSelect.options[estadoSelect.selectedIndex] : null;
+        const estadoCode = selectedOption ? selectedOption.dataset.codigo : '';
+
+        if (estadoCode !== 'puja') {
+            if (!confirm('¿Está seguro de que desea cambiar el estado del producto?')) {
+                return;
+            }
+        } else {
+            const pujaConfig = await openPujaConfigModal();
+            if (!pujaConfig) {
+                return;
+            }
+            formData.set('puja_duracion_minutos', pujaConfig.duration);
+            formData.set('puja_hora_inicio', pujaConfig.start);
+            formData.set('puja_zona_horaria', pujaConfig.timezone);
+        }
+
+        fetch(formAction, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = '<?php echo url('moderator/dashboard'); ?>';
+            } else {
+                alert(data.message || 'Error al procesar la solicitud');
+            }
+        })
+        .catch(error => {
+            alert('Error al procesar la solicitud: ' + error.message);
+        });
+    });
 });
 </script>
 

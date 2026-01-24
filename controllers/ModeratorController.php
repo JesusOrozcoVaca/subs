@@ -6,6 +6,7 @@ require_once BASE_PATH . '/models/Question.php';
 require_once BASE_PATH . '/models/Bid.php';
 require_once BASE_PATH . '/models/ProductState.php';
 require_once BASE_PATH . '/models/OfferRating.php';
+require_once BASE_PATH . '/models/PujaConfig.php';
 require_once BASE_PATH . '/services/PyrPdfGenerator.php';
 
 class ModeratorController {
@@ -16,6 +17,7 @@ class ModeratorController {
     private $bidModel;
     private $productStateModel;
     private $offerRatingModel;
+    private $pujaConfigModel;
 
     public function __construct() {
         $this->productModel = new Product();
@@ -25,6 +27,7 @@ class ModeratorController {
         $this->bidModel = new Bid();
         $this->productStateModel = new ProductState();
         $this->offerRatingModel = new OfferRating();
+        $this->pujaConfigModel = new PujaConfig();
     }
 
     private function isAjaxRequest() {
@@ -95,10 +98,83 @@ class ModeratorController {
                     return;
                 }
                 
-                $estadoId = $_POST['estado_id'];
-                error_log("Estado ID: " . $estadoId);
+                $estadoId = $_POST['estado_id'] ?? null;
+                error_log("Estado ID: " . ($estadoId ?? 'null'));
                 error_log("Product ID: " . $id);
-                
+
+                if (!$estadoId || !is_numeric($estadoId)) {
+                    if ($this->isAjaxRequest()) {
+                        $this->sendJsonResponse(false, "Estado inválido.");
+                    } else {
+                        $_SESSION['error_message'] = "Estado inválido.";
+                        header('Location: ' . url('moderator/manage-product/' . $id));
+                        exit;
+                    }
+                    return;
+                }
+
+                $estadoCode = $this->productStateModel->getStateCodeById((int)$estadoId);
+                if ($estadoCode === 'puja') {
+                    $duracionMinutos = trim((string)($_POST['puja_duracion_minutos'] ?? ''));
+                    $horaInicio = trim((string)($_POST['puja_hora_inicio'] ?? ''));
+                    $zonaHoraria = trim((string)($_POST['puja_zona_horaria'] ?? ''));
+                    $duracionesPermitidas = ['5', '10', '15'];
+
+                    if ($duracionMinutos === '' || $horaInicio === '' || $zonaHoraria === '') {
+                        if ($this->isAjaxRequest()) {
+                            $this->sendJsonResponse(false, "Debe ingresar duracion, hora de inicio y zona horaria para la puja.");
+                        } else {
+                            $_SESSION['error_message'] = "Debe ingresar duracion, hora de inicio y zona horaria para la puja.";
+                            header('Location: ' . url('moderator/manage-product/' . $id));
+                            exit;
+                        }
+                        return;
+                    }
+
+                    if (!in_array($duracionMinutos, $duracionesPermitidas, true)) {
+                        if ($this->isAjaxRequest()) {
+                            $this->sendJsonResponse(false, "La duracion de la puja no es valida.");
+                        } else {
+                            $_SESSION['error_message'] = "La duracion de la puja no es valida.";
+                            header('Location: ' . url('moderator/manage-product/' . $id));
+                            exit;
+                        }
+                        return;
+                    }
+
+                    try {
+                        $tz = new DateTimeZone($zonaHoraria);
+                        $horaInicioDt = DateTime::createFromFormat('Y-m-d\TH:i', $horaInicio, $tz);
+                        if (!$horaInicioDt) {
+                            throw new Exception('Hora de inicio invalida.');
+                        }
+                        // Guardar la hora en UTC para mantener consistencia en BD.
+                        $horaInicioDt->setTimezone(new DateTimeZone('UTC'));
+                        $horaInicioUtc = $horaInicioDt->format('Y-m-d H:i:s');
+                    } catch (Exception $e) {
+                        if ($this->isAjaxRequest()) {
+                            $this->sendJsonResponse(false, "La hora o zona horaria de la puja no es valida.");
+                        } else {
+                            $_SESSION['error_message'] = "La hora o zona horaria de la puja no es valida.";
+                            header('Location: ' . url('moderator/manage-product/' . $id));
+                            exit;
+                        }
+                        return;
+                    }
+
+                    $configSaved = $this->pujaConfigModel->saveConfig((int)$id, $duracionMinutos, $horaInicioUtc, $zonaHoraria);
+                    if (!$configSaved) {
+                        if ($this->isAjaxRequest()) {
+                            $this->sendJsonResponse(false, "No se pudo guardar la configuracion de la puja.");
+                        } else {
+                            $_SESSION['error_message'] = "No se pudo guardar la configuracion de la puja.";
+                            header('Location: ' . url('moderator/manage-product/' . $id));
+                            exit;
+                        }
+                        return;
+                    }
+                }
+
                 try {
                     $result = $this->productModel->updateProductStatus($id, $estadoId);
                     error_log("Update result: " . ($result ? 'SUCCESS' : 'FAILED'));

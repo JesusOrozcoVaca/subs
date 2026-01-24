@@ -334,6 +334,17 @@ try {
             $controller->removeCpc();
             break;
 
+        case 'participant_puja':
+            checkAccess(3);
+            $id = $_GET['id'] ?? null;
+            if ($id) {
+                $controller = loadController('ParticipantController');
+                $controller->pujaWindow($id);
+            } else {
+                throw new Exception("ID requerido");
+            }
+            break;
+
         case 'participant_phase':
             checkAccess(3);
             $phase = $_GET['phase'] ?? null;
@@ -385,6 +396,18 @@ try {
             checkAccess(3);
             $controller = loadController('ParticipantController');
             $controller->processOffer();
+            break;
+
+        case 'participant_submit_bid':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->submitBid();
+            break;
+
+        case 'participant_puja_status':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->getPujaStatus();
             break;
 
         case 'participant_submit_initial_offer':
