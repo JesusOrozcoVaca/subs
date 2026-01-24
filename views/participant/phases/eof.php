@@ -1,3 +1,10 @@
+<?php
+$blockForNoOffer = isset($blockWithoutOffer) ? (bool)$blockWithoutOffer : false;
+if ($blockForNoOffer) {
+    echo '<div class="read-only-message"><p>Usted no cargo oferta para este proceso por lo tanto, no puede participar en el mismo.</p></div>';
+    return;
+}
+?>
 <h2>Entrega de Ofertas</h2>
 <div id="entrega-ofertas-container">
     <form id="oferta-form" enctype="multipart/form-data" class="oferta-form" action="#" method="POST">

@@ -125,6 +125,35 @@ class User {
         return $stmt->execute(['userId' => $userId, 'cpcId' => $cpcId]);
     }
 
+    public function addCPCs($userId, array $cpcIds) {
+        $uniqueIds = array_values(array_unique(array_map('intval', $cpcIds)));
+        if (empty($uniqueIds)) {
+            return false;
+        }
+
+        try {
+            $this->db->beginTransaction();
+            $stmt = $this->db->prepare("INSERT INTO usuarios_cpc (usuario_id, cpc_id) VALUES (:userId, :cpcId)");
+            foreach ($uniqueIds as $cpcId) {
+                $result = $stmt->execute(['userId' => $userId, 'cpcId' => $cpcId]);
+                if (!$result) {
+                    $this->db->rollBack();
+                    return false;
+                }
+            }
+            return $this->db->commit();
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            app_log('User.addCPCs PDOException', [
+                'message' => $e->getMessage(),
+                'code' => $e->getCode()
+            ]);
+            return false;
+        }
+    }
+
     public function removeCPC($userId, $cpcId) {
         $query = "DELETE FROM usuarios_cpc WHERE usuario_id = :userId AND cpc_id = :cpcId";
         $stmt = $this->db->prepare($query);

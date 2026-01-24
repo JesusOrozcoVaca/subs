@@ -387,6 +387,12 @@ try {
             $controller->processOffer();
             break;
 
+        case 'participant_submit_initial_offer':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->submitInitialOffer();
+            break;
+
         case 'participant_submit_convalidation':
             checkAccess(3);
             $controller = loadController('ParticipantController');

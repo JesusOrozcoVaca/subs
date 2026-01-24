@@ -3,6 +3,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const mainContent = document.getElementById('dynamic-content');
     const pageTitle = document.querySelector('h1');
+    const selectedCpcIds = new Set();
+    let availableCpcData = [];
 
     // Inicializar sistema PYR global
     initializePYRSystem();
@@ -44,8 +46,12 @@ document.addEventListener('DOMContentLoaded', function() {
     function initializePageFunctionality() {
         initializeAjaxForms();
         initializeSearchForm();
+        initializeCpcPagination();
+        initializeUserCpcSearch();
+        initializeCpcModal();
         initializeTabs();
         initializePhaseLinks();
+        initializeParticipantProductFilters();
         // PYR se inicializa cuando se carga el contenido dinámico
     }
 
@@ -90,27 +96,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCPCLists(data) {
-        const userCPCsList = document.getElementById('user-cpcs-list');
+        const userCPCsBody = document.getElementById('user-cpcs-body');
         const cpcSelect = document.querySelector('select[name="cpc_id"]');
 
-        if (userCPCsList && cpcSelect) {
-            userCPCsList.innerHTML = data.userCPCs.map(cpc => `
-                <li>
-                    ${cpc.codigo} - ${cpc.descripcion}
-                    <form class="ajax-form" action="${URLS.participantProfile()}" method="POST">
-                        <input type="hidden" name="action" value="remove_cpc">
-                        <input type="hidden" name="cpc_id" value="${cpc.id}">
-                        <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
-                    </form>
-                </li>
+        if (userCPCsBody) {
+            userCPCsBody.innerHTML = data.userCPCs.map(cpc => `
+                <tr>
+                    <td>${cpc.codigo}</td>
+                    <td>${cpc.descripcion}</td>
+                    <td>
+                        <form class="ajax-form" action="${URLS.participantProfile()}" method="POST">
+                            <input type="hidden" name="action" value="remove_cpc">
+                            <input type="hidden" name="cpc_id" value="${cpc.id}">
+                            <button type="submit" class="btn btn-small btn-danger">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
             `).join('');
+            userCPCsBody.dataset.currentPage = '1';
+        }
 
+        if (cpcSelect && data.availableCPCs) {
             cpcSelect.innerHTML = data.availableCPCs.map(cpc => `
                 <option value="${cpc.id}">${cpc.codigo} - ${cpc.descripcion}</option>
             `).join('');
-
-            initializeAjaxForms();
         }
+
+        if (data.availableCPCs) {
+            setAvailableCpcData(data.availableCPCs);
+        }
+
+        initializeAjaxForms();
+        initializeCpcPagination();
     }
 
     function initializeSearchForm() {
@@ -150,6 +167,393 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
         }
+    }
+
+    function initializeCpcPagination() {
+        const list = document.getElementById('user-cpcs-body');
+        const pagination = document.getElementById('user-cpcs-pagination');
+        if (!list || !pagination) {
+            return;
+        }
+
+        const searchInput = document.getElementById('user-cpcs-search');
+        const needle = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const items = Array.from(list.querySelectorAll('tr'));
+        const filteredItems = needle === ''
+            ? items
+            : items.filter(row => {
+                const descCell = row.cells[1];
+                if (!descCell) {
+                    return false;
+                }
+                return descCell.textContent.toLowerCase().includes(needle);
+            });
+        const pageSize = Math.max(1, parseInt(list.dataset.pageSize || '6', 10));
+        const totalPages = Math.ceil(filteredItems.length / pageSize) || 1;
+        let currentPage = parseInt(list.dataset.currentPage || '1', 10);
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        const renderControls = () => {
+            pagination.innerHTML = '';
+            if (filteredItems.length <= pageSize) {
+                return;
+            }
+
+            const prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'pagination-link';
+            prevBtn.textContent = 'Anterior';
+            prevBtn.disabled = currentPage === 1;
+            if (prevBtn.disabled) {
+                prevBtn.classList.add('disabled');
+            }
+            prevBtn.addEventListener('click', () => renderPage(currentPage - 1));
+
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.textContent = `Página ${currentPage} de ${totalPages}`;
+
+            const nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'pagination-link';
+            nextBtn.textContent = 'Siguiente';
+            nextBtn.disabled = currentPage === totalPages;
+            if (nextBtn.disabled) {
+                nextBtn.classList.add('disabled');
+            }
+            nextBtn.addEventListener('click', () => renderPage(currentPage + 1));
+
+            pagination.appendChild(prevBtn);
+            pagination.appendChild(info);
+            pagination.appendChild(nextBtn);
+        };
+
+        const renderPage = (page) => {
+            const safePage = Math.min(Math.max(page, 1), totalPages);
+            currentPage = safePage;
+            list.dataset.currentPage = String(currentPage);
+
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+            items.forEach(item => {
+                item.style.display = 'none';
+            });
+
+            filteredItems.slice(start, end).forEach(item => {
+                item.style.display = '';
+            });
+
+            renderControls();
+        };
+
+        renderPage(currentPage);
+    }
+
+    function initializeUserCpcSearch() {
+        const searchInput = document.getElementById('user-cpcs-search');
+        const list = document.getElementById('user-cpcs-body');
+        if (!searchInput || !list) {
+            return;
+        }
+
+        searchInput.addEventListener('input', () => {
+            list.dataset.currentPage = '1';
+            initializeCpcPagination();
+        });
+    }
+
+    function initializeCpcModal() {
+        const modal = document.getElementById('cpc-modal');
+        const openBtn = document.getElementById('open-cpc-modal');
+        if (!modal || !openBtn) {
+            return;
+        }
+
+        const isInitialized = modal.dataset.initialized === 'true';
+        const closeBtn = document.getElementById('close-cpc-modal');
+        const searchInput = document.getElementById('available-cpc-search');
+        const addBtn = document.getElementById('add-selected-cpcs');
+        const body = document.getElementById('available-cpcs-body');
+
+        availableCpcData = collectAvailableCpcData();
+        syncSelectedCpcs();
+        renderAvailableCpcTable();
+
+        const openModal = () => {
+            modal.classList.add('is-open');
+            document.body.classList.add('modal-open');
+            renderAvailableCpcTable();
+        };
+
+        const closeModal = () => {
+            modal.classList.remove('is-open');
+            document.body.classList.remove('modal-open');
+        };
+
+        if (!isInitialized) {
+            openBtn.addEventListener('click', openModal);
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeModal);
+            }
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && modal.classList.contains('is-open')) {
+                    closeModal();
+                }
+            });
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    if (body) {
+                        body.dataset.currentPage = '1';
+                    }
+                    renderAvailableCpcTable();
+                });
+            }
+
+            if (addBtn) {
+                addBtn.addEventListener('click', submitSelectedCpcs);
+            }
+
+            modal.dataset.initialized = 'true';
+        }
+    }
+
+    function collectAvailableCpcData() {
+        const body = document.getElementById('available-cpcs-body');
+        if (!body) {
+            return [];
+        }
+
+        return Array.from(body.querySelectorAll('tr')).map(row => {
+            const id = row.getAttribute('data-cpc-id') || '';
+            const desc = row.getAttribute('data-cpc-desc') || '';
+            const codeCell = row.cells[1];
+            return {
+                id: id.toString(),
+                codigo: codeCell ? codeCell.textContent.trim() : '',
+                descripcion: desc.toString()
+            };
+        });
+    }
+
+    function setAvailableCpcData(cpcs) {
+        availableCpcData = Array.isArray(cpcs)
+            ? cpcs.map(cpc => ({
+                id: String(cpc.id),
+                codigo: cpc.codigo,
+                descripcion: cpc.descripcion
+            }))
+            : [];
+
+        syncSelectedCpcs();
+
+        const body = document.getElementById('available-cpcs-body');
+        if (body) {
+            body.dataset.currentPage = '1';
+        }
+        renderAvailableCpcTable();
+    }
+
+    function syncSelectedCpcs() {
+        const availableIds = new Set(availableCpcData.map(cpc => cpc.id));
+        Array.from(selectedCpcIds).forEach(id => {
+            if (!availableIds.has(id)) {
+                selectedCpcIds.delete(id);
+            }
+        });
+    }
+
+    function renderAvailableCpcTable() {
+        const body = document.getElementById('available-cpcs-body');
+        const pagination = document.getElementById('available-cpcs-pagination');
+        const searchInput = document.getElementById('available-cpc-search');
+        if (!body || !pagination) {
+            return;
+        }
+
+        const needle = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        const filtered = needle === ''
+            ? availableCpcData
+            : availableCpcData.filter(cpc => cpc.descripcion.toLowerCase().includes(needle));
+
+        const pageSize = Math.max(1, parseInt(body.dataset.pageSize || '6', 10));
+        const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+        let currentPage = parseInt(body.dataset.currentPage || '1', 10);
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+        body.dataset.currentPage = String(currentPage);
+
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const pageItems = filtered.slice(start, end);
+
+        if (pageItems.length === 0) {
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 12px;">No hay CPCs disponibles.</td></tr>';
+        } else {
+            body.innerHTML = pageItems.map(cpc => `
+                <tr data-cpc-id="${cpc.id}" data-cpc-desc="${cpc.descripcion}">
+                    <td>
+                        <input type="checkbox" class="cpc-select-checkbox" value="${cpc.id}" ${selectedCpcIds.has(cpc.id) ? 'checked' : ''}>
+                    </td>
+                    <td>${cpc.codigo}</td>
+                    <td>${cpc.descripcion}</td>
+                </tr>
+            `).join('');
+        }
+
+        body.querySelectorAll('.cpc-select-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (event) => {
+                const id = event.target.value;
+                if (event.target.checked) {
+                    selectedCpcIds.add(id);
+                } else {
+                    selectedCpcIds.delete(id);
+                }
+            });
+        });
+
+        pagination.innerHTML = '';
+        if (filtered.length > pageSize) {
+            const prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'pagination-link';
+            prevBtn.textContent = 'Anterior';
+            prevBtn.disabled = currentPage === 1;
+            if (prevBtn.disabled) {
+                prevBtn.classList.add('disabled');
+            }
+            prevBtn.addEventListener('click', () => {
+                body.dataset.currentPage = String(currentPage - 1);
+                renderAvailableCpcTable();
+            });
+
+            const info = document.createElement('span');
+            info.className = 'pagination-info';
+            info.textContent = `Página ${currentPage} de ${totalPages}`;
+
+            const nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'pagination-link';
+            nextBtn.textContent = 'Siguiente';
+            nextBtn.disabled = currentPage === totalPages;
+            if (nextBtn.disabled) {
+                nextBtn.classList.add('disabled');
+            }
+            nextBtn.addEventListener('click', () => {
+                body.dataset.currentPage = String(currentPage + 1);
+                renderAvailableCpcTable();
+            });
+
+            pagination.appendChild(prevBtn);
+            pagination.appendChild(info);
+            pagination.appendChild(nextBtn);
+        }
+    }
+
+    function submitSelectedCpcs() {
+        if (selectedCpcIds.size === 0) {
+            alert('Seleccione al menos un CPC.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('action', 'add_cpcs_bulk');
+        selectedCpcIds.forEach(id => formData.append('cpc_ids[]', id));
+
+        fetch(URLS.participantProfile(), {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (data.data && data.data.userCPCs) {
+                    updateCPCLists(data.data);
+                }
+                selectedCpcIds.clear();
+                const modal = document.getElementById('cpc-modal');
+                if (modal) {
+                    modal.classList.remove('is-open');
+                    document.body.classList.remove('modal-open');
+                }
+                alert('CPCs agregados con éxito.');
+            } else {
+                throw new Error(data.message || 'Error en la operación');
+            }
+        })
+        .catch(error => {
+            console.error('Error al agregar CPCs:', error);
+            alert(`Ocurrió un error al procesar la solicitud: ${error.message}`);
+        });
+    }
+
+    function initializeParticipantProductFilters() {
+        const container = document.getElementById('participant-products');
+        if (!container) {
+            return;
+        }
+
+        const searchInput = container.querySelector('#participant-product-search');
+        const statusSelect = container.querySelector('#participant-status-filter');
+        const table = container.querySelector('table');
+        if (!searchInput || !statusSelect || !table) {
+            return;
+        }
+
+        const rows = Array.from(table.querySelectorAll('tbody tr')).filter(row => !row.classList.contains('no-results-row'));
+
+        const applyFilters = () => {
+            const needle = searchInput.value.trim().toLowerCase();
+            const estadoSeleccionado = statusSelect.value.trim();
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const objetoCell = row.cells[3];
+                const estadoCell = row.cells[4];
+                if (!objetoCell || !estadoCell) {
+                    return;
+                }
+
+                const textoObjeto = objetoCell.textContent.toLowerCase();
+                const textoEstado = estadoCell.textContent.trim();
+                const coincideObjeto = needle === '' || textoObjeto.includes(needle);
+                const coincideEstado = estadoSeleccionado === '' || textoEstado === estadoSeleccionado;
+                const visible = coincideObjeto && coincideEstado;
+                row.style.display = visible ? '' : 'none';
+                if (visible) {
+                    visibleCount++;
+                }
+            });
+
+            const noResults = table.querySelector('.no-results-row');
+            if ((needle !== '' || estadoSeleccionado !== '') && visibleCount === 0) {
+                if (!noResults) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'no-results-row';
+                    tr.innerHTML = '<td colspan="6" style="text-align:center; padding: 16px;">No se encontraron procesos que coincidan.</td>';
+                    table.tBodies[0].appendChild(tr);
+                }
+            } else if (noResults) {
+                noResults.remove();
+            }
+        };
+
+        searchInput.addEventListener('input', applyFilters);
+        statusSelect.addEventListener('change', applyFilters);
     }
 
     function initializeTabs() {

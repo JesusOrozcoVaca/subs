@@ -4,6 +4,7 @@ require_once BASE_PATH . '/models/User.php';
 require_once BASE_PATH . '/models/CPC.php';
 require_once BASE_PATH . '/models/OfferSubmission.php';
 require_once BASE_PATH . '/models/OfferRating.php';
+require_once BASE_PATH . '/models/InitialOfferSubmission.php';
 
 class ParticipantController {
     private $productModel;
@@ -59,6 +60,21 @@ class ParticipantController {
                         break;
                     case 'add_cpc':
                         $result = $this->userModel->addCPC($userId, $_POST['cpc_id']);
+                        break;
+                    case 'add_cpcs_bulk':
+                        $cpcIds = $_POST['cpc_ids'] ?? [];
+                        if (!is_array($cpcIds)) {
+                            $this->sendJsonResponse(false, "No se seleccionaron CPCs.");
+                            return;
+                        }
+                        $cpcIds = array_values(array_filter(array_map('intval', $cpcIds), function ($id) {
+                            return $id > 0;
+                        }));
+                        if (empty($cpcIds)) {
+                            $this->sendJsonResponse(false, "No se seleccionaron CPCs.");
+                            return;
+                        }
+                        $result = $this->userModel->addCPCs($userId, $cpcIds);
                         break;
                     case 'remove_cpc':
                         $result = $this->userModel->removeCPC($userId, $_POST['cpc_id']);
@@ -196,15 +212,16 @@ class ParticipantController {
             '7' => 'adj'
         ];
         
-        $allowedPhases = ['pyr', 'eof', 'conv', 'calif', 'ofini', 'puja', 'adj'];
-        
         // Si es un número, convertirlo a código de fase
         if (isset($phaseMap[$phase])) {
             $phase = $phaseMap[$phase];
             error_log("Phase mapped to: " . $phase);
         }
-        
-        if (!in_array($phase, $allowedPhases)) {
+
+        require_once BASE_PATH . '/models/ProductState.php';
+        $productStateModel = new ProductState();
+        $phaseState = $productStateModel->getStateByCode($phase);
+        if (!$phaseState) {
             error_log("Phase not allowed: " . $phase);
             http_response_code(400);
             echo json_encode(['success' => false, 'message' => 'Fase no válida']);
@@ -233,6 +250,101 @@ class ParticipantController {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'Producto no encontrado']);
                 exit;
+            }
+
+            $currentStateCode = $this->getCurrentStateCode($product);
+            $isReadOnly = ($phase !== $currentStateCode);
+
+            $userId = $_SESSION['user_id'] ?? null;
+            $hasOffer = false;
+            $offerSubmissionModel = new OfferSubmission();
+            if ($userId) {
+                require_once BASE_PATH . '/models/Document.php';
+                $documentModel = new Document();
+                $userDocuments = $documentModel->getUserDocuments($productId, $userId);
+                $hasOffer = (!empty($userDocuments)) || $offerSubmissionModel->exists($productId, $userId);
+            }
+
+            $normalize = function ($value) {
+                $value = strtolower(trim((string)$value));
+                return strtr($value, [
+                    'á' => 'a',
+                    'é' => 'e',
+                    'í' => 'i',
+                    'ó' => 'o',
+                    'ú' => 'u',
+                    'ü' => 'u',
+                    'ñ' => 'n'
+                ]);
+            };
+
+            $allowedNoOfferDescriptions = [
+                'preguntas y respuestas',
+                'por adjudicar',
+                'adjudicado - registro de contrato',
+                'adjudicado registro de contrato',
+                'en ejecucion',
+                'en recepcion',
+                'finalizado'
+            ];
+
+            $allowedNoOfferCodes = [
+                'pyr',
+                'por_adj',
+                'por-adj',
+                'por_adjudicar',
+                'por-adjudicar',
+                'poradj',
+                'adj',
+                'adjudicado',
+                'registro_contrato',
+                'reg_contrato',
+                'ejec',
+                'ejecucion',
+                'en-ejecucion',
+                'en_ejecucion',
+                'recep',
+                'recepcion',
+                'en-recepcion',
+                'en_recepcion',
+                'fin',
+                'final',
+                'finalizado'
+            ];
+
+            $phaseDescription = $phaseState['descripcion'] ?? '';
+            $normalizedDescription = $normalize($phaseDescription);
+            $isAllowedNoOffer = in_array($phase, $allowedNoOfferCodes, true)
+                || in_array($normalizedDescription, $allowedNoOfferDescriptions, true);
+
+            if ($phase === 'pyr') {
+                $isAllowedNoOffer = true;
+            }
+
+            if ($currentStateCode === 'eof' && $phase === 'eof') {
+                $isAllowedNoOffer = true;
+            }
+
+            $blockWithoutOffer = !$hasOffer && !$isAllowedNoOffer;
+
+            $initialOfferSent = false;
+            $initialOfferDocument = null;
+            if ($phase === 'ofini' && $userId) {
+                $initialOfferModel = new InitialOfferSubmission();
+                $initialOfferSubmission = $initialOfferModel->getByProductAndUser($productId, $userId);
+                if ($initialOfferSubmission) {
+                    $initialOfferSent = true;
+                    $offerDetail = $offerSubmissionModel->getByProductAndUser($productId, $userId);
+                    $user = $this->userModel->getUserById($userId);
+                    if ($offerDetail && $user) {
+                        $initialOfferDocument = $this->buildInitialOfferDocumentData(
+                            $product,
+                            $user,
+                            $offerDetail,
+                            $initialOfferSubmission
+                        );
+                    }
+                }
             }
             
             include $viewFile;
@@ -756,6 +868,111 @@ class ParticipantController {
         }
     }
 
+    public function submitInitialOffer() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
+            $productoId = $_POST['producto_id'] ?? null;
+            $valorOferta = trim($_POST['valor_oferta'] ?? '');
+            $usuarioId = $_SESSION['user_id'];
+
+            if (!$productoId) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            if ($valorOferta === '') {
+                $this->sendJsonResponse(false, "Debe ingresar el valor de su oferta inicial");
+                return;
+            }
+
+            $offerSubmissionModel = new OfferSubmission();
+            $initialOfferModel = new InitialOfferSubmission();
+
+            if ($initialOfferModel->exists($productoId, $usuarioId)) {
+                $this->sendJsonResponse(false, "Usted ya ha enviado su oferta inicial.");
+                return;
+            }
+
+            $offerDetail = $offerSubmissionModel->getByProductAndUser($productoId, $usuarioId);
+            if (!$offerDetail) {
+                $this->sendJsonResponse(false, "No se encontró la oferta ingresada al entregar la oferta");
+                return;
+            }
+
+            $valorIngresadoCents = $this->toCents($valorOferta);
+            $valorRegistradoCents = $this->toCents($offerDetail['oferta_inicial_user'] ?? null);
+
+            if ($valorIngresadoCents === null || $valorRegistradoCents === null) {
+                $this->sendJsonResponse(false, "El valor ingresado no corresponde a su oferta ingresada al entregar la oferta. Inténtelo nuevamente.");
+                return;
+            }
+
+            if ($valorIngresadoCents !== $valorRegistradoCents) {
+                $this->sendJsonResponse(false, "El valor ingresado no corresponde a su oferta ingresada al entregar la oferta. Inténtelo nuevamente.");
+                return;
+            }
+
+            $product = $this->productModel->getProductById($productoId);
+            if (!$product) {
+                $this->sendJsonResponse(false, "Producto no encontrado");
+                return;
+            }
+
+            $user = $this->userModel->getUserById($usuarioId);
+            if (!$user) {
+                $this->sendJsonResponse(false, "Usuario no encontrado");
+                return;
+            }
+
+            $fechaEcuador = new DateTime('now', new DateTimeZone('America/Guayaquil'));
+            $codigoAleatorio = $this->generateRandomCode(32);
+            $createdAt = $fechaEcuador->format('Y-m-d H:i:s');
+
+            if (!$initialOfferModel->create($productoId, $usuarioId, $codigoAleatorio, $createdAt)) {
+                $this->sendJsonResponse(false, "No se pudo registrar la oferta inicial");
+                return;
+            }
+
+            $documentData = $this->buildInitialOfferDocumentData($product, $user, $offerDetail, [
+                'codigo' => $codigoAleatorio,
+                'created_at' => $createdAt
+            ]);
+
+            $this->sendJsonResponse(true, "Validación exitosa", [
+                'document' => $documentData
+            ]);
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    private function buildInitialOfferDocumentData(array $product, array $user, array $offerDetail, array $submission) {
+        return [
+            'empresa' => $user['nombre_completo'] ?? '',
+            'ruc' => $user['cedula'] ?? '',
+            'usuario' => $user['nombre_completo'] ?? '',
+            'fecha' => $this->formatEcuadorDateTime($submission['created_at'] ?? 'now'),
+            'modulo' => 'Oferta Inicial',
+            'entidad_contratante' => $product['entidad'] ?? '',
+            'objeto_proceso' => $product['objeto_proceso'] ?? '',
+            'codigo' => $product['codigo'] ?? '',
+            'tipo_compra' => 'Servicio',
+            'tipo_contratacion' => $product['tipo_contratacion'] ?? '',
+            'estado_proceso' => 'Oferta Inicial',
+            'oferta_inicial' => number_format((float)($offerDetail['oferta_inicial_user'] ?? 0), 2, ',', '.'),
+            'codigo_aleatorio' => $submission['codigo'] ?? ''
+        ];
+    }
+
+    private function formatEcuadorDateTime($value) {
+        $timezone = new DateTimeZone('America/Guayaquil');
+        try {
+            $date = new DateTime($value, $timezone);
+        } catch (Exception $e) {
+            $date = new DateTime('now', $timezone);
+        }
+        return $date->format('d-M-Y H:i:s');
+    }
+
     private function toCents($value) {
         if ($value === null) {
             return null;
@@ -765,6 +982,18 @@ class ParticipantController {
             return null;
         }
         return (int)round(((float)$normalized) * 100);
+    }
+
+    private function generateRandomCode($length = 32) {
+        $characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        $maxIndex = strlen($characters) - 1;
+        $code = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $code .= $characters[random_int(0, $maxIndex)];
+        }
+
+        return $code;
     }
 
     private function normalizeNumeric($value) {
