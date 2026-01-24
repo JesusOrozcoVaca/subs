@@ -237,6 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 productInfoContainer.style.display = 'none';
                 phaseContainer.innerHTML = data.content;
                 phaseContainer.style.display = 'block';
+                executeInlineScripts(phaseContainer);
             } else {
                 throw new Error(data.message || 'Error al cargar la fase');
             }
@@ -245,6 +246,24 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error al cargar la fase:', error);
             phaseContainer.innerHTML = `<p>Error al cargar la fase: ${error.message}</p>`;
             phaseContainer.style.display = 'block';
+        });
+    }
+
+    function executeInlineScripts(container) {
+        if (!container) {
+            return;
+        }
+
+        const scripts = container.querySelectorAll('script');
+        scripts.forEach(script => {
+            const newScript = document.createElement('script');
+            if (script.src) {
+                newScript.src = script.src;
+            } else {
+                newScript.textContent = script.textContent;
+            }
+            document.body.appendChild(newScript);
+            document.body.removeChild(newScript);
         });
     }
 

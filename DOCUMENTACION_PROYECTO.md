@@ -29,6 +29,8 @@ Sistema web para simulación de contratación pública mediante subastas inversa
 - **Base de Datos:** MySQL
 - **Frontend:** HTML5, CSS3, JavaScript (Vanilla)
 - **Servidor Web:** Apache (XAMPP local) / Nginx (producción)
+- **Generación de PDFs:** DomPDF 2.0+ (HTML/CSS a PDF)
+- **Gestión de Dependencias:** Composer
 - **Control de Versiones:** Git
 
 ### Roles del Sistema
@@ -88,9 +90,18 @@ subs/
 │   ├── css/
 │   ├── js/
 │   └── images/
+├── services/
+│   ├── OfferPdfGenerator.php  # Generador de PDFs de ofertas
+│   └── PyrPdfGenerator.php    # Generador de PDFs de actas PyR
 ├── utils/
 │   └── url_helpers.php
+├── vendor/                  # Dependencias de Composer (DomPDF, etc.)
+├── uploads/
+│   ├── offer_pdfs/         # PDFs generados de ofertas
+│   ├── offers/             # Documentos subidos por participantes
+│   └── pyr_actas/          # Actas de preguntas y respuestas
 ├── index.php                # Punto de entrada principal
+├── composer.json            # Configuración de Composer
 ├── .htaccess               # Configuración Apache
 └── .gitignore              # Archivos ignorados por Git
 ```
@@ -263,6 +274,8 @@ usuario_id, cpc_id
 - `searchProcess()` → Buscar proceso
 - `viewProduct($id)` → Ver producto
 - `loadPhaseContent($phase)` → Cargar fase
+- `processOffer()` → Procesar oferta del participante (incluye validación de `oferta_inicial_user`)
+- `downloadOfferPdf()` → Generar y descargar PDF de la propuesta de oferta
 
 ### Modelos
 
@@ -336,6 +349,33 @@ index.php
 **⚠️ IMPORTANTE:** Estos archivos NO se versionan y deben configurarse manualmente en producción.
 
 ### Dependencias Críticas
+
+#### Instalación de Composer y DomPDF
+
+**Para generar PDFs de ofertas, se requiere DomPDF instalado vía Composer:**
+
+1. **Instalar Composer** (si no está instalado):
+   - En XAMPP, usar la ruta completa: `C:\xampp\php\php.exe`
+   - Descargar desde: https://getcomposer.org/download/
+   - O ejecutar: `C:\xampp\php\php.exe -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"`
+   - Instalar: `C:\xampp\php\php.exe composer-setup.php`
+
+2. **Instalar dependencias:**
+   ```bash
+   C:\xampp\php\php.exe C:\xampp\php\composer.phar install
+   ```
+   O si Composer está en el PATH:
+   ```bash
+   composer install
+   ```
+
+3. **Verificar instalación:**
+   - Verificar que existe `vendor/autoload.php`
+   - Verificar que existe `vendor/dompdf/dompdf/`
+
+**Nota:** Si DomPDF no está disponible, el sistema usará `SimplePdfBuilder` como fallback, pero el formato visual será más básico.
+
+**Ver archivo:** `INSTALL_DOMPDF.md` para instrucciones detalladas.
 
 #### Para Vistas del Participante
 ```php
@@ -731,10 +771,29 @@ CREATE TABLE preguntas_respuestas (
 #### Acta PDF de Preguntas y Respuestas
 - **Servicio:** `services/PyrPdfGenerator.php`
 - **Ubicación de los archivos generados:** `uploads/pyr_actas/acta_pyr_producto_{ID}.pdf`
-- **Generación automática:** ocurre cuando un moderador o administrador publica las respuestas desde el modal “Responder Preguntas”. Se genera (o actualiza) el PDF solo si el proceso tiene al menos una pregunta con respuesta.
+- **Generación automática:** ocurre cuando un moderador o administrador publica las respuestas desde el modal "Responder Preguntas". Se genera (o actualiza) el PDF solo si el proceso tiene al menos una pregunta con respuesta.
 - **Visibilidad en el participante:** la fase PyR muestra el botón `Descargar acta PyR` únicamente si existe el PDF; el simple ingreso a la fase no crea el archivo.
-- **Backfill:** para procesos con respuestas previas, basta con volver a pulsar “Publicar Respuestas” para crear el acta.
+- **Backfill:** para procesos con respuestas previas, basta con volver a pulsar "Publicar Respuestas" para crear el acta.
 - **Contenido:** código y detalles del producto, cada pregunta con su autor, fecha de registro, respuesta y fecha de respuesta.
+
+#### PDF de Propuesta de Oferta
+- **Servicio:** `services/OfferPdfGenerator.php`
+- **Dependencia:** DomPDF 2.0+ (instalado vía Composer)
+- **Ubicación de los archivos generados:** `uploads/offer_pdfs/propuesta_oferta_producto_{ID}_usuario_{ID}.pdf`
+- **Generación:** Se genera cuando un participante descarga el PDF de su oferta procesada desde la fase "Entrega de Ofertas"
+- **Visibilidad:** El botón "Descargar PDF de Oferta" aparece en el resumen de oferta procesada, solo después de que la oferta ha sido procesada
+- **Contenido del PDF:**
+  - Encabezado: "Propuesta" (H4), "Sistema de Simulación de Subasta Inversa" (H2, azul)
+  - Información del participante: Fecha/hora, RUC, Empresa, Usuario (en 4 columnas)
+  - Línea separadora amarilla
+  - Detalles del proceso de contratación (con formato azul claro)
+  - Tabla de detalle: Bien/Obra/Servicio
+  - Ingreso de ofertas: Tiempo de entrega, garantía, razón de aceptación
+  - Tabla detallada de oferta con precios
+  - Pie de página: "Documento educativo, sin validez legal"
+- **Formato:** HTML/CSS convertido a PDF usando DomPDF, con tablas con bordes, colores y formato profesional
+- **Fallback:** Si DomPDF no está disponible, usa `SimplePdfBuilder` como respaldo
+- **Ruta de descarga:** `participant/download-offer-pdf` o `participant_download_offer_pdf` (según sistema de routing)
 
 ### 🎯 Sistema de Popups Dinámicos
 
@@ -1140,15 +1199,17 @@ RewriteRule ^(.*)$ index.php/$1 [L,QSA]
 ### 📦 Entrega de Ofertas – Captura de datos adicionales (Nov/2025)
 
 - Al pulsar `Procesar`, el sistema muestra un **modal** solicitando:
-  - `Tiempo de entrega`
-  - `Plazo de la oferta`
-  - `Descripción de la oferta`
+  - `Tiempo de entrega` (días)
+  - `Plazo de la oferta` (meses)
+  - `Descripción de la oferta` (máx 350 caracteres)
+  - `Oferta inicial` (valor numérico >= 0) - **NUEVO**
 - La confirmación del modal ejecuta el POST a:
   - `/subs/participant/process-offer` (entorno local sin `index.php`)
   - `/subs/index.php?action=participant_process_offer` (modo legacy)
-- Se guarda un registro en `ofertas_detalle` y se marca la oferta como procesada.
+- Se guarda un registro en `ofertas_detalle` (incluyendo `oferta_inicial_user`) y se marca la oferta como procesada.
 - La UI se bloquea (oculta área de carga) y se renderiza un resumen de la oferta en modo lectura.
 - Si la oferta ya estaba procesada, el modal no se muestra y solo se presenta el resumen.
+- **NUEVO:** Aparece un botón "Descargar PDF de Oferta" en el resumen, que genera y descarga un PDF profesional de la propuesta.
 
 #### Archivos clave
 - `models/OfferSubmission.php` – Acceso a la nueva tabla.
@@ -1165,6 +1226,9 @@ CREATE TABLE ofertas_detalle (
     tiempo_entrega VARCHAR(100) NOT NULL,
     plazo_oferta VARCHAR(100) NOT NULL,
     descripcion TEXT NOT NULL,
+    oferta_inicial_user DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    processed BOOLEAN DEFAULT FALSE,
+    fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_ofertas_detalle_producto_usuario (producto_id, usuario_id),
@@ -1173,13 +1237,37 @@ CREATE TABLE ofertas_detalle (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+**Campos principales:**
+- `id` - ID único de la oferta
+- `producto_id` - ID del producto
+- `usuario_id` - ID del usuario participante
+- `tiempo_entrega` - Tiempo de entrega propuesto (días)
+- `plazo_oferta` - Tiempo de garantía (meses)
+- `descripcion` - Razón de aceptación (máx 350 caracteres)
+- `oferta_inicial_user` - **NUEVO:** Valor de oferta inicial registrado por el usuario (DECIMAL 15,2)
+- `processed` - Indica si la oferta ha sido procesada
+- `fecha_registro` - Fecha de registro de la oferta
+
+**Migración para agregar campo `oferta_inicial_user`:**
+```sql
+-- Ver archivo: migrations/add_oferta_inicial_user.sql
+ALTER TABLE ofertas_detalle 
+ADD COLUMN oferta_inicial_user DECIMAL(15,2) NOT NULL DEFAULT 0.00 
+AFTER plazo_oferta;
+```
+
 **Notas:**
 - Ejecutar la sentencia anterior en cada entorno antes de desplegar la funcionalidad.
 - Si existen ofertas procesadas antes de la migración, poblar `ofertas_detalle` manualmente para evitar inconsistencias.
+- El campo `oferta_inicial_user` es validado en el frontend (numérico, >= 0) y en el backend antes de guardar.
 
 ---
 
-**Última actualización:** Noviembre 2025  
-**Versión del documento:** 2.1  
-**Estado del proyecto:** Funcional en local y producción con oferta procesada y resumen bloqueado tras la confirmación del modal
+**Última actualización:** Enero 2025  
+**Versión del documento:** 2.2  
+**Estado del proyecto:** Funcional en local y producción con:
+- Oferta procesada y resumen bloqueado tras la confirmación del modal
+- Campo `oferta_inicial_user` agregado a `ofertas_detalle`
+- Generación de PDFs de propuestas de ofertas con DomPDF
+- Formato visual profesional con HTML/CSS convertido a PDF
 

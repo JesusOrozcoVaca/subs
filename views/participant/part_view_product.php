@@ -96,7 +96,7 @@
     </div>
 
     <script src="<?php echo js('url-helper.js'); ?>"></script>
-    <script src="<?php echo js('unified-tabs.js'); ?>"></script>
+    <script src="<?php echo js('unified-tabs.js'); ?>?v=20260124"></script>
     
 </body>
 </html>

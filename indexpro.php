@@ -381,6 +381,24 @@ try {
             $controller->processOffer();
             break;
 
+        case 'participant_submit_convalidation':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->submitConvalidation();
+            break;
+
+        case 'participant_get_convalidation':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->getConvalidation();
+            break;
+
+        case 'participant_download_convalidation_pdf':
+            checkAccess(3);
+            $controller = loadController('ParticipantController');
+            $controller->downloadConvalidationPdf();
+            break;
+
         case 'participant_download_offer_pdf':
             checkAccess(3);
             $controller = loadController('ParticipantController');

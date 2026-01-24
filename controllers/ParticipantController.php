@@ -677,6 +677,245 @@ class ParticipantController {
         }
     }
 
+    public function submitConvalidation() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->isAjaxRequest()) {
+            $productoId = $_POST['producto_id'] ?? null;
+            $usuarioId = $_SESSION['user_id'];
+            $detalle = trim($_POST['respuesta_convalidacion'] ?? '');
+
+            if (!$productoId) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            if ($detalle === '') {
+                $this->sendJsonResponse(false, "Debe ingresar el detalle de la convalidación");
+                return;
+            }
+
+            if (strlen($detalle) > 2000) {
+                $this->sendJsonResponse(false, "El detalle no puede exceder 2000 caracteres");
+                return;
+            }
+
+            if (!isset($_FILES['documentos_convalidacion'])) {
+                $this->sendJsonResponse(false, "Debe adjuntar al menos un archivo");
+                return;
+            }
+
+            $files = $this->normalizeUploadedFiles($_FILES['documentos_convalidacion']);
+            if (empty($files)) {
+                $this->sendJsonResponse(false, "Debe adjuntar al menos un archivo");
+                return;
+            }
+
+            $allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ];
+            $maxSize = 5 * 1024 * 1024;
+
+            foreach ($files as $file) {
+                if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    $this->sendJsonResponse(false, "Error al subir el archivo: " . ($file['name'] ?? ''));
+                    return;
+                }
+
+                if (!in_array($file['type'], $allowedTypes)) {
+                    $this->sendJsonResponse(false, "Tipo de archivo no permitido. Solo PDF, DOC y DOCX");
+                    return;
+                }
+
+                if ($file['size'] > $maxSize) {
+                    $this->sendJsonResponse(false, "El archivo excede el tamaño máximo de 5MB");
+                    return;
+                }
+            }
+
+            require_once BASE_PATH . '/models/ConvalidationSubmission.php';
+            require_once BASE_PATH . '/models/ConvalidationDocument.php';
+            require_once BASE_PATH . '/config/database.php';
+
+            $connection = Database::getInstance()->getConnection();
+            $convalidationModel = new ConvalidationSubmission($connection);
+            $documentModel = new ConvalidationDocument($connection);
+
+            if ($convalidationModel->exists($productoId, $usuarioId)) {
+                $this->sendJsonResponse(false, "La convalidación ya fue enviada previamente");
+                return;
+            }
+
+            date_default_timezone_set('America/Guayaquil');
+            $now = date('Y-m-d H:i:s');
+            $uploadedFiles = [];
+
+            try {
+                $connection->beginTransaction();
+
+                $convalidationId = $convalidationModel->create($productoId, $usuarioId, $detalle, $now);
+                if (!$convalidationId) {
+                    throw new Exception("No se pudo registrar la convalidación");
+                }
+
+                foreach ($files as $file) {
+                    $result = $documentModel->uploadDocument($convalidationId, $file, $now);
+                    if (!$result['success']) {
+                        throw new Exception($result['message'] ?? "Error al subir archivos");
+                    }
+                    if (!empty($result['full_path'])) {
+                        $uploadedFiles[] = $result['full_path'];
+                    }
+                }
+
+                $connection->commit();
+
+                $summary = $convalidationModel->getByProductAndUser($productoId, $usuarioId);
+                if ($summary) {
+                    $summary['created_at_formatted'] = $this->formatEcuadorDate($summary['created_at'] ?? $now);
+                }
+                $filesList = $documentModel->getFilesByConvalidation($convalidationId);
+
+                $this->sendJsonResponse(true, "Convalidación enviada exitosamente", [
+                    'summary' => $summary,
+                    'files' => $filesList
+                ]);
+            } catch (Exception $e) {
+                if ($connection->inTransaction()) {
+                    $connection->rollBack();
+                }
+                foreach ($uploadedFiles as $path) {
+                    if ($path && file_exists($path)) {
+                        unlink($path);
+                    }
+                }
+                $this->sendJsonResponse(false, "Error al enviar la convalidación: " . $e->getMessage());
+            }
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function getConvalidation() {
+        if ($this->isAjaxRequest()) {
+            $productoId = $_GET['producto_id'] ?? null;
+            $usuarioId = $_SESSION['user_id'];
+
+            if (!$productoId) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+                return;
+            }
+
+            require_once BASE_PATH . '/models/ConvalidationSubmission.php';
+            require_once BASE_PATH . '/models/ConvalidationDocument.php';
+
+            $convalidationModel = new ConvalidationSubmission();
+            $documentModel = new ConvalidationDocument();
+
+            $summary = $convalidationModel->getByProductAndUser($productoId, $usuarioId);
+            $files = [];
+
+            if ($summary) {
+                $summary['created_at_formatted'] = $this->formatEcuadorDate($summary['created_at'] ?? 'now');
+                $files = $documentModel->getFilesByConvalidation($summary['id']);
+            }
+
+            $this->sendJsonResponse(true, "", [
+                'summary' => $summary,
+                'files' => $files
+            ]);
+        } else {
+            $this->sendJsonResponse(false, "Método no permitido");
+        }
+    }
+
+    public function downloadConvalidationPdf() {
+        $productoId = $_GET['producto_id'] ?? null;
+        $usuarioId = $_SESSION['user_id'];
+
+        date_default_timezone_set('America/Guayaquil');
+
+        if (!$productoId) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "ID de producto requerido");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        require_once BASE_PATH . '/models/ConvalidationSubmission.php';
+        require_once BASE_PATH . '/models/ConvalidationDocument.php';
+        require_once BASE_PATH . '/services/ConvalidationPdfGenerator.php';
+
+        $convalidationModel = new ConvalidationSubmission();
+        $documentModel = new ConvalidationDocument();
+        $summary = $convalidationModel->getByProductAndUser($productoId, $usuarioId);
+
+        if (!$summary) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "No se encontró la convalidación enviada");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $product = $this->productModel->getProductById($productoId);
+        if (!$product) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Producto no encontrado");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $user = $this->userModel->getUserById($usuarioId);
+        if (!$user) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Usuario no encontrado");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $files = $documentModel->getFilesByConvalidation($summary['id']);
+        $pdfInfo = ConvalidationPdfGenerator::generate($product, $user, $summary, $files);
+
+        if (!$pdfInfo) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "Error al generar el PDF");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        $fullPath = $pdfInfo['full_path'];
+        if (!file_exists($fullPath)) {
+            if ($this->isAjaxRequest()) {
+                $this->sendJsonResponse(false, "El archivo PDF no existe");
+            } else {
+                header('Location: ' . BASE_URL . 'participant/dashboard');
+            }
+            return;
+        }
+
+        while (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        header('Content-Type: application/pdf');
+        header('Content-Length: ' . filesize($fullPath));
+        header('Content-Disposition: attachment; filename="' . $pdfInfo['file_name'] . '"');
+        header('Cache-Control: private, max-age=3600');
+
+        readfile($fullPath);
+        exit;
+    }
+
     public function pyrDirect($productId = null) {
         error_log("=== PYRDIRECT START ===");
         
@@ -716,6 +955,34 @@ class ParticipantController {
         $pathParts = explode('/', $_SERVER['REQUEST_URI']);
         $productId = end($pathParts);
         return is_numeric($productId) ? $productId : null;
+    }
+
+    private function normalizeUploadedFiles($fileInput) {
+        if (!is_array($fileInput['name'])) {
+            return [$fileInput];
+        }
+
+        $files = [];
+        foreach ($fileInput['name'] as $index => $name) {
+            $files[] = [
+                'name' => $name,
+                'type' => $fileInput['type'][$index] ?? '',
+                'tmp_name' => $fileInput['tmp_name'][$index] ?? '',
+                'error' => $fileInput['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $fileInput['size'][$index] ?? 0
+            ];
+        }
+        return $files;
+    }
+
+    private function formatEcuadorDate($value) {
+        $timezone = new DateTimeZone('America/Guayaquil');
+        try {
+            $date = new DateTime($value, $timezone);
+        } catch (Exception $e) {
+            $date = new DateTime('now', $timezone);
+        }
+        return $date->format('d/m/Y H:i');
     }
 
     public function downloadOfferPdf() {

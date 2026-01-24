@@ -148,6 +148,8 @@ function loadPhaseContent(phase) {
         if (data.success) {
             console.log('Content loaded successfully for:', phase);
             phaseContainer.innerHTML = data.content;
+            console.log('Phase content length:', data.content ? data.content.length : 0);
+            executeInlineScripts(phaseContainer);
             
             // Inicializar funcionalidad específica del contenido
             initializeContentSpecificFunctionality(phase, phaseContainer);
@@ -179,6 +181,26 @@ function initializeContentSpecificFunctionality(phase, container) {
             break;
         // Agregar más casos según sea necesario
     }
+}
+
+function executeInlineScripts(container) {
+    if (!container) {
+        return;
+    }
+
+    const scripts = container.querySelectorAll('script');
+    console.log('Executing inline scripts count:', scripts.length);
+    scripts.forEach(script => {
+        const newScript = document.createElement('script');
+        if (script.src) {
+            newScript.src = script.src;
+        } else {
+            newScript.textContent = script.textContent;
+        }
+        console.log('Executing inline script', newScript.src ? newScript.src : 'inline');
+        document.body.appendChild(newScript);
+        document.body.removeChild(newScript);
+    });
 }
 
 function getProductIdFromURL() {
