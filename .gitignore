@@ -60,3 +60,6 @@ utils/replace_urls.php
 uploads/
 *.zip
 *.md
+
+# Dump local de base de datos
+sistema_subastas_inversas.sql
