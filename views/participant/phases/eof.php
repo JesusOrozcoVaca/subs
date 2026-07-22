@@ -577,17 +577,12 @@ function displayOfertas(ofertas) {
         return;
     }
     
-    // Usar función helper para generar URLs dinámicas (siguiendo documentación)
-    function generateUrl(path) {
-        return generateUrl('view_file', { path });
-    }
-    
     let html = '<div class="ofertas-grid">';
     window.eofState.uploadedFiles = ofertas.slice();
 
     ofertas.forEach(oferta => {
-        // Generar URL usando función helper dinámica
-        const fileUrl = generateUrl(oferta.ruta_archivo);
+        // Usar helper global de url-helper.js (no sombrear generateUrl)
+        const fileUrl = generateUrl('view_file', { path: oferta.ruta_archivo });
         console.log('Generating file URL (eof.php):', fileUrl, 'for file:', oferta.nombre_archivo);
         
         html += `
