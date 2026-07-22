@@ -86,7 +86,14 @@ if (!$canParticipate && !$isEnded) {
 </script>
 
 <?php if ($isEnded && !empty($pujaSummary) && !empty($pujaSummary['columns'])): ?>
-    <h3 style="margin-top: 18px;">Resumen de Puja</h3>
+    <h3 style="margin-top: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span>Resumen de Puja</span>
+        <?php if (!empty($pujaSummary['winner_name'])): ?>
+            <span class="puja-winner-badge" title="Menor valor ofertado en la subasta inversa<?php echo isset($pujaSummary['winner_value']) ? ': $ ' . number_format((float)$pujaSummary['winner_value'], 2, ',', '.') : ''; ?>">
+                Ganador: <?php echo htmlspecialchars($pujaSummary['winner_name']); ?>
+            </span>
+        <?php endif; ?>
+    </h3>
     <div style="overflow-x:auto; max-width: 100%;">
         <table style="border-collapse: collapse; width: max-content; min-width: 520px;">
             <thead>

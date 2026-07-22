@@ -378,21 +378,36 @@ class ParticipantController {
                         $bidModel = new Bid();
                         $columns = [];
                         $maxEntries = 0;
+                        // Ganador = menor valor ofertado (subasta inversa).
+                        // Se compara el mejor valor de cada participante (mínimo entre pujas
+                        // y, si no hubo pujas, su oferta inicial).
+                        $winnerName = null;
+                        $winnerValue = null;
+                        $winnerTimeMs = null;
 
                         foreach ($participants as $participant) {
                             $userBids = $bidModel->getUserBids($productId, $participant['id']);
                             $rows = [];
+                            $bestValue = null;
+                            $bestTimeMs = null;
 
                             if (!empty($userBids)) {
                                 foreach ($userBids as $bid) {
+                                    $bidValue = (float)$bid['valor'];
+                                    $bidTimeMs = isset($bid['fecha_puja_ms']) ? (int)$bid['fecha_puja_ms'] : 0;
                                     $rows[] = [
-                                        'value' => '$ ' . number_format((float)$bid['valor'], 2, ',', '.'),
+                                        'value' => '$ ' . number_format($bidValue, 2, ',', '.'),
                                         'time' => $this->formatPujaTimestamp(
                                             $bid['fecha_puja_ms'] ?? 0,
                                             $bid['fecha_puja'] ?? null,
                                             $timezone
                                         )
                                     ];
+
+                                    if ($bestValue === null || $bidValue < $bestValue || ($bidValue === $bestValue && ($bestTimeMs === null || $bidTimeMs < $bestTimeMs))) {
+                                        $bestValue = $bidValue;
+                                        $bestTimeMs = $bidTimeMs;
+                                    }
                                 }
                             }
 
@@ -400,14 +415,36 @@ class ParticipantController {
                             // incluso si el participante hizo pujas durante la fase.
                             $initialInfo = $offerSubmissionModel->getInitialOfferInfo($productId, $participant['id']);
                             if ($initialInfo) {
+                                $initialValue = (float)($initialInfo['oferta_inicial_user'] ?? 0);
+                                $initialTimeMs = !empty($initialInfo['fecha_oferta_inicial'])
+                                    ? ((int)strtotime($initialInfo['fecha_oferta_inicial']) * 1000)
+                                    : 0;
                                 $rows[] = [
-                                    'value' => '$ ' . number_format((float)($initialInfo['oferta_inicial_user'] ?? 0), 2, ',', '.'),
+                                    'value' => '$ ' . number_format($initialValue, 2, ',', '.'),
                                     'time' => $this->formatPujaTimestamp(
                                         0,
                                         $initialInfo['fecha_oferta_inicial'] ?? null,
                                         $timezone
                                     )
                                 ];
+
+                                // Si no hubo pujas, la oferta inicial es su valor a comparar.
+                                if ($bestValue === null) {
+                                    $bestValue = $initialValue;
+                                    $bestTimeMs = $initialTimeMs;
+                                }
+                            }
+
+                            if ($bestValue !== null) {
+                                if (
+                                    $winnerValue === null
+                                    || $bestValue < $winnerValue
+                                    || ($bestValue === $winnerValue && ($winnerTimeMs === null || $bestTimeMs < $winnerTimeMs))
+                                ) {
+                                    $winnerValue = $bestValue;
+                                    $winnerTimeMs = $bestTimeMs;
+                                    $winnerName = $participant['nombre_completo'];
+                                }
                             }
 
                             $maxEntries = max($maxEntries, count($rows));
@@ -419,7 +456,9 @@ class ParticipantController {
 
                         $pujaSummary = [
                             'columns' => $columns,
-                            'max_entries' => $maxEntries
+                            'max_entries' => $maxEntries,
+                            'winner_name' => $winnerName,
+                            'winner_value' => $winnerValue
                         ];
                     }
                 }

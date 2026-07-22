@@ -1312,6 +1312,19 @@ button:hover {
     margin-left: 10px;
 }
 
+.puja-winner-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #1f9d55;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
 .oferta-actions {
     display: flex;
     gap: 10px;
