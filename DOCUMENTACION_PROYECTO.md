@@ -16,6 +16,7 @@
 10. [Despliegue y Producción](#despliegue-y-producción)
 11. [Problemas Conocidos y Soluciones](#problemas-conocidos-y-soluciones)
 12. [Reglas de Desarrollo](#reglas-de-desarrollo)
+13. [Módulo Prácticas de Puja](#módulo-prácticas-de-puja)
 
 ---
 
@@ -1248,11 +1249,38 @@ AFTER plazo_oferta;
 
 ---
 
-**Última actualización:** Enero 2025  
-**Versión del documento:** 2.2  
+## Módulo Prácticas de Puja
+
+Módulo **aislado** del simulador completo para entrenamiento de puja inversa electrónica.
+
+### Principios
+- Tablas propias: `practicas_salas`, `practicas_rondas`, `practicas_inscripciones`, `practicas_pujas`
+- Sin FK hacia `productos` / `pujas` / fases del proceso
+- Misma regla de negocio vía `services/ReverseAuctionEngine.php`
+- Multiusuario en vivo con polling HTTP 1s (igual que la puja de proceso)
+- Rondas con historial; el trainee define oferta inicial al entrar
+
+### Migración
+Ejecutar `migrations/create_practicas_puja_tables.sql` en cada entorno.
+
+### Controllers
+- `AdminTrainingController` — CRUD salas, abrir/cancelar/cerrar rondas, monitor
+- `ParticipantTrainingController` — listado, join, ventana, submit/status, resumen
+
+### Deploy checklist
+1. Backup DB
+2. `git pull`
+3. Ejecutar migración SQL
+4. Confirmar `index.php` sincronizado con `indexpro.php`
+5. Smoke test: admin crea sala/ronda + 2 participantes concurrentes
+
+---
+
+**Última actualización:** Julio 2026  
+**Versión del documento:** 2.3  
 **Estado del proyecto:** Funcional en local y producción con:
 - Oferta procesada y resumen bloqueado tras la confirmación del modal
 - Campo `oferta_inicial_user` agregado a `ofertas_detalle`
 - Generación de PDFs de propuestas de ofertas con DomPDF
-- Formato visual profesional con HTML/CSS convertido a PDF
+- Módulo Prácticas de Puja (entrenamiento separado)
 

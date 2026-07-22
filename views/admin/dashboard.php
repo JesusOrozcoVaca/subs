@@ -16,6 +16,7 @@
                 <li><a href="<?php echo url('admin/create-product'); ?>" data-target="create-product">Crear Producto</a></li>
                 <li><a href="<?php echo url('admin/create-user'); ?>" data-target="create-user">Crear Usuario</a></li>
                 <li><a href="<?php echo url('admin/create-cpc'); ?>" data-target="create-cpc">Crear CPC</a></li>
+                <li><a href="<?php echo BASE_URL; ?>index.php?action=admin_training_dashboard">Prácticas de Puja</a></li>
             </ul>
         </aside>
         <main class="main-content">

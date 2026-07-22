@@ -52,6 +52,35 @@ cp config/database.example.php config/database.php
 | `config/database.php` | **No** | Secretos; crear en cada entorno |
 | `uploads/` | **No** | Archivos de usuarios |
 
+## Módulo Prácticas de Puja
+
+Módulo **separado** del proceso completo para entrenamiento multiusuario en vivo.
+
+### Deploy de tablas (obligatorio una vez)
+
+```bash
+# En MySQL / phpMyAdmin ejecutar:
+migrations/create_practicas_puja_tables.sql
+```
+
+### Rutas
+
+| Rol | Acción | URL |
+|---|---|---|
+| Admin | Banco de salas | `/index.php?action=admin_training_dashboard` |
+| Admin | Crear sala | `/index.php?action=admin_training_create_sala` |
+| Participante | Listado prácticas | `/index.php?action=participant_training_list` |
+| Participante | Join + oferta inicial | `/index.php?action=participant_training_join&id=RONDA_ID` |
+| Participante | Ventana puja | `/index.php?action=participant_training_puja&id=RONDA_ID` |
+
+### Checklist smoke test
+
+1. Admin crea sala activa (presupuesto + variación + duración)
+2. Admin abre ronda con fecha/hora de inicio
+3. Dos participantes ingresan con oferta inicial ≤ presupuesto
+4. Compiten en vivo; rechazo si no mejora el mejor valor
+5. Al cerrar: resumen + badge ganador; nueva ronda no mezcla historial
+
 ## URLs principales (producción)
 
 | Función | URL |
@@ -61,6 +90,8 @@ cp config/database.example.php config/database.php
 | Moderador | `/index.php?action=moderator_dashboard` |
 | Participante | `/index.php?action=participant_dashboard` |
 | Fase PyR | `/index.php?action=participant_phase&phase=pyr&producto_id=ID` |
+| Prácticas (admin) | `/index.php?action=admin_training_dashboard` |
+| Prácticas (participante) | `/index.php?action=participant_training_list` |
 
 ## Troubleshooting
 

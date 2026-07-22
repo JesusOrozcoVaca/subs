@@ -7,6 +7,7 @@ require_once BASE_PATH . '/models/OfferRating.php';
 require_once BASE_PATH . '/models/InitialOfferSubmission.php';
 require_once BASE_PATH . '/models/PujaConfig.php';
 require_once BASE_PATH . '/models/Bid.php';
+require_once BASE_PATH . '/services/ReverseAuctionEngine.php';
 
 class ParticipantController {
     private $productModel;
@@ -1436,36 +1437,7 @@ class ParticipantController {
     }
 
     private function buildPujaSchedule($horaInicioUtc, $duracionMinutos, $zonaHoraria) {
-        $zonaHoraria = trim((string)$zonaHoraria);
-        $tzName = $zonaHoraria !== '' ? $zonaHoraria : 'UTC';
-
-        try {
-            $localTz = new DateTimeZone($tzName);
-        } catch (Exception $e) {
-            $localTz = new DateTimeZone('UTC');
-            $tzName = 'UTC';
-        }
-
-        try {
-            $startUtc = new DateTime($horaInicioUtc, new DateTimeZone('UTC'));
-        } catch (Exception $e) {
-            return null;
-        }
-
-        $startLocal = clone $startUtc;
-        $startLocal->setTimezone($localTz);
-
-        $endLocal = clone $startLocal;
-        $endLocal->modify('+' . (int)$duracionMinutos . ' minutes');
-
-        return [
-            'timezone' => $tzName,
-            'start' => $startLocal->format('d/m/Y H:i:s'),
-            'end' => $endLocal->format('d/m/Y H:i:s'),
-            'duration' => (int)$duracionMinutos,
-            'start_ts_ms' => $startLocal->getTimestamp() * 1000,
-            'end_ts_ms' => $endLocal->getTimestamp() * 1000
-        ];
+        return ReverseAuctionEngine::buildSchedule($horaInicioUtc, $duracionMinutos, $zonaHoraria);
     }
 
     public function pujaWindow($productId = null) {
@@ -1563,19 +1535,15 @@ class ParticipantController {
         $pujaConfigModel = new PujaConfig();
         $pujaConfig = $pujaConfigModel->getByProductId($productId);
         if ($pujaConfig && !empty($pujaConfig['hora_inicio'])) {
-            $startUtc = DateTime::createFromFormat('Y-m-d H:i:s', $pujaConfig['hora_inicio'], new DateTimeZone('UTC'));
-            if ($startUtc) {
-                $startTs = $startUtc->getTimestamp();
-                $endTs = $startTs + ((int)($pujaConfig['duracion_minutos'] ?? 0) * 60);
-                $nowTs = time();
-                if ($nowTs < $startTs) {
-                    $this->sendJsonResponse(false, "La puja aún no ha iniciado.");
-                    return;
-                }
-                if ($nowTs > $endTs) {
-                    $this->sendJsonResponse(false, "La puja ha finalizado.");
-                    return;
-                }
+            $schedule = ReverseAuctionEngine::buildSchedule(
+                $pujaConfig['hora_inicio'],
+                $pujaConfig['duracion_minutos'] ?? 0,
+                $pujaConfig['zona_horaria'] ?? 'UTC'
+            );
+            $window = ReverseAuctionEngine::evaluateWindow($schedule);
+            if (!$window['open']) {
+                $this->sendJsonResponse(false, $window['message']);
+                return;
             }
         }
 
@@ -1591,66 +1559,36 @@ class ParticipantController {
             return;
         }
 
-        $valorRaw = trim((string)$valorRaw);
-        $valorSanitized = str_replace('.', '', $valorRaw);
-        $valorSanitized = str_replace(',', '.', $valorSanitized);
-
-        if ($valorSanitized === '' || !is_numeric($valorSanitized)) {
-            $this->sendJsonResponse(false, "El valor de la puja es inválido.");
-            return;
-        }
-
-        $valor = (float)$valorSanitized;
-        if ($valor <= 0) {
-            $this->sendJsonResponse(false, "El valor de la puja debe ser mayor a 0.");
-            return;
-        }
-
         $offerSubmissionModel = new OfferSubmission();
         $offerDetail = $offerSubmissionModel->getByProductAndUser($productId, $userId);
         $initialOfferValue = $offerDetail && isset($offerDetail['oferta_inicial_user'])
             ? (float)$offerDetail['oferta_inicial_user']
             : 0.0;
-        $variationPercent = isset($product['variacion_minima']) ? (float)$product['variacion_minima'] : 0.0;
-        $variationAmount = round($initialOfferValue * ($variationPercent / 100), 2);
-
-        if (isset($product['presupuesto_referencial']) && $valor > (float)$product['presupuesto_referencial']) {
-            $this->sendJsonResponse(false, "El valor ingresado es mayor al presupuesto referencial.");
-            return;
-        }
 
         $bidModel = new Bid();
-        $userLastBid = $bidModel->getUserLastBid($productId, $userId);
-        $baseBidValue = $userLastBid ? (float)$userLastBid['valor'] : $initialOfferValue;
-        if ($baseBidValue > 0 && $variationAmount > 0) {
-            $maxAllowedForUser = $baseBidValue - $variationAmount;
-            if ($valor > $maxAllowedForUser) {
-                $this->sendJsonResponse(false, "El valor ingresado no cumple la variación mínima permitida.");
-                return;
+        $result = ReverseAuctionEngine::submitBid($valorRaw, [
+            'presupuesto_referencial' => $product['presupuesto_referencial'] ?? 0,
+            'variacion_minima' => $product['variacion_minima'] ?? 0,
+            'oferta_inicial' => $initialOfferValue,
+            'user_last_bid' => $bidModel->getUserLastBid($productId, $userId),
+            'lowest_bid' => $bidModel->getLowestBid($productId),
+            'create_callback' => function ($valor, $fechaMs) use ($bidModel, $productId, $userId) {
+                return $bidModel->create([
+                    'producto_id' => $productId,
+                    'usuario_id' => $userId,
+                    'valor' => $valor,
+                    'fecha_puja_ms' => $fechaMs
+                ]);
             }
-        }
-
-        $lowestBid = $bidModel->getLowestBid($productId);
-        if ($lowestBid !== null && $valor >= (float)$lowestBid) {
-            $this->sendJsonResponse(false, "Ya existe una oferta con mejor valor ingresado.");
-            return;
-        }
-
-        $fechaMs = (int)round(microtime(true) * 1000);
-        $result = $bidModel->create([
-            'producto_id' => $productId,
-            'usuario_id' => $userId,
-            'valor' => $valor,
-            'fecha_puja_ms' => $fechaMs
         ]);
 
-        if (!$result) {
-            $this->sendJsonResponse(false, "No se pudo registrar la puja.");
+        if (!$result['success']) {
+            $this->sendJsonResponse(false, $result['message']);
             return;
         }
 
         $statusData = $this->buildPujaStatusData($productId, $userId);
-        $this->sendJsonResponse(true, "Puja registrada exitosamente.", $statusData);
+        $this->sendJsonResponse(true, $result['message'], $statusData);
     }
 
     public function getPujaStatus($productId = null) {
@@ -1681,50 +1619,14 @@ class ParticipantController {
 
     private function buildPujaStatusData($productId, $userId) {
         $bidModel = new Bid();
-        $lowestBid = $bidModel->getLowestBid($productId);
-        $userLastBid = $bidModel->getUserLastBid($productId, $userId);
-
-        $isUserBest = false;
-        if ($userLastBid && $lowestBid !== null) {
-            $isUserBest = abs((float)$userLastBid['valor'] - (float)$lowestBid) < 0.00001;
-        } elseif ($userLastBid && $lowestBid === null) {
-            $isUserBest = true;
-        }
-
-        return [
-            'user_last_bid' => $userLastBid ? (float)$userLastBid['valor'] : null,
-            'is_user_best' => $isUserBest
-        ];
+        return ReverseAuctionEngine::buildStatusData(
+            $bidModel->getUserLastBid($productId, $userId),
+            $bidModel->getLowestBid($productId)
+        );
     }
 
     private function formatPujaTimestamp($timestampMs, $fallbackDateTime, $timezone) {
-        $timezone = $timezone ?: 'UTC';
-        try {
-            $tz = new DateTimeZone($timezone);
-        } catch (Exception $e) {
-            $tz = new DateTimeZone('UTC');
-        }
-
-        if ($timestampMs) {
-            $seconds = (int)floor($timestampMs / 1000);
-            $msPart = (int)($timestampMs % 1000);
-            $msTwo = str_pad((string)floor($msPart / 10), 2, '0', STR_PAD_LEFT);
-            $dt = new DateTime('@' . $seconds);
-            $dt->setTimezone($tz);
-            return 'hora:' . $dt->format('H:i:s') . '.' . $msTwo;
-        }
-
-        if (!empty($fallbackDateTime)) {
-            try {
-                $dt = new DateTime($fallbackDateTime);
-                $dt->setTimezone($tz);
-                return 'hora:' . $dt->format('H:i:s') . '.00';
-            } catch (Exception $e) {
-                return '';
-            }
-        }
-
-        return '';
+        return ReverseAuctionEngine::formatPujaTimestamp($timestampMs, $fallbackDateTime, $timezone);
     }
 
     private function evaluatePujaEligibility($productId, $userId) {

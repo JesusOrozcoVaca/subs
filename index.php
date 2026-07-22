@@ -292,6 +292,61 @@ try {
             $controller->deleteCPC();
             break;
 
+        // Rutas Admin - Prácticas de Puja
+        case 'admin_training_dashboard':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->dashboard();
+            break;
+
+        case 'admin_training_create_sala':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->createSala();
+            break;
+
+        case 'admin_training_edit_sala':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->editSala($_GET['id'] ?? null);
+            break;
+
+        case 'admin_training_view_sala':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->viewSala($_GET['id'] ?? null);
+            break;
+
+        case 'admin_training_create_ronda':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->createRonda($_POST['sala_id'] ?? $_GET['sala_id'] ?? null);
+            break;
+
+        case 'admin_training_cancel_ronda':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->cancelRonda($_POST['id'] ?? $_GET['id'] ?? null);
+            break;
+
+        case 'admin_training_close_ronda':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->closeRonda($_POST['id'] ?? $_GET['id'] ?? null);
+            break;
+
+        case 'admin_training_ronda_detail':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->rondaDetail($_GET['id'] ?? null);
+            break;
+
+        case 'admin_training_toggle_inscripcion':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->toggleInscripcion();
+            break;
+
         // Rutas del Participante
         case 'participant_dashboard':
             checkAccess(3);
@@ -438,6 +493,43 @@ try {
             checkAccess(3);
             $controller = loadController('ParticipantController');
             $controller->downloadOfferPdf();
+            break;
+
+        // Rutas Participante - Prácticas de Puja
+        case 'participant_training_list':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->listPractices();
+            break;
+
+        case 'participant_training_join':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->join($_GET['id'] ?? $_POST['ronda_id'] ?? null);
+            break;
+
+        case 'participant_training_puja':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->pujaWindow($_GET['id'] ?? null);
+            break;
+
+        case 'participant_training_submit_bid':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->submitBid();
+            break;
+
+        case 'participant_training_puja_status':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->pujaStatus($_GET['id'] ?? $_GET['ronda_id'] ?? null);
+            break;
+
+        case 'participant_training_summary':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->summary($_GET['id'] ?? null);
             break;
 
         // Rutas del Moderador

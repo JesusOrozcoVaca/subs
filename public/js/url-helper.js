@@ -122,7 +122,10 @@ function legacyPathForAction(action, params = {}) {
  */
 function generateUrl(action, params = {}) {
     const baseUrl = getBaseUrl();
-    const useQueryParams = isNewSystem() || action === 'view_file';
+    const isTrainingAction = typeof action === 'string' && (
+        action.indexOf('admin_training_') === 0 || action.indexOf('participant_training_') === 0
+    );
+    const useQueryParams = isNewSystem() || action === 'view_file' || isTrainingAction;
 
     if (useQueryParams) {
         const indexFile = getIndexFile();
@@ -203,7 +206,15 @@ const URLS = {
     participantDownloadConvalidationPdf: (producto_id) => generateUrl('participant_download_convalidation_pdf', { producto_id }),
     participantGetConvalidation: (producto_id) => generateUrl('participant_get_convalidation', { producto_id }),
     participantSubmitConvalidation: () => generateUrl('participant_submit_convalidation'),
-    viewFile: (path) => generateUrl('view_file', { path })
+    viewFile: (path) => generateUrl('view_file', { path }),
+    adminTrainingDashboard: () => generateUrl('admin_training_dashboard'),
+    adminTrainingToggleInscripcion: () => generateUrl('admin_training_toggle_inscripcion'),
+    participantTrainingList: () => generateUrl('participant_training_list'),
+    participantTrainingJoin: (id) => generateUrl('participant_training_join', { id }),
+    participantTrainingPuja: (id) => generateUrl('participant_training_puja', { id }),
+    participantTrainingSubmitBid: () => generateUrl('participant_training_submit_bid'),
+    participantTrainingPujaStatus: (id) => generateUrl('participant_training_puja_status', { id }),
+    participantTrainingSummary: (id) => generateUrl('participant_training_summary', { id })
 };
 
 // Exportar para uso global
