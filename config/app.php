@@ -1,36 +1,36 @@
 <?php
 /**
- * Configuración de la aplicación - DESARROLLO LOCAL
- * 
- * Este archivo contiene las configuraciones para el entorno de desarrollo local.
- * Está ignorado por Git para evitar conflictos con producción.
+ * Configuración de la aplicación - PRODUCCIÓN
+ *
+ * Dominio: https://sie.hjconsulting.com.ec/
+ * Para desarrollo local, usa BASE_URL = '/subs/' y ENVIRONMENT = 'development'.
  */
 
-// Configuración de la URL base para DESARROLLO LOCAL
-define('BASE_URL', '/subs/');
+// Configuración de la URL base para PRODUCCIÓN
+define('BASE_URL', '/');
 
 // Otras configuraciones de la aplicación
 define('APP_NAME', 'Simulador de Subasta Inversa Electrónica');
 define('APP_VERSION', '1.0.0');
 
 // Configuración de entorno
-define('ENVIRONMENT', 'development');
+define('ENVIRONMENT', 'production');
 
-// Configuración de debug - HABILITADO para desarrollo
+// Configuración de debug - DESHABILITADO en producción
 define('DEBUG', false);
 
-// Configuración de rutas - SISTEMA LEGACY (URLs amigables)
-define('LOGIN_URL', BASE_URL . 'login');
-define('UNAUTHORIZED_URL', BASE_URL . 'unauthorized');
+// Configuración de rutas - NUEVA ARQUITECTURA (query parameters)
+define('LOGIN_URL', BASE_URL . 'index.php?action=login');
+define('UNAUTHORIZED_URL', BASE_URL . 'index.php?action=unauthorized');
+define('LOGOUT_URL', BASE_URL . 'index.php?action=logout');
 
-// URLs de redirección por rol - SISTEMA LEGACY
-define('ADMIN_DASHBOARD_URL', BASE_URL . 'admin/dashboard');
-define('MODERATOR_DASHBOARD_URL', BASE_URL . 'moderator/dashboard');
-define('PARTICIPANT_DASHBOARD_URL', BASE_URL . 'participant/dashboard');
+// URLs de redirección por rol - NUEVA ARQUITECTURA (query parameters)
+define('ADMIN_DASHBOARD_URL', BASE_URL . 'index.php?action=admin_dashboard');
+define('MODERATOR_DASHBOARD_URL', BASE_URL . 'index.php?action=moderator_dashboard');
+define('PARTICIPANT_DASHBOARD_URL', BASE_URL . 'index.php?action=participant_dashboard');
 
 // URL para assets estáticos
 define('ASSETS_URL', BASE_URL . 'public/');
 define('CSS_URL', ASSETS_URL . 'css/');
 define('JS_URL', ASSETS_URL . 'js/');
 define('IMAGES_URL', ASSETS_URL . 'images/');
-
