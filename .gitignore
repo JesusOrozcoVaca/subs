@@ -1,10 +1,10 @@
 # Archivos de configuración sensibles (configurar manualmente en producción)
-config/database.php
-config/app.php
+#config/database.php
+#config/app.php
 
 # Archivos del sistema (configurar manualmente en producción)
 .htaccess
-index.php
+#index.php
 
 # Archivos de backup del sistema
 index_legacy_backup.php
@@ -21,8 +21,8 @@ config/app_backup.php
 Thumbs.db
 
 # Logs
-*.log
-logs/
+#*.log
+#logs/
 
 # Archivos temporales
 *.tmp
@@ -46,8 +46,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Archivos de Composer (si se agregan en el futuro)
-vendor/composer/
-composer.lock
+#vendor/composer/
+#composer.lock
 
 # Archivos de sesión PHP
 sess_*
