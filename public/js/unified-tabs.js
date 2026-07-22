@@ -113,23 +113,11 @@ function loadPhaseContent(phase) {
     // Construir URL para la fase
     const productId = getProductIdFromURL();
     
-    // Detectar si estamos en producción (URL contiene index.php o estamos en dominio de producción)
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    
-    let url;
-    if (isProduction) {
-        // En producción: usar query parameters
-        url = `/subs/index.php?action=participant_phase&phase=${phase}&producto_id=${productId}`;
-    } else {
-        // En local: usar URLs amigables
-        url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
-    }
+    const url = generateUrl('participant_phase', { phase, producto_id: productId });
     
     console.log('=== PHASE LOADING DEBUG ===');
     console.log('Current URL:', window.location.href);
     console.log('Current pathname:', window.location.pathname);
-    console.log('Is production detected:', isProduction);
     console.log('Phase:', phase);
     console.log('Product ID:', productId);
     console.log('Generated URL:', url);
@@ -286,16 +274,7 @@ function loadPreguntas(page) {
     console.log('Loading preguntas, page:', page);
     const productId = getProductIdFromURL();
     
-    // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    
-    let url;
-    if (isProduction) {
-        url = `/subs/index.php?action=participant_get_questions&producto_id=${productId}&page=${page}&limit=5`;
-    } else {
-        url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
-    }
+    const url = generateUrl('participant_get_questions', { producto_id: productId, page, limit: 5 });
     
     fetch(url, {
         method: 'GET',
@@ -332,16 +311,7 @@ function submitPregunta(pregunta) {
     console.log('Submitting pregunta:', pregunta);
     const productId = getProductIdFromURL();
     
-    // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    
-    let url;
-    if (isProduction) {
-        url = '/subs/index.php?action=participant_submit_question';
-    } else {
-        url = '/subs/participant/submit-question';
-    }
+    const url = generateUrl('participant_submit_question');
     
     fetch(url, {
         method: 'POST',
@@ -492,12 +462,7 @@ function renderOfferSummaryDirectly(summary) {
     if (summary) {
         summaryContainer.classList.remove('hidden');
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const downloadUrl = isProduction ? 
-            `/subs/index.php?action=participant_download_offer_pdf&producto_id=${getProductIdFromURL()}` : 
-            `/subs/participant/download-offer-pdf?producto_id=${getProductIdFromURL()}`;
+        const downloadUrl = generateUrl('participant_download_offer_pdf', { producto_id: getProductIdFromURL() });
         
         summaryContainer.innerHTML = `
             <h3>Resumen de la oferta procesada</h3>
@@ -753,12 +718,7 @@ function initializeEOFDirectly(container) {
             }
             
             // Detectar si estamos en producción
-            const isProduction = window.location.pathname.includes('index.php') || 
-                                window.location.hostname.includes('hjconsulting.com.ec');
-            
-            const processUrl = isProduction ? 
-                '/subs/index.php?action=participant_process_offer' : 
-                '/subs/participant/process-offer';
+            const processUrl = generateUrl('participant_process_offer');
             
             console.log('Processing offer at:', processUrl);
             
@@ -919,12 +879,7 @@ function uploadFilesDirectly(files) {
         formData.append('documento_oferta', file);
         
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const uploadUrl = isProduction ? 
-            '/subs/index.php?action=participant_upload_offer' : 
-            '/subs/participant/upload-offer';
+        const uploadUrl = generateUrl('participant_upload_offer');
         
         console.log('Uploading file:', file.name, 'to:', uploadUrl);
         
@@ -997,12 +952,7 @@ function uploadFilesDirectly(files) {
 function loadOfertasDirectly() {
     console.log('=== LOAD OFFERS DIRECTLY ===');
     // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    
-    const getOffersUrl = isProduction ? 
-        `/subs/index.php?action=participant_get_offers&producto_id=${getProductIdFromURL()}` : 
-        `/subs/participant/get-offers?producto_id=${getProductIdFromURL()}`;
+    const getOffersUrl = generateUrl('participant_get_offers', { producto_id: getProductIdFromURL() });
     
     console.log('Loading offers from:', getOffersUrl);
     
@@ -1107,10 +1057,7 @@ function displayOfertasDirectly(ofertas) {
     
     // Usar función helper para generar URLs dinámicas (siguiendo documentación)
     function generateUrl(path) {
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        const baseUrl = isProduction ? '/subs/' : '/subs/';
-        return `${baseUrl}index.php?action=view_file&path=${encodeURIComponent(path)}`;
+        return generateUrl('view_file', { path });
     }
     
     let html = '<div class="ofertas-grid">';
@@ -1160,12 +1107,7 @@ window.deleteOfertaDirectly = function(fileId) {
     console.log('=== DELETE OFFER DIRECTLY ===', fileId);
     if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const deleteUrl = isProduction ? 
-            '/subs/index.php?action=participant_delete_offer' : 
-            '/subs/participant/delete-offer';
+        const deleteUrl = generateUrl('participant_delete_offer');
         
         fetch(deleteUrl, {
             method: 'POST',

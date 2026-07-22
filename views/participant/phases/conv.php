@@ -55,10 +55,7 @@ function escapeHtml(string) {
 }
 
 function generateFileUrl(path) {
-    const isProduction = window.location.pathname.includes('index.php') ||
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    const baseUrl = isProduction ? '/subs/' : '/subs/';
-    return `${baseUrl}index.php?action=view_file&path=${encodeURIComponent(path)}`;
+    return generateUrl('view_file', { path });
 }
 
 function updateFileInfo(files, countElement, sizeElement) {
@@ -87,11 +84,7 @@ function renderSummary(summary) {
         return;
     }
 
-    const isProduction = window.location.pathname.includes('index.php') ||
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    const downloadUrl = isProduction ?
-        `/subs/index.php?action=participant_download_convalidation_pdf&producto_id=<?php echo $product['id']; ?>` :
-        `/subs/participant/download-convalidation-pdf?producto_id=<?php echo $product['id']; ?>`;
+    const downloadUrl = generateUrl('participant_download_convalidation_pdf', { producto_id: <?php echo (int)$product['id']; ?> });
 
     summaryContainer.classList.remove('hidden');
     summaryContainer.innerHTML = `
@@ -163,11 +156,7 @@ function loadConvalidation() {
     console.log('[CONV] loadConvalidation start');
     window.convalidationState.loading = true;
     updateConvalidationUI(window.convalidationState.summary, window.convalidationState.files);
-    const isProduction = window.location.pathname.includes('index.php') ||
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    const url = isProduction ?
-        `/subs/index.php?action=participant_get_convalidation&producto_id=<?php echo $product['id']; ?>` :
-        `/subs/participant/get-convalidation?producto_id=<?php echo $product['id']; ?>`;
+    const url = generateUrl('participant_get_convalidation', { producto_id: <?php echo (int)$product['id']; ?> });
 
     console.log('[CONV] loadConvalidation url', url);
     fetch(url, {
@@ -242,11 +231,7 @@ function initializeConvalidation() {
             formData.append('documentos_convalidacion[]', file);
         });
 
-        const isProduction = window.location.pathname.includes('index.php') ||
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        const submitUrl = isProduction ?
-            '/subs/index.php?action=participant_submit_convalidation' :
-            '/subs/participant/submit-convalidation';
+        const submitUrl = generateUrl('participant_submit_convalidation');
 
         console.log('[CONV] submit url', submitUrl);
         fetch(submitUrl, {

@@ -497,15 +497,16 @@ define('DEBUG', false);
 **⚠️ PUNTOS CRÍTICOS:**
 
 - **`indexpro.php`** = Plantilla versionada (se actualiza con `git pull`)
-- **`index.php`** = Archivo de producción (se copia manualmente)
-- **JavaScript** debe detectar automáticamente el entorno
-- **URLs** se generan dinámicamente según el entorno detectado
+- **`index.php`** = Versionado (espejo de `indexpro.php` para producción)
+- **`config/app.php`** = Versionado con `BASE_URL = '/'` (producción)
+- **`config/database.php`** = NO versionado (secretos); usar `database.example.php`
+- **JavaScript** debe usar `generateUrl()` / `URLS.*` de `url-helper.js`
 
 **ERRORES COMUNES A EVITAR:**
-- ❌ Modificar `index.php` directamente en producción
-- ❌ Hacer commit de `index.php` (está en `.gitignore`)
-- ❌ Hardcodear URLs en JavaScript
-- ❌ Olvidar copiar `indexpro.php` a `index.php` después de `git pull`
+- ❌ Hardcodear `/subs/` en JavaScript o vistas
+- ❌ Hacer commit de `config/database.php` con credenciales reales
+- ❌ Dejar `BASE_URL = '/subs/'` en producción (rompe CSS/JS/AJAX)
+- ❌ Olvidar crear `config/database.php` en el servidor tras el primer deploy
 
 **Ventajas de este enfoque:**
 - ✅ Mantiene configuraciones específicas de cada entorno
@@ -514,30 +515,25 @@ define('DEBUG', false);
 
 #### 🚨 CONSIDERACIÓN CRÍTICA - Detección de Entorno en JavaScript
 
-**PROBLEMA RESUELTO:** El JavaScript debe detectar automáticamente si está ejecutándose en desarrollo local o en producción para generar las URLs correctas.
+**PROBLEMA RESUELTO (Julio 2026):** Las URLs AJAX ya no usan `/subs/` hardcodeado. Toda generación pasa por `public/js/url-helper.js`.
 
-**CAUSA RAÍZ:** 
-- **Desarrollo local:** Usa URLs amigables (`/subs/participant/phase/pyr`)
-- **Producción:** Usa query parameters (`/subs/index.php?action=participant_phase&phase=pyr`)
-- **El mismo código JavaScript debe funcionar en ambos entornos**
+**CAUSA RAÍZ HISTÓRICA:**
+- Local Windows: app bajo `/subs/`
+- Producción actual (`sie.hjconsulting.com.ec`): app en la **raíz** del dominio (`/`)
+- Hardcodear `/subs/` en JS provoca HTTP 404 en producción
 
-**SOLUCIÓN IMPLEMENTADA:**
+**SOLUCIÓN OBLIGATORIA:**
 
 ```javascript
-// Detección automática de entorno
-const isProduction = window.location.pathname.includes('index.php') || 
-                    window.location.hostname.includes('hjconsulting.com.ec');
+// ✅ CORRECTO - usar el helper global
+const url = generateUrl('participant_phase', { phase, producto_id: productId });
 
-// Generación de URLs según entorno
-let url;
-if (isProduction) {
-    // Producción: query parameters
-    url = `/subs/index.php?action=participant_phase&phase=${phase}&producto_id=${productId}`;
-} else {
-    // Local: URLs amigables
-    url = `/subs/participant/phase/${phase}?producto_id=${productId}`;
-}
+// ❌ INCORRECTO
+const url = `/subs/index.php?action=participant_phase&phase=${phase}&producto_id=${productId}`;
 ```
+
+- Local: `getAppBasePath()` → `/subs/` y rutas amigables (si no hay `index.php?action=`)
+- Producción: `getAppBasePath()` → `/` y `index.php?action=...`
 
 **EXTRACCIÓN DE PARÁMETROS:**
 
@@ -986,38 +982,27 @@ El uso de URLs hardcodeadas causa problemas de enrutamiento entre entornos local
 - URLs absolutas fallan en diferentes configuraciones de servidor
 
 ### **SOLUCIÓN OBLIGATORIA:**
-**SIEMPRE usar detección de entorno y URLs dinámicas** para cualquier enlace a recursos:
+**SIEMPRE usar `generateUrl()` de `public/js/url-helper.js`:**
 
 ```javascript
-// ✅ CORRECTO - Detección de entorno
-const isProduction = window.location.pathname.includes('index.php') || 
-                    window.location.hostname.includes('hjconsulting.com.ec');
+// ✅ CORRECTO
+const fileUrl = generateUrl('view_file', { path: rutaArchivo });
+const phaseUrl = generateUrl('participant_phase', { phase: 'pyr', producto_id: productId });
 
-const baseUrl = isProduction ? '/subs/' : '/subs/';
-const fileUrl = baseUrl + rutaArchivo;
-
-// ❌ INCORRECTO - URL hardcodeada
-const fileUrl = '/subs/' + rutaArchivo;
+// ❌ INCORRECTO
+const fileUrl = '/subs/index.php?action=view_file&path=' + encodeURIComponent(rutaArchivo);
 ```
 
 ### **CASOS DE USO CRÍTICOS:**
-1. **Enlaces a archivos subidos** (`uploads/offers/`)
-2. **Enlaces a recursos estáticos** (CSS, JS, imágenes)
+1. **Enlaces a archivos subidos** (`uploads/offers/`) vía `action=view_file`
+2. **Enlaces a recursos estáticos** (CSS, JS, imágenes) vía `BASE_URL` PHP
 3. **Enlaces a vistas** (formularios, reportes)
-4. **URLs de API** (endpoints AJAX)
+4. **URLs de API** (endpoints AJAX de fases)
 
 ### **IMPLEMENTACIÓN REQUERIDA:**
 ```javascript
-// Función helper para generar URLs dinámicas
-function generateUrl(path) {
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    const baseUrl = isProduction ? '/subs/' : '/subs/';
-    return baseUrl + path;
-}
-
-// Uso en enlaces
-<a href="${generateUrl(oferta.ruta_archivo)}" target="_blank">Ver</a>
+// Ya disponible globalmente si la vista carga url-helper.js
+const fileUrl = generateUrl('view_file', { path: oferta.ruta_archivo });
 ```
 
 ### **REGLAS OBLIGATORIAS:**

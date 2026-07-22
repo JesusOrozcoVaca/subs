@@ -1,4 +1,8 @@
 <?php
+if (!function_exists('url')) {
+    require_once BASE_PATH . '/utils/url_helpers.php';
+}
+
 // Verificar que el producto esté disponible
 if (!isset($product) || !$product) {
     echo '<div class="error">Producto no encontrado</div>';
@@ -198,7 +202,7 @@ $actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlenco
     <div class="container">
         <div class="header">
             <h1>Preguntas y Respuestas - Producto: <?php echo htmlspecialchars($product['codigo']); ?></h1>
-            <a href="/subs/participant/view-product/<?php echo $productId; ?>" class="btn-back">Regresar al Producto</a>
+            <a href="<?php echo htmlspecialchars(url('participant/view-product/' . $productId)); ?>" class="btn-back">Regresar al Producto</a>
         </div>
 
         <div class="preguntas-respuestas" id="pyr-container">
@@ -331,7 +335,7 @@ $actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlenco
         function testGetQuestions() {
             console.log('PYR-TEST - Testing GET questions...');
             const productId = getProductIdFromURL();
-            const url = `/subs/participant/get-questions?producto_id=${productId}&page=1&limit=5`;
+            const url = generateUrl('participant_get_questions', { producto_id: productId, page: 1, limit: 5 });
             
             showDebugLog('Testing GET questions...');
             showDebugLog('GET URL: ' + url);
@@ -375,7 +379,7 @@ $actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlenco
         function testSubmitQuestion() {
             console.log('PYR-TEST - Testing POST submit question...');
             const productId = getProductIdFromURL();
-            const url = '/subs/participant/submit-question';
+            const url = generateUrl('participant_submit_question');
             
             showDebugLog('Testing POST submit question...');
             showDebugLog('POST URL: ' + url);
@@ -419,7 +423,7 @@ $actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlenco
         function submitPregunta(pregunta) {
             console.log('PYR-TEST - Submitting pregunta:', pregunta);
             const productId = getProductIdFromURL();
-            const url = '/subs/participant/submit-question';
+            const url = generateUrl('participant_submit_question');
             
             showDebugLog('Submitting pregunta: ' + pregunta);
             
@@ -467,7 +471,7 @@ $actaUrl = $actaExists ? BASE_URL . 'index.php?action=view_file&path=' . urlenco
         function loadPreguntas(page) {
             console.log('PYR-TEST - Loading preguntas, page:', page);
             const productId = getProductIdFromURL();
-            const url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
+            const url = generateUrl('participant_get_questions', { producto_id: productId, page, limit: 5 });
             
             showDebugLog('Loading preguntas, page: ' + page);
             

@@ -55,11 +55,7 @@ $initialOfferDocument = $initialOfferDocument ?? null;
         return;
     }
 
-    const isProduction = window.location.pathname.includes('index.php') ||
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    const submitUrl = isProduction
-        ? '/subs/index.php?action=participant_submit_initial_offer'
-        : '/subs/participant/submit-initial-offer';
+    const submitUrl = generateUrl('participant_submit_initial_offer');
 
     const mismatchMessage = 'El valor ingresado no corresponde a su oferta ingresada al entregar la oferta. Inténtelo nuevamente.';
 

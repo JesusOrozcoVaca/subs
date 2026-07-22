@@ -1,75 +1,84 @@
 # Sistema de Simulación de Contratación Pública
 
-## 🚀 **Nueva Arquitectura Implementada**
+Simulador Educativo de Subastas Inversas Electrónicas.
 
-Este proyecto utiliza una **nueva arquitectura de routing** que resuelve problemas de interferencia con WordPress y servidores compartidos.
+Dominio de producción: `https://sie.hjconsulting.com.ec/`
 
-### **📋 Características Principales**
+## Arquitectura
 
-- ✅ **Sin interferencia de WordPress**
-- ✅ **Sin dependencia de `.htaccess` en producción**
-- ✅ **Routing robusto con query parameters**
-- ✅ **Compatible con desarrollo local**
+- Routing por query parameters en producción: `index.php?action=...`
+- Compatible con desarrollo local bajo `/subs/` (URLs amigables + `.htaccess`)
+- Las URLs de JavaScript se generan con `public/js/url-helper.js` (`generateUrl` / `getAppBasePath`)
+- **No hardcodear** `/subs/` en JS ni vistas
 
-### **🔧 Instalación Rápida**
+## Instalación
 
-#### **Para Producción:**
+### Producción (`sie.hjconsulting.com.ec`)
+
 ```bash
-git clone [tu-repo]
-cd subs
-mv index_new.php index.php
-# Configurar config/app.php y config/database.php
-```
+git pull origin master
 
-#### **Para Desarrollo Local:**
-```bash
-git clone [tu-repo]
-cd subs
-cp config/app_local.php config/app.php
+# index.php y config/app.php ya vienen versionados para producción (BASE_URL = '/')
+
+# Credenciales DB (NO versionadas): crear solo si no existe
 cp config/database.example.php config/database.php
-# Configurar .htaccess para desarrollo local
+# Editar config/database.php con usuario/password del hosting
 ```
 
-### **📖 URLs del Sistema**
+Checklist post-deploy:
+
+1. `config/app.php` → `BASE_URL = '/'`, `ENVIRONMENT = 'production'`
+2. `config/database.php` → credenciales del hosting (archivo local en servidor)
+3. `index.php` presente (espejo de `indexpro.php`)
+4. Hard refresh del navegador (JS versionado con `?v=20260722`)
+
+### Desarrollo local
+
+```bash
+cp config/app.local.example.php config/app.php
+cp config/database.example.php config/database.php
+# Editar database.php (ej. root sin password en XAMPP)
+# Configurar .htaccess con RewriteBase /subs/
+```
+
+## Archivos versionados vs ignorados
+
+| Archivo | ¿En Git? | Notas |
+|---|---|---|
+| `index.php` / `indexpro.php` | Sí | Producción usa `index.php` |
+| `config/app.php` | Sí | Config de producción (`BASE_URL=/`) |
+| `config/app.local.example.php` | Sí | Plantilla local |
+| `config/database.example.php` | Sí | Plantilla sin secretos |
+| `config/database.php` | **No** | Secretos; crear en cada entorno |
+| `uploads/` | **No** | Archivos de usuarios |
+
+## URLs principales (producción)
 
 | Función | URL |
 |---|---|
-| **Login** | `/index.php?action=login` |
-| **Admin Dashboard** | `/index.php?action=admin_dashboard` |
-| **Moderator Dashboard** | `/index.php?action=moderator_dashboard` |
-| **Participant Dashboard** | `/index.php?action=participant_dashboard` |
+| Login | `/index.php?action=login` |
+| Admin | `/index.php?action=admin_dashboard` |
+| Moderador | `/index.php?action=moderator_dashboard` |
+| Participante | `/index.php?action=participant_dashboard` |
+| Fase PyR | `/index.php?action=participant_phase&phase=pyr&producto_id=ID` |
 
-### **📚 Documentación Completa**
+## Troubleshooting
 
-Ver `NUEVA_ARQUITECTURA.md` para documentación detallada sobre:
-- Configuración por entorno
-- Mapeo completo de URLs
-- Mantenimiento y troubleshooting
+**Fases / AJAX con HTTP 404 a `/subs/...`**  
+Causa: JS antiguo con `/subs/` quemado o caché del navegador.  
+Solución: desplegar `url-helper.js` + `unified-tabs.js` y hard refresh.
 
-### **🧪 Verificación rápida de fases**
+**Sitio sin CSS**  
+Causa: `BASE_URL` en `config/app.php` apunta a `/subs/` en un dominio raíz.  
+Solución: `BASE_URL = '/'` en producción.
 
-- Las fases con scripts embebidos (ej. `conv`, `eof`) se cargan vía AJAX en `participant/view-product`.
-- El loader `public/js/unified-tabs.js` debe ejecutar los `<script>` inline del contenido inyectado.
-- Verificación por código: actualmente solo `conv.php` y `eof.php` incluyen `<script>` y ambos se cargan desde `unified-tabs.js`.
+**Scripts de fase no corren**  
+Causa: HTML inyectado con `innerHTML` sin ejecutar `<script>`.  
+Solución: `executeInlineScripts` en `unified-tabs.js`.
 
-### **🛠️ Troubleshooting**
+## Documentación
 
-**Síntoma:** al cargar una fase, el formulario no intercepta el submit, los inputs no actualizan y el envío redirige al detalle del proceso.  
-**Causa:** el HTML de la fase se inyecta con `innerHTML` y los `<script>` inline no se ejecutan.  
-**Solución:** ejecutar scripts inline después de inyectar el contenido en `public/js/unified-tabs.js` (función `executeInlineScripts`).  
+Ver `DOCUMENTACION_PROYECTO.md` para detalle funcional y de base de datos.
 
-**Nota:** si el navegador cachea `unified-tabs.js`, limpiar caché o usar un query param de versión en `views/participant/part_view_product.php`.
-
-### **⚙️ Configuración**
-
-Los archivos de configuración se manejan por entorno:
-- `config/app.php` - Configuración principal (ignorado por Git)
-- `config/database.php` - Base de datos (ignorado por Git)
-- `.htaccess` - Servidor web (ignorado por Git)
-
-**Ver archivos `.example` para plantillas de configuración.**
-
----
-
-**Versión:** 2.0 - Nueva Arquitectura  
-**Última actualización:** Enero 2025
+**Versión:** 2.1 - URLs dinámicas multi-entorno  
+**Última actualización:** Julio 2026

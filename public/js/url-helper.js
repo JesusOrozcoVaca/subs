@@ -1,187 +1,160 @@
-// URL Helper - Compatible con ambos sistemas (legacy y nuevo)
-// Este archivo proporciona funciones para generar URLs correctas según el entorno
+// URL Helper - Compatible con local (/subs/) y producción (raíz del dominio)
+// Fuente de verdad para armar URLs en JS. No hardcodear '/subs/' en otros archivos.
 
 /**
- * Detecta si estamos en el nuevo sistema (query parameters) o sistema legacy
+ * ¿Estamos en entorno local?
  */
-function isNewSystem() {
-    // Si la URL contiene index_new.php o query parameters de acción, es el nuevo sistema
-    const isNew = window.location.href.includes('index_new.php') || 
-           window.location.search.includes('action=') ||
-           (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1');
-    
-    console.log('=== URL SYSTEM DETECTION ===');
-    console.log('Current URL:', window.location.href);
-    console.log('Search params:', window.location.search);
-    console.log('Hostname:', window.location.hostname);
-    console.log('Is new system:', isNew);
-    
-    return isNew;
+function isLocalHost() {
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1';
 }
 
 /**
- * Obtiene la URL base correcta según el entorno
+ * Prefijo de aplicación: '/subs/' en local, '/' en producción.
+ */
+function getAppBasePath() {
+    if (isLocalHost()) {
+        const parts = window.location.pathname.split('/').filter(part => part !== '');
+        if (parts.length > 0 && !parts[0].includes('.php')) {
+            return '/' + parts[0] + '/';
+        }
+        return '/';
+    }
+    return '/';
+}
+
+/**
+ * URL base absoluta según el entorno (incluye origin).
  */
 function getBaseUrl() {
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        // Desarrollo local - incluir el directorio del proyecto
-        const pathParts = window.location.pathname.split('/').filter(part => part !== '');
-        return window.location.origin + '/' + (pathParts.length > 0 ? pathParts[0] + '/' : '');
-    } else {
-        // Producción - usar la raíz del dominio
-        return window.location.origin + '/';
-    }
+    return window.location.origin + getAppBasePath();
 }
 
 /**
- * Genera una URL usando el sistema apropiado
+ * Archivo índice a usar cuando el routing es por query parameters.
+ */
+function getIndexFile() {
+    const path = window.location.pathname;
+    if (path.includes('indexpro.php')) return 'indexpro.php';
+    if (path.includes('index_new.php')) return 'index_new.php';
+    if (path.includes('index.php')) return 'index.php';
+    return 'index.php';
+}
+
+/**
+ * Detecta si debemos usar query parameters (producción / index.php)
+ * o rutas amigables legacy (local con .htaccess).
+ */
+function isNewSystem() {
+    if (!isLocalHost()) {
+        return true;
+    }
+    return window.location.pathname.includes('index.php')
+        || window.location.pathname.includes('indexpro.php')
+        || window.location.pathname.includes('index_new.php')
+        || window.location.search.includes('action=');
+}
+
+/**
+ * Mapeo legacy de acciones -> rutas amigables (solo local).
+ */
+function legacyPathForAction(action, params = {}) {
+    const id = params.id || '';
+    const phase = params.phase || '';
+
+    const map = {
+        login: 'login',
+        logout: 'logout',
+        unauthorized: 'unauthorized',
+        admin_dashboard: 'admin/dashboard',
+        admin_create_user: 'admin/create-user',
+        admin_create_product: 'admin/create-product',
+        admin_create_cpc: 'admin/create-cpc',
+        admin_edit_user: 'admin/edit-user/' + id,
+        admin_edit_product: 'admin/edit-product/' + id,
+        admin_edit_cpc: 'admin/edit-cpc/' + id,
+        admin_toggle_user_status: 'admin/toggle-user-status',
+        admin_manage_product: 'admin/manage-product/' + id,
+        admin_delete_user: 'admin/delete-user',
+        admin_delete_product: 'admin/delete-product',
+        admin_delete_cpc: 'admin/delete-cpc',
+        admin_get_unanswered_questions: 'admin/get-unanswered-questions',
+        admin_answer_questions: 'admin/answer-questions',
+        admin_get_offer_ratings: 'admin/get-offer-ratings',
+        admin_save_offer_rating: 'admin/save-offer-rating',
+        moderator_dashboard: 'moderator/dashboard',
+        moderator_manage_cpcs: 'moderator/manage-cpcs',
+        moderator_edit_cpc: 'moderator/edit-cpc/' + id,
+        moderator_manage_questions: 'moderator/manage-questions/' + id,
+        moderator_evaluate_participants: 'moderator/evaluate-participants/' + id,
+        moderator_delete_cpc: 'moderator/delete-cpc',
+        moderator_get_unanswered_questions: 'moderator/get-unanswered-questions',
+        moderator_answer_questions: 'moderator/answer-questions',
+        moderator_get_offer_ratings: 'moderator/get-offer-ratings',
+        moderator_save_offer_rating: 'moderator/save-offer-rating',
+        participant_dashboard: 'participant/dashboard',
+        participant_view_product: 'participant/view-product/' + id,
+        participant_profile: 'participant/profile',
+        participant_search_process: 'participant/search-process',
+        participant_add_cpc: 'participant/add-cpc',
+        participant_remove_cpc: 'participant/remove-cpc',
+        participant_phase: 'participant/phase/' + phase,
+        participant_get_questions: 'participant/get-questions',
+        participant_submit_question: 'participant/submit-question',
+        participant_get_offer_rating: 'participant/get-offer-rating',
+        participant_submit_initial_offer: 'participant/submit-initial-offer',
+        participant_download_offer_pdf: 'participant/download-offer-pdf',
+        participant_process_offer: 'participant/process-offer',
+        participant_upload_offer: 'participant/upload-offer',
+        participant_get_offers: 'participant/get-offers',
+        participant_delete_offer: 'participant/delete-offer',
+        participant_download_convalidation_pdf: 'participant/download-convalidation-pdf',
+        participant_get_convalidation: 'participant/get-convalidation',
+        participant_submit_convalidation: 'participant/submit-convalidation',
+        view_file: 'index.php'
+    };
+
+    return map[action] || '';
+}
+
+/**
+ * Genera una URL usando el sistema apropiado.
  */
 function generateUrl(action, params = {}) {
     const baseUrl = getBaseUrl();
-    const isNew = isNewSystem();
-    
-    console.log('=== GENERATING URL ===');
-    console.log('Action:', action);
-    console.log('Params:', params);
-    console.log('Base URL:', baseUrl);
-    console.log('Is new system:', isNew);
-    
-    if (isNew) {
-        // Nuevo sistema - usar query parameters
-        // En producción, index_new.php se renombra a index.php
-        const indexFile = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-            ? 'index_new.php' 
-            : 'index.php';
-        let url = baseUrl + indexFile + '?action=' + action;
-        if (Object.keys(params).length > 0) {
-            url += '&' + new URLSearchParams(params).toString();
-        }
-        console.log('Generated URL (new system):', url);
-        return url;
-    } else {
-        // Sistema legacy - usar URLs amigables
-        console.log('Using legacy system for action:', action);
-        let url;
-        switch (action) {
-            case 'login':
-                url = baseUrl + 'login';
-                break;
-            case 'admin_dashboard':
-                url = baseUrl + 'admin/dashboard';
-                break;
-            case 'admin_create_user':
-                url = baseUrl + 'admin/create-user';
-                break;
-            case 'admin_create_product':
-                url = baseUrl + 'admin/create-product';
-                break;
-            case 'admin_create_cpc':
-                url = baseUrl + 'admin/create-cpc';
-                break;
-            case 'admin_edit_user':
-                url = baseUrl + 'admin/edit-user/' + (params.id || '');
-                break;
-            case 'admin_edit_product':
-                url = baseUrl + 'admin/edit-product/' + (params.id || '');
-                break;
-            case 'admin_edit_cpc':
-                url = baseUrl + 'admin/edit-cpc/' + (params.id || '');
-                break;
-            case 'admin_toggle_user_status':
-                url = baseUrl + 'admin/toggle-user-status';
-                break;
-            case 'admin_manage_product':
-                url = baseUrl + 'admin/manage-product/' + (params.id || '');
-                break;
-            case 'admin_delete_user':
-                url = baseUrl + 'admin/delete-user';
-                break;
-            case 'admin_delete_product':
-                url = baseUrl + 'admin/delete-product';
-                break;
-            case 'admin_delete_cpc':
-                url = baseUrl + 'admin/delete-cpc';
-                break;
-            case 'admin_get_unanswered_questions':
-                url = baseUrl + 'admin/get-unanswered-questions';
-                break;
-            case 'admin_answer_questions':
-                url = baseUrl + 'admin/answer-questions';
-                break;
-            case 'admin_get_offer_ratings':
-                url = baseUrl + 'admin/get-offer-ratings';
-                break;
-            case 'admin_save_offer_rating':
-                url = baseUrl + 'admin/save-offer-rating';
-                break;
-            case 'moderator_dashboard':
-                url = baseUrl + 'moderator/dashboard';
-                break;
-            case 'moderator_manage_cpcs':
-                url = baseUrl + 'moderator/manage-cpcs';
-                break;
-            case 'moderator_edit_cpc':
-                url = baseUrl + 'moderator/edit-cpc/' + (params.id || '');
-                break;
-            case 'moderator_manage_questions':
-                url = baseUrl + 'moderator/manage-questions/' + (params.id || '');
-                break;
-            case 'moderator_evaluate_participants':
-                url = baseUrl + 'moderator/evaluate-participants/' + (params.id || '');
-                break;
-            case 'moderator_delete_cpc':
-                url = baseUrl + 'moderator/delete-cpc';
-                break;
-            case 'moderator_get_unanswered_questions':
-                url = baseUrl + 'moderator/get-unanswered-questions';
-                break;
-            case 'moderator_answer_questions':
-                url = baseUrl + 'moderator/answer-questions';
-                break;
-            case 'moderator_get_offer_ratings':
-                url = baseUrl + 'moderator/get-offer-ratings';
-                break;
-            case 'moderator_save_offer_rating':
-                url = baseUrl + 'moderator/save-offer-rating';
-                break;
-            case 'participant_dashboard':
-                url = baseUrl + 'participant/dashboard';
-                break;
-            case 'participant_view_product':
-                url = baseUrl + 'participant/view-product/' + (params.id || '');
-                break;
-            case 'participant_profile':
-                url = baseUrl + 'participant/profile';
-                break;
-            case 'participant_search_process':
-                url = baseUrl + 'participant/search-process';
-                break;
-            case 'participant_add_cpc':
-                url = baseUrl + 'participant/add-cpc';
-                break;
-            case 'participant_remove_cpc':
-                url = baseUrl + 'participant/remove-cpc';
-                break;
-            case 'participant_phase':
-                url = baseUrl + 'participant/phase/' + (params.phase || '');
-                break;
-            case 'participant_get_offer_rating':
-                url = baseUrl + 'participant/get-offer-rating';
-                break;
-            default:
-                console.warn('Acción no reconocida:', action);
-                url = baseUrl;
-        }
-        
-        // Agregar parámetros adicionales si existen
-        if (Object.keys(params).length > 0) {
-            const queryString = new URLSearchParams(params).toString();
-            url += (url.includes('?') ? '&' : '?') + queryString;
-        }
-        
-        console.log('Generated URL (legacy system):', url);
-        return url;
+    const useQueryParams = isNewSystem() || action === 'view_file';
+
+    if (useQueryParams) {
+        const indexFile = getIndexFile();
+        const query = new URLSearchParams({ action, ...params });
+        // Evitar duplicar action si venía en params
+        query.set('action', action);
+        return baseUrl + indexFile + '?' + query.toString();
     }
+
+    const legacyPath = legacyPathForAction(action, params);
+    let url = baseUrl + legacyPath;
+
+    // Params que no van en el path (id/phase ya embebidios cuando aplica)
+    const queryParams = { ...params };
+    if (action === 'participant_phase') {
+        delete queryParams.phase;
+    }
+    if (['admin_edit_user', 'admin_edit_product', 'admin_edit_cpc',
+         'admin_manage_product', 'moderator_edit_cpc',
+         'moderator_manage_questions', 'moderator_evaluate_participants',
+         'participant_view_product'].includes(action)) {
+        delete queryParams.id;
+    }
+
+    const remaining = Object.keys(queryParams).filter(k => queryParams[k] !== undefined && queryParams[k] !== null && queryParams[k] !== '');
+    if (remaining.length > 0) {
+        const qs = new URLSearchParams();
+        remaining.forEach(k => qs.set(k, queryParams[k]));
+        url += (url.includes('?') ? '&' : '?') + qs.toString();
+    }
+
+    return url;
 }
 
 /**
@@ -217,12 +190,27 @@ const URLS = {
     participantSearchProcess: () => generateUrl('participant_search_process'),
     participantAddCpc: () => generateUrl('participant_add_cpc'),
     participantRemoveCpc: () => generateUrl('participant_remove_cpc'),
-    participantPhase: (phase) => generateUrl('participant_phase', { phase }),
-    participantGetOfferRating: () => generateUrl('participant_get_offer_rating')
+    participantPhase: (phase, producto_id) => generateUrl('participant_phase', { phase, producto_id }),
+    participantGetQuestions: (producto_id, page = 1, limit = 5) => generateUrl('participant_get_questions', { producto_id, page, limit }),
+    participantSubmitQuestion: () => generateUrl('participant_submit_question'),
+    participantGetOfferRating: () => generateUrl('participant_get_offer_rating'),
+    participantSubmitInitialOffer: () => generateUrl('participant_submit_initial_offer'),
+    participantDownloadOfferPdf: (producto_id) => generateUrl('participant_download_offer_pdf', { producto_id }),
+    participantProcessOffer: () => generateUrl('participant_process_offer'),
+    participantUploadOffer: () => generateUrl('participant_upload_offer'),
+    participantGetOffers: (producto_id) => generateUrl('participant_get_offers', { producto_id }),
+    participantDeleteOffer: () => generateUrl('participant_delete_offer'),
+    participantDownloadConvalidationPdf: (producto_id) => generateUrl('participant_download_convalidation_pdf', { producto_id }),
+    participantGetConvalidation: (producto_id) => generateUrl('participant_get_convalidation', { producto_id }),
+    participantSubmitConvalidation: () => generateUrl('participant_submit_convalidation'),
+    viewFile: (path) => generateUrl('view_file', { path })
 };
 
 // Exportar para uso global
 window.URLS = URLS;
 window.generateUrl = generateUrl;
 window.isNewSystem = isNewSystem;
+window.isLocalHost = isLocalHost;
 window.getBaseUrl = getBaseUrl;
+window.getAppBasePath = getAppBasePath;
+window.getIndexFile = getIndexFile;

@@ -83,12 +83,7 @@ function renderOfferSummary(summary) {
         summaryContainer.classList.remove('hidden');
         
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const downloadUrl = isProduction ? 
-            `/subs/index.php?action=participant_download_offer_pdf&producto_id=<?php echo $product['id']; ?>` : 
-            `/subs/participant/download-offer-pdf?producto_id=<?php echo $product['id']; ?>`;
+        const downloadUrl = generateUrl('participant_download_offer_pdf', { producto_id: <?php echo (int)$product['id']; ?> });
         
         summaryContainer.innerHTML = `
             <h3>Resumen de la oferta procesada</h3>
@@ -400,12 +395,7 @@ function initializeEOF() {
             }
             
             // Detectar si estamos en producción
-            const isProduction = window.location.pathname.includes('index.php') || 
-                                window.location.hostname.includes('hjconsulting.com.ec');
-            
-            const processUrl = isProduction ? 
-                '/subs/index.php?action=participant_process_offer' : 
-                '/subs/participant/process-offer';
+            const processUrl = generateUrl('participant_process_offer');
             
             console.log('Processing offer at:', processUrl);
             
@@ -470,12 +460,7 @@ function uploadFiles(files) {
         formData.append('documento_oferta', file);
         
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const uploadUrl = isProduction ? 
-            '/subs/index.php?action=participant_upload_offer' : 
-            '/subs/participant/upload-offer';
+        const uploadUrl = generateUrl('participant_upload_offer');
         
         console.log('Uploading file:', file.name, 'to:', uploadUrl);
         
@@ -526,12 +511,7 @@ function loadOfertas() {
     window.eofState.loading = true;
     updateProcessedUI(window.eofState.isProcessed, window.eofState.offerSummary);
     // Detectar si estamos en producción
-    const isProduction = window.location.pathname.includes('index.php') || 
-                        window.location.hostname.includes('hjconsulting.com.ec');
-    
-    const getOffersUrl = isProduction ? 
-        `/subs/index.php?action=participant_get_offers&producto_id=<?php echo $product['id']; ?>` : 
-        `/subs/participant/get-offers?producto_id=<?php echo $product['id']; ?>`;
+    const getOffersUrl = generateUrl('participant_get_offers', { producto_id: <?php echo (int)$product['id']; ?> });
     
     console.log('Loading offers from:', getOffersUrl);
     
@@ -599,10 +579,7 @@ function displayOfertas(ofertas) {
     
     // Usar función helper para generar URLs dinámicas (siguiendo documentación)
     function generateUrl(path) {
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        const baseUrl = isProduction ? '/subs/' : '/subs/';
-        return `${baseUrl}index.php?action=view_file&path=${encodeURIComponent(path)}`;
+        return generateUrl('view_file', { path });
     }
     
     let html = '<div class="ofertas-grid">';
@@ -636,12 +613,7 @@ window.deleteOferta = function(fileId) {
     console.log('=== DELETE OFFER FUNCTION CALLED ===', fileId);
     if (confirm('¿Está seguro de que desea eliminar este archivo?')) {
         // Detectar si estamos en producción
-        const isProduction = window.location.pathname.includes('index.php') || 
-                            window.location.hostname.includes('hjconsulting.com.ec');
-        
-        const deleteUrl = isProduction ? 
-            '/subs/index.php?action=participant_delete_offer' : 
-            '/subs/participant/delete-offer';
+        const deleteUrl = generateUrl('participant_delete_offer');
         
         fetch(deleteUrl, {
             method: 'POST',

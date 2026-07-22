@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function testGetQuestions() {
         console.log('PARTICIPANT-DASHBOARD - Testing GET questions...');
         const productId = getProductIdFromURL();
-        const url = `/subs/participant/get-questions?producto_id=${productId}&page=1&limit=5`;
+        const url = generateUrl('participant_get_questions', { producto_id: productId, page: 1, limit: 5 });
         console.log('PARTICIPANT-DASHBOARD - URL:', url);
         
         fetch(url, {
@@ -756,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function testSubmitQuestion() {
         console.log('PARTICIPANT-DASHBOARD - Testing POST submit question...');
         const productId = getProductIdFromURL();
-        const url = '/subs/participant/submit-question';
+        const url = generateUrl('participant_submit_question');
         const body = `producto_id=${productId}&pregunta=Test question from participant-dashboard.js`;
         console.log('PARTICIPANT-DASHBOARD - URL:', url);
         console.log('PARTICIPANT-DASHBOARD - Body:', body);
@@ -844,7 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function submitPregunta(pregunta) {
         console.log('PARTICIPANT-DASHBOARD - Submitting pregunta:', pregunta);
         const productId = getProductIdFromURL();
-        const url = '/subs/participant/submit-question';
+        const url = generateUrl('participant_submit_question');
         const body = `producto_id=${productId}&pregunta=${encodeURIComponent(pregunta)}`;
         
         fetch(url, {
@@ -877,7 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadPreguntas(page = 1) {
         console.log('PARTICIPANT-DASHBOARD - Loading preguntas, page:', page);
         const productId = getProductIdFromURL();
-        const url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
+        const url = generateUrl('participant_get_questions', { producto_id: productId, page, limit: 5 });
         
         fetch(url, {
             method: 'GET',
@@ -1120,7 +1120,7 @@ function initializePreguntaForm() {
 function testGetQuestions() {
     console.log('PYR-SYSTEM - Testing GET questions...');
     const productId = getProductIdFromURL();
-    const url = `/subs/participant/get-questions?producto_id=${productId}&page=1&limit=5`;
+    const url = generateUrl('participant_get_questions', { producto_id: productId, page: 1, limit: 5 });
     
     showDebugLog('Testing GET questions...');
     showDebugLog('GET URL: ' + url);
@@ -1166,7 +1166,7 @@ function testGetQuestions() {
 function testSubmitQuestion() {
     console.log('PYR-SYSTEM - Testing POST submit question...');
     const productId = getProductIdFromURL();
-    const url = '/subs/participant/submit-question';
+    const url = generateUrl('participant_submit_question');
     
     showDebugLog('Testing POST submit question...');
     showDebugLog('POST URL: ' + url);
@@ -1211,7 +1211,7 @@ function testSubmitQuestion() {
 function submitPregunta(pregunta) {
     console.log('PYR-SYSTEM - Submitting pregunta:', pregunta);
     const productId = getProductIdFromURL();
-    const url = '/subs/participant/submit-question';
+    const url = generateUrl('participant_submit_question');
     
     showDebugLog('Submitting pregunta: ' + pregunta);
     
@@ -1261,7 +1261,7 @@ function submitPregunta(pregunta) {
 function loadPreguntas(page) {
     console.log('PYR-SYSTEM - Loading preguntas, page:', page);
     const productId = getProductIdFromURL();
-    const url = `/subs/participant/get-questions?producto_id=${productId}&page=${page}&limit=5`;
+    const url = generateUrl('participant_get_questions', { producto_id: productId, page, limit: 5 });
     
     showDebugLog('Loading preguntas, page: ' + page);
     
