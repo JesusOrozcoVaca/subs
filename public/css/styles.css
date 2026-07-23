@@ -1717,6 +1717,24 @@ body.login-page html {
     color: #1f2d3d;
 }
 
+.training-history-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+}
+
+.training-history-head p {
+    margin: 0;
+    flex: 1 1 280px;
+}
+
+.training-history-detail {
+    margin-bottom: 18px;
+}
+
 @media (max-width: 700px) {
     .training-join-meta {
         grid-template-columns: 1fr;

@@ -5,7 +5,12 @@
     <p class="error-message"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></p>
 <?php endif; ?>
 
-<p>Bancos de puja habilitados para entrenamiento. Compite en vivo con otros participantes usando las mismas reglas del simulador.</p>
+<div class="training-history-head">
+    <p>Bancos de puja habilitados para entrenamiento. Compite en vivo con otros participantes usando las mismas reglas del simulador.</p>
+    <a class="btn btn-secondary" href="<?php echo BASE_URL; ?>index.php?action=participant_training_history">
+        Historial de mis pujas
+    </a>
+</div>
 
 <table class="data-table">
     <thead>

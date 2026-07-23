@@ -83,4 +83,33 @@ class PracticaInscripcion {
         $stmt = $this->db->prepare("UPDATE practicas_inscripciones SET activo = :activo WHERE id = :id");
         return $stmt->execute(['id' => $id, 'activo' => $activo ? 1 : 0]);
     }
+
+    /**
+     * Historial de prácticas del participante (rondas en las que se inscribió).
+     */
+    public function listHistoryByUser($usuarioId, $limit = 50) {
+        $stmt = $this->db->prepare(
+            "SELECT i.id AS inscripcion_id, i.oferta_inicial, i.activo, i.joined_at,
+                    r.id AS ronda_id, r.numero, r.estado, r.hora_inicio, r.duracion_minutos,
+                    r.zona_horaria, r.ganador_usuario_id, r.ganador_valor, r.ended_at,
+                    s.codigo AS sala_codigo, s.titulo AS sala_titulo,
+                    s.presupuesto_referencial, s.variacion_minima,
+                    ug.nombre_completo AS ganador_nombre,
+                    (SELECT MIN(p.valor) FROM practicas_pujas p
+                      WHERE p.ronda_id = r.id AND p.usuario_id = i.usuario_id) AS mi_mejor_puja,
+                    (SELECT COUNT(*) FROM practicas_pujas p
+                      WHERE p.ronda_id = r.id AND p.usuario_id = i.usuario_id) AS total_mis_pujas
+             FROM practicas_inscripciones i
+             INNER JOIN practicas_rondas r ON r.id = i.ronda_id
+             INNER JOIN practicas_salas s ON s.id = r.sala_id
+             LEFT JOIN usuarios ug ON ug.id = r.ganador_usuario_id
+             WHERE i.usuario_id = :usuario_id
+             ORDER BY COALESCE(r.ended_at, r.hora_inicio) DESC, r.id DESC
+             LIMIT :limit"
+        );
+        $stmt->bindValue(':usuario_id', (int)$usuarioId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

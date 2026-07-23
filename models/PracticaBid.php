@@ -54,12 +54,13 @@ class PracticaBid {
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function getUserBids($rondaId, $userId) {
+    public function getUserBids($rondaId, $userId, $ascending = false) {
+        $order = $ascending ? 'ASC' : 'DESC';
         $stmt = $this->db->prepare(
             "SELECT valor, fecha_puja_ms, created_at AS fecha_puja
              FROM practicas_pujas
              WHERE ronda_id = :ronda_id AND usuario_id = :usuario_id
-             ORDER BY fecha_puja_ms DESC"
+             ORDER BY fecha_puja_ms {$order}"
         );
         $stmt->execute(['ronda_id' => $rondaId, 'usuario_id' => $userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

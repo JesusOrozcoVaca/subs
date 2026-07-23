@@ -214,6 +214,34 @@
                     <?php echo htmlspecialchars(date('d/m/Y H:i:s')); ?>
                 </div>
             </div>
+
+            <div class="puja-section" style="margin-top: 18px;">
+                <div class="puja-section-title">Historial de sus pujas (esta ronda)</div>
+                <table class="puja-table" id="live-my-bids-table">
+                    <thead>
+                    <tr>
+                        <td class="label" style="width:10%;">#</td>
+                        <td class="value" style="width:35%;">Valor</td>
+                        <td class="value" style="width:25%;">Δ bajada</td>
+                        <td class="helper" style="width:30%;">Fecha / hora</td>
+                    </tr>
+                    </thead>
+                    <tbody id="live-my-bids-body">
+                    <?php if (empty($misPujas)): ?>
+                        <tr><td class="value" colspan="4">Aún no ha enviado pujas. Su oferta inicial es la base.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($misPujas as $p): ?>
+                            <tr>
+                                <td class="label"><?php echo (int)$p['n']; ?></td>
+                                <td class="value"><strong>$ <?php echo htmlspecialchars($p['valor_fmt']); ?></strong></td>
+                                <td class="value"><?php echo $p['delta_fmt'] !== null ? '$ ' . htmlspecialchars($p['delta_fmt']) : '—'; ?></td>
+                                <td class="helper"><?php echo htmlspecialchars($p['fecha']); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
     </main>
     <?php if (empty($blockPuja)): ?>
@@ -403,6 +431,25 @@
                 countdownEl.textContent = `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
             }
 
+            function renderMyBids(bids) {
+                const tbody = document.getElementById('live-my-bids-body');
+                if (!tbody || !Array.isArray(bids)) {
+                    return;
+                }
+                if (!bids.length) {
+                    tbody.innerHTML = '<tr><td class="value" colspan="4">Aún no ha enviado pujas. Su oferta inicial es la base.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = bids.map((p) => (
+                    '<tr>' +
+                        '<td class="label">' + (p.n || '') + '</td>' +
+                        '<td class="value"><strong>$ ' + (p.valor_fmt || '') + '</strong></td>' +
+                        '<td class="value">' + (p.delta_fmt != null ? ('$ ' + p.delta_fmt) : '—') + '</td>' +
+                        '<td class="helper">' + (p.fecha || '') + '</td>' +
+                    '</tr>'
+                )).join('');
+            }
+
             function applyStatusData(data) {
                 if (!data) {
                     return;
@@ -420,6 +467,9 @@
 
                 const isBest = data.is_user_best;
                 updateStatus(isBest);
+                if (data.my_bids) {
+                    renderMyBids(data.my_bids);
+                }
             }
 
             function fetchStatus() {

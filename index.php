@@ -538,6 +538,18 @@ try {
             $controller->summary($_GET['id'] ?? null);
             break;
 
+        case 'participant_training_history':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->history();
+            break;
+
+        case 'participant_training_history_detail':
+            checkAccess(3);
+            $controller = loadController('ParticipantTrainingController');
+            $controller->historyDetail($_GET['id'] ?? null);
+            break;
+
         // Rutas del Moderador
         case 'moderator_dashboard':
             checkAccess(2);

@@ -215,7 +215,9 @@ const URLS = {
     participantTrainingPuja: (id) => generateUrl('participant_training_puja', { id }),
     participantTrainingSubmitBid: () => generateUrl('participant_training_submit_bid'),
     participantTrainingPujaStatus: (id) => generateUrl('participant_training_puja_status', { id }),
-    participantTrainingSummary: (id) => generateUrl('participant_training_summary', { id })
+    participantTrainingSummary: (id) => generateUrl('participant_training_summary', { id }),
+    participantTrainingHistory: () => generateUrl('participant_training_history'),
+    participantTrainingHistoryDetail: (id) => generateUrl('participant_training_history_detail', { id })
 };
 
 // Exportar para uso global

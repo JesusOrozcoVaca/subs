@@ -147,6 +147,10 @@ class ParticipantTrainingController {
         $initialOfferValue = (float)$inscription['oferta_inicial'];
         $variationPercent = (float)$ronda['variacion_minima'];
         $variationAmount = round($initialOfferValue * ($variationPercent / 100), 2);
+        $misPujas = $this->formatUserBidsForView(
+            $this->bidModel->getUserBids($rondaId, $userId, true),
+            $ronda['zona_horaria'] ?? 'America/Guayaquil'
+        );
         $blockPuja = false;
         $pujaBlockMessage = '';
 
@@ -223,6 +227,10 @@ class ParticipantTrainingController {
             $bidModel->getUserLastBid($rondaId, $userId),
             $bidModel->getLowestBid($rondaId)
         );
+        $status['my_bids'] = $this->formatUserBidsForView(
+            $bidModel->getUserBids($rondaId, $userId, true),
+            $ronda['zona_horaria'] ?? 'America/Guayaquil'
+        );
         $this->sendJsonResponse(true, $result['message'], $status);
     }
 
@@ -261,6 +269,10 @@ class ParticipantTrainingController {
         $status['ronda_estado'] = $ronda['estado'];
         $schedule = $this->rondaService->getSchedule($ronda);
         $status['ended'] = $ronda['estado'] === 'finalizada' || ($schedule && time() > (int)$schedule['end_ts']);
+        $status['my_bids'] = $this->formatUserBidsForView(
+            $this->bidModel->getUserBids($rondaId, $userId, true),
+            $ronda['zona_horaria'] ?? 'America/Guayaquil'
+        );
         $this->sendJsonResponse(true, '', $status);
     }
 
@@ -286,11 +298,116 @@ class ParticipantTrainingController {
         }
         $summary = $this->rondaService->buildSummary($ronda);
         $schedule = $this->rondaService->getSchedule($ronda);
+        $misPujas = $this->formatUserBidsForView(
+            $this->bidModel->getUserBids($rondaId, $userId, true),
+            $ronda['zona_horaria'] ?? 'America/Guayaquil'
+        );
         $pageTitle = 'Resumen de práctica';
         ob_start();
         require BASE_PATH . '/views/participant/training/summary.php';
         $content = ob_get_clean();
         require BASE_PATH . '/views/participant/participant_layout.php';
+    }
+
+    /**
+     * Historial de prácticas del participante.
+     */
+    public function history() {
+        $userId = $_SESSION['user_id'];
+        $historial = $this->inscripcionModel->listHistoryByUser($userId, 50);
+        foreach ($historial as &$row) {
+            $row['schedule'] = $this->rondaService->getSchedule([
+                'hora_inicio' => $row['hora_inicio'],
+                'duracion_minutos' => $row['duracion_minutos'],
+                'zona_horaria' => $row['zona_horaria']
+            ]);
+            $row['fue_ganador'] = !empty($row['ganador_usuario_id'])
+                && (int)$row['ganador_usuario_id'] === (int)$userId;
+        }
+        unset($row);
+
+        $pageTitle = 'Historial de prácticas';
+        ob_start();
+        require BASE_PATH . '/views/participant/training/history.php';
+        $content = ob_get_clean();
+        require BASE_PATH . '/views/participant/participant_layout.php';
+    }
+
+    /**
+     * Detalle: secuencia de pujas propias en una ronda (análisis / decisión).
+     */
+    public function historyDetail($rondaId = null) {
+        $rondaId = $rondaId ?: ($_GET['id'] ?? null);
+        $userId = $_SESSION['user_id'];
+        $ronda = $this->rondaModel->getById($rondaId);
+        if (!$ronda) {
+            $_SESSION['error_message'] = 'Ronda no encontrada.';
+            header('Location: ' . $this->url('participant_training_history'));
+            exit;
+        }
+
+        $inscription = $this->inscripcionModel->getByRondaAndUser($rondaId, $userId);
+        if (!$inscription) {
+            $_SESSION['error_message'] = 'No participó en esta ronda.';
+            header('Location: ' . $this->url('participant_training_history'));
+            exit;
+        }
+
+        $ronda = $this->rondaService->syncEstado($ronda);
+        $ronda = $this->rondaModel->getById($rondaId);
+        $schedule = $this->rondaService->getSchedule($ronda);
+        $misPujas = $this->formatUserBidsForView(
+            $this->bidModel->getUserBids($rondaId, $userId, true),
+            $ronda['zona_horaria'] ?? 'America/Guayaquil'
+        );
+        $lowestBid = $this->bidModel->getLowestBid($rondaId);
+        $bestInfo = $this->bidModel->getBestBidInfo($rondaId);
+        $miMejor = null;
+        foreach ($misPujas as $p) {
+            if ($miMejor === null || $p['valor'] < $miMejor) {
+                $miMejor = $p['valor'];
+            }
+        }
+        $fueGanador = !empty($ronda['ganador_usuario_id'])
+            && (int)$ronda['ganador_usuario_id'] === (int)$userId;
+
+        $pageTitle = 'Historial de pujas';
+        ob_start();
+        require BASE_PATH . '/views/participant/training/history_detail.php';
+        $content = ob_get_clean();
+        require BASE_PATH . '/views/participant/participant_layout.php';
+    }
+
+    private function formatUserBidsForView(array $bids, $timezone = 'America/Guayaquil') {
+        try {
+            $tz = new DateTimeZone($timezone ?: 'America/Guayaquil');
+        } catch (Exception $e) {
+            $tz = new DateTimeZone('America/Guayaquil');
+        }
+
+        $out = [];
+        $prev = null;
+        $n = 0;
+        foreach ($bids as $bid) {
+            $n++;
+            $valor = (float)$bid['valor'];
+            $ms = isset($bid['fecha_puja_ms']) ? (int)$bid['fecha_puja_ms'] : 0;
+            $dt = $ms > 0
+                ? (new DateTime('@' . (int)floor($ms / 1000)))->setTimezone($tz)
+                : null;
+            $delta = ($prev !== null) ? round($prev - $valor, 2) : null;
+            $out[] = [
+                'n' => $n,
+                'valor' => $valor,
+                'valor_fmt' => number_format($valor, 2, ',', '.'),
+                'fecha' => $dt ? $dt->format('d/m/Y H:i:s') : '',
+                'fecha_puja_ms' => $ms,
+                'delta' => $delta,
+                'delta_fmt' => $delta !== null ? number_format($delta, 2, ',', '.') : null
+            ];
+            $prev = $valor;
+        }
+        return $out;
     }
 
     private function url($action, $params = []) {

@@ -58,6 +58,34 @@
     <p>No hay datos de resumen para esta ronda.</p>
 <?php endif; ?>
 
-<p style="margin-top: 20px;">
+<h3 style="margin-top: 22px;">Sus pujas (secuencia)</h3>
+<table class="data-table">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Valor</th>
+        <th>Δ bajada</th>
+        <th>Fecha / hora</th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php if (empty($misPujas)): ?>
+        <tr><td colspan="4">No registró pujas en esta ronda.</td></tr>
+    <?php else: ?>
+        <?php foreach ($misPujas as $p): ?>
+            <tr>
+                <td><?php echo (int)$p['n']; ?></td>
+                <td>$ <?php echo htmlspecialchars($p['valor_fmt']); ?></td>
+                <td><?php echo $p['delta_fmt'] !== null ? '$ ' . htmlspecialchars($p['delta_fmt']) : '—'; ?></td>
+                <td><?php echo htmlspecialchars($p['fecha']); ?></td>
+            </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+    </tbody>
+</table>
+
+<p style="margin-top: 20px;" class="training-join-actions">
     <a class="btn btn-primary" href="<?php echo BASE_URL; ?>index.php?action=participant_training_list">Volver a prácticas</a>
+    <a class="btn btn-secondary" href="<?php echo BASE_URL; ?>index.php?action=participant_training_history_detail&id=<?php echo (int)$ronda['id']; ?>">Ver historial detallado</a>
+    <a class="btn btn-secondary" href="<?php echo BASE_URL; ?>index.php?action=participant_training_history">Todo el historial</a>
 </p>
