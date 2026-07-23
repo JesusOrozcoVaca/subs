@@ -32,7 +32,7 @@
         </main>
     </div>
 
-    <script src="<?php echo js('url-helper.js'); ?>?v=20260723a"></script>
-    <script src="<?php echo js('participant-dashboard.js'); ?>?v=20260723a"></script>
+    <script src="<?php echo js('url-helper.js'); ?>?v=20260723b"></script>
+    <script src="<?php echo js('participant-dashboard.js'); ?>?v=20260723b"></script>
 </body>
 </html>

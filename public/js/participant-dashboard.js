@@ -979,16 +979,37 @@ document.addEventListener('DOMContentLoaded', function() {
     // Hacer funciones globales
     window.loadPreguntas = loadPreguntas;
 
+    function getParticipantAction() {
+        return new URLSearchParams(window.location.search).get('action') || '';
+    }
+
+    function isStandaloneParticipantPage() {
+        const action = getParticipantAction();
+        // Prácticas de Puja y otras páginas full-page: no reemplazar por AJAX del dashboard
+        if (action.indexOf('participant_training_') === 0) {
+            return true;
+        }
+        if (window.location.pathname.includes('/view-product/')) {
+            return true;
+        }
+        return false;
+    }
+
     window.addEventListener('popstate', function() {
-        loadContent(window.location.pathname);
+        if (isStandaloneParticipantPage()) {
+            window.location.reload();
+            return;
+        }
+        loadContent(window.location.pathname + window.location.search);
     });
 
     initializePageFunctionality();
     
-    // NO cargar contenido automáticamente si estamos en la página de detalle del producto
-    // porque eso interfiere con la carga de fases
-    if (!window.location.pathname.includes('/view-product/')) {
-    loadContent(window.location.pathname);
+    // NO cargar contenido automáticamente en páginas standalone
+    // (view-product / prácticas): el HTML ya viene renderizado y un loadContent
+    // a /index.php sin action termina redirigiendo al dashboard.
+    if (!isStandaloneParticipantPage()) {
+        loadContent(window.location.pathname + window.location.search);
     }
 });
 
