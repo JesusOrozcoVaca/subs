@@ -232,7 +232,25 @@ class AdminTrainingController {
         if ($ronda['estado'] === 'finalizada') {
             $summary = $this->rondaService->buildSummary($ronda);
         }
-        $lowestBid = $this->bidModel->getLowestBid($id);
+        $best = $this->bidModel->getBestBidInfo($id);
+        $lowestBid = $best ? (float)$best['valor'] : null;
+        $bestBidder = $best['nombre_completo'] ?? null;
+        $totalPujas = $this->bidModel->countByRonda($id);
+        $inscritosLive = [];
+        foreach ($inscritos as $ins) {
+            $last = $this->bidModel->getUserLastBid($id, $ins['usuario_id']);
+            $lastValor = $last ? (float)$last['valor'] : null;
+            $isBest = $best
+                && (int)$best['usuario_id'] === (int)$ins['usuario_id']
+                && $lastValor !== null
+                && abs($lastValor - (float)$best['valor']) < 0.00001;
+            $inscritosLive[] = array_merge($ins, [
+                'ultima_puja' => $lastValor,
+                'es_mejor' => $isBest
+            ]);
+        }
+        $inscritos = $inscritosLive;
+        $pollLive = in_array($ronda['estado'], ['programada', 'en_curso'], true);
         require BASE_PATH . '/views/admin/training/ronda_detail.php';
     }
 
@@ -249,6 +267,62 @@ class AdminTrainingController {
         }
         $ok = $this->inscripcionModel->setActivo($inscripcionId, $activo === 1);
         $this->sendJsonResponse($ok, $ok ? 'Inscripción actualizada.' : 'No se pudo actualizar.');
+    }
+
+    /**
+     * Polling admin: estado en vivo de la ronda (1s).
+     */
+    public function rondaStatus($id = null) {
+        $id = $id ?: ($_GET['id'] ?? null);
+        $ronda = $this->rondaModel->getById($id);
+        if (!$ronda) {
+            $this->sendJsonResponse(false, 'Ronda no encontrada');
+            return;
+        }
+
+        $ronda = $this->rondaService->syncEstado($ronda);
+        $ronda = $this->rondaModel->getById($id);
+        $schedule = $this->rondaService->getSchedule($ronda);
+        $best = $this->bidModel->getBestBidInfo($id);
+        $lowestBid = $best ? (float)$best['valor'] : null;
+        $inscritos = $this->inscripcionModel->listByRonda($id);
+
+        $participants = [];
+        foreach ($inscritos as $ins) {
+            $last = $this->bidModel->getUserLastBid($id, $ins['usuario_id']);
+            $lastValor = $last ? (float)$last['valor'] : null;
+            $isBest = $best
+                && (int)$best['usuario_id'] === (int)$ins['usuario_id']
+                && $lastValor !== null
+                && abs($lastValor - (float)$best['valor']) < 0.00001;
+
+            $participants[] = [
+                'inscripcion_id' => (int)$ins['id'],
+                'usuario_id' => (int)$ins['usuario_id'],
+                'nombre' => $ins['nombre_completo'],
+                'oferta_inicial' => (float)$ins['oferta_inicial'],
+                'ultima_puja' => $lastValor,
+                'activo' => (int)$ins['activo'] === 1,
+                'es_mejor' => $isBest
+            ];
+        }
+
+        $summary = null;
+        if ($ronda['estado'] === 'finalizada') {
+            $summary = $this->rondaService->buildSummary($ronda);
+        }
+
+        $this->sendJsonResponse(true, '', [
+            'estado' => $ronda['estado'],
+            'lowest_bid' => $lowestBid,
+            'best_bidder' => $best['nombre_completo'] ?? null,
+            'total_pujas' => $this->bidModel->countByRonda($id),
+            'schedule' => $schedule,
+            'now_ts_ms' => (int)round(microtime(true) * 1000),
+            'participants' => $participants,
+            'summary' => $summary,
+            'ended' => in_array($ronda['estado'], ['finalizada', 'cancelada'], true)
+        ]);
     }
 
     private function validateSalaInput($input) {

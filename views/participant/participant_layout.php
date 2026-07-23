@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?> - Participante</title>
-    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>">
+    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>?v=20260723c">
 </head>
 <body>
     <div class="dashboard-container">

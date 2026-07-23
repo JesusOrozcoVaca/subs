@@ -347,6 +347,12 @@ try {
             $controller->toggleInscripcion();
             break;
 
+        case 'admin_training_ronda_status':
+            checkAccess(1);
+            $controller = loadController('AdminTrainingController');
+            $controller->rondaStatus($_GET['id'] ?? null);
+            break;
+
         // Rutas del Participante
         case 'participant_dashboard':
             checkAccess(3);

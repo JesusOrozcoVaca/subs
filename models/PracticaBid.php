@@ -23,6 +23,25 @@ class PracticaBid {
         return $val !== null ? $val : null;
     }
 
+    public function getBestBidInfo($rondaId) {
+        $stmt = $this->db->prepare(
+            "SELECT p.valor, p.usuario_id, p.fecha_puja_ms, u.nombre_completo
+             FROM practicas_pujas p
+             JOIN usuarios u ON u.id = p.usuario_id
+             WHERE p.ronda_id = :ronda_id
+             ORDER BY p.valor ASC, p.fecha_puja_ms ASC
+             LIMIT 1"
+        );
+        $stmt->execute(['ronda_id' => $rondaId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
+    public function countByRonda($rondaId) {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM practicas_pujas WHERE ronda_id = :ronda_id");
+        $stmt->execute(['ronda_id' => $rondaId]);
+        return (int)$stmt->fetchColumn();
+    }
+
     public function getUserLastBid($rondaId, $userId) {
         $stmt = $this->db->prepare(
             "SELECT valor, fecha_puja_ms, created_at AS fecha_puja

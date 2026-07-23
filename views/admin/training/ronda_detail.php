@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ronda #<?php echo (int)$ronda['numero']; ?> - Prácticas</title>
-    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>">
+    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>?v=20260723c">
 </head>
 <body>
 <div class="dashboard-container">
@@ -13,7 +13,7 @@
         <h2>Administración</h2>
         <ul class="sidebar-menu">
             <li><a href="<?php echo url('admin/dashboard'); ?>">Dashboard</a></li>
-            <li><a href="<?php echo BASE_URL; ?>index.php?action=admin_training_dashboard">Prácticas de Puja</a></li>
+            <li><a href="<?php echo BASE_URL; ?>index.php?action=admin_training_dashboard" class="active">Prácticas de Puja</a></li>
         </ul>
     </aside>
     <main class="main-content">
@@ -29,16 +29,54 @@
             <p class="error-message"><?php echo htmlspecialchars($_SESSION['error_message']); unset($_SESSION['error_message']); ?></p>
         <?php endif; ?>
 
-        <section class="form-card" style="margin-bottom: 16px;">
-            <p><strong>Estado:</strong> <?php echo htmlspecialchars($ronda['estado']); ?></p>
-            <?php if ($schedule): ?>
-                <p><strong>Inicio:</strong> <?php echo htmlspecialchars($schedule['start']); ?> (<?php echo htmlspecialchars($schedule['timezone']); ?>)</p>
-                <p><strong>Fin:</strong> <?php echo htmlspecialchars($schedule['end']); ?></p>
-            <?php endif; ?>
-            <p><strong>Mejor valor actual:</strong>
-                <?php echo $lowestBid !== null ? '$ ' . number_format((float)$lowestBid, 2, ',', '.') : 'Sin pujas'; ?>
-            </p>
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <section class="form-card training-admin-live" id="training-admin-live"
+                 data-ronda-id="<?php echo (int)$ronda['id']; ?>"
+                 data-poll="<?php echo !empty($pollLive) ? '1' : '0'; ?>">
+            <div class="training-admin-live-head">
+                <div>
+                    <span class="training-join-meta-label">Estado</span>
+                    <p class="training-estado-badge" id="live-estado" data-estado="<?php echo htmlspecialchars($ronda['estado']); ?>">
+                        <?php echo htmlspecialchars($ronda['estado']); ?>
+                    </p>
+                </div>
+                <div class="training-live-indicator" id="live-indicator" <?php echo empty($pollLive) ? 'hidden' : ''; ?>>
+                    <span class="training-live-dot" aria-hidden="true"></span>
+                    Actualización en vivo
+                </div>
+            </div>
+
+            <div class="training-join-meta" style="margin-bottom: 14px;">
+                <?php if ($schedule): ?>
+                    <div class="training-join-meta-item">
+                        <span class="training-join-meta-label">Inicio</span>
+                        <strong class="training-join-meta-value" id="live-start">
+                            <?php echo htmlspecialchars($schedule['start']); ?>
+                            <small><?php echo htmlspecialchars($schedule['timezone']); ?></small>
+                        </strong>
+                    </div>
+                    <div class="training-join-meta-item">
+                        <span class="training-join-meta-label">Fin</span>
+                        <strong class="training-join-meta-value" id="live-end"><?php echo htmlspecialchars($schedule['end']); ?></strong>
+                    </div>
+                <?php endif; ?>
+                <div class="training-join-meta-item training-admin-highlight">
+                    <span class="training-join-meta-label">Mejor valor actual</span>
+                    <strong class="training-join-meta-value" id="live-lowest">
+                        <?php echo $lowestBid !== null ? '$ ' . number_format((float)$lowestBid, 2, ',', '.') : 'Sin pujas'; ?>
+                    </strong>
+                    <small id="live-best-bidder" class="training-best-bidder">
+                        <?php echo !empty($bestBidder) ? 'Por: ' . htmlspecialchars($bestBidder) : ''; ?>
+                    </small>
+                </div>
+                <div class="training-join-meta-item">
+                    <span class="training-join-meta-label">Pujas registradas</span>
+                    <strong class="training-join-meta-value" id="live-total-pujas"><?php echo (int)$totalPujas; ?></strong>
+                </div>
+            </div>
+
+            <p class="training-countdown" id="live-countdown" aria-live="polite"></p>
+
+            <div style="display:flex; gap:8px; flex-wrap:wrap;" id="live-actions">
                 <?php if ($ronda['estado'] === 'programada'): ?>
                     <form method="POST" action="<?php echo BASE_URL; ?>index.php?action=admin_training_cancel_ronda">
                         <input type="hidden" name="id" value="<?php echo (int)$ronda['id']; ?>">
@@ -54,24 +92,35 @@
             </div>
         </section>
 
-        <h3>Inscritos</h3>
+        <h3>Inscritos <span id="live-inscritos-count" style="font-weight:400; color:#666;">(<?php echo count($inscritos); ?>)</span></h3>
         <table class="data-table" id="inscritos-table">
             <thead>
             <tr>
                 <th>Participante</th>
                 <th>Oferta inicial</th>
+                <th>Última puja</th>
                 <th>Estado</th>
                 <th>Acción</th>
             </tr>
             </thead>
-            <tbody>
+            <tbody id="inscritos-tbody">
             <?php if (empty($inscritos)): ?>
-                <tr><td colspan="4">Aún no hay inscritos.</td></tr>
+                <tr class="inscritos-empty"><td colspan="5">Aún no hay inscritos.</td></tr>
             <?php else: ?>
                 <?php foreach ($inscritos as $ins): ?>
-                    <tr data-inscripcion-id="<?php echo (int)$ins['id']; ?>">
-                        <td><?php echo htmlspecialchars($ins['nombre_completo']); ?></td>
+                    <tr data-inscripcion-id="<?php echo (int)$ins['id']; ?>" class="<?php echo !empty($ins['es_mejor']) ? 'is-best-bidder' : ''; ?>">
+                        <td>
+                            <?php echo htmlspecialchars($ins['nombre_completo']); ?>
+                            <?php if (!empty($ins['es_mejor'])): ?>
+                                <span class="puja-winner-badge">Mejor</span>
+                            <?php endif; ?>
+                        </td>
                         <td>$ <?php echo number_format((float)$ins['oferta_inicial'], 2, ',', '.'); ?></td>
+                        <td class="ins-ultima">
+                            <?php echo isset($ins['ultima_puja']) && $ins['ultima_puja'] !== null
+                                ? '$ ' . number_format((float)$ins['ultima_puja'], 2, ',', '.')
+                                : '—'; ?>
+                        </td>
                         <td class="ins-estado"><?php echo ((int)$ins['activo'] === 1) ? 'Activo' : 'Inactivo'; ?></td>
                         <td>
                             <button type="button" class="btn btn-small btn-toggle-ins"
@@ -86,6 +135,7 @@
             </tbody>
         </table>
 
+        <div id="live-summary-wrap">
         <?php if ($ronda['estado'] === 'finalizada' && !empty($summary)): ?>
             <h3 style="margin-top: 18px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
                 <span>Resumen de Puja</span>
@@ -128,9 +178,10 @@
                 </table>
             </div>
         <?php endif; ?>
+        </div>
     </main>
 </div>
-<script src="<?php echo js('url-helper.js'); ?>?v=20260722t"></script>
-<script src="<?php echo js('admin-training.js'); ?>?v=20260722t"></script>
+<script src="<?php echo js('url-helper.js'); ?>?v=20260723c"></script>
+<script src="<?php echo js('admin-training.js'); ?>?v=20260723c"></script>
 </body>
 </html>

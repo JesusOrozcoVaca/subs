@@ -209,6 +209,7 @@ const URLS = {
     viewFile: (path) => generateUrl('view_file', { path }),
     adminTrainingDashboard: () => generateUrl('admin_training_dashboard'),
     adminTrainingToggleInscripcion: () => generateUrl('admin_training_toggle_inscripcion'),
+    adminTrainingRondaStatus: (id) => generateUrl('admin_training_ronda_status', { id }),
     participantTrainingList: () => generateUrl('participant_training_list'),
     participantTrainingJoin: (id) => generateUrl('participant_training_join', { id }),
     participantTrainingPuja: (id) => generateUrl('participant_training_puja', { id }),

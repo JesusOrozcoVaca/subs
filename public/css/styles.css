@@ -1467,3 +1467,234 @@ body.login-page html {
     width: 100%;
     max-width: 100%;
 }
+
+/* —— Prácticas de Puja: ingreso participante —— */
+.training-join {
+    max-width: 720px;
+}
+
+.training-join-header {
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e5e8ee;
+}
+
+.training-join-code {
+    display: inline-block;
+    margin: 0 0 8px;
+    padding: 4px 10px;
+    background: #e8f1fb;
+    color: #1f4e79;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    border-radius: 4px;
+}
+
+.training-join-title {
+    margin: 0 0 8px;
+    font-size: 22px;
+    line-height: 1.25;
+    color: #1f2d3d;
+}
+
+.training-join-round {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #4e73df;
+}
+
+.training-join-desc {
+    margin: 0;
+    color: #5a6a7a;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.training-join-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.training-join-meta-item {
+    background: #f6f8fb;
+    border: 1px solid #e4e9f0;
+    border-radius: 6px;
+    padding: 12px 14px;
+}
+
+.training-join-meta-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #6b7c8f;
+    margin-bottom: 4px;
+}
+
+.training-join-meta-value {
+    display: block;
+    font-size: 16px;
+    color: #1f2d3d;
+    line-height: 1.3;
+}
+
+.training-join-meta-value small {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #7a8794;
+}
+
+.training-join-offer label {
+    font-size: 15px;
+}
+
+.training-money-input {
+    display: flex;
+    align-items: stretch;
+    max-width: 320px;
+    border: 1px solid #c9c9c9;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.training-money-prefix {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 12px;
+    background: #eef2f7;
+    color: #3d4f63;
+    font-weight: 700;
+    border-right: 1px solid #c9c9c9;
+}
+
+.training-money-input input {
+    border: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    border-radius: 0 !important;
+}
+
+.training-join-help {
+    margin: 8px 0 0;
+    max-width: 420px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #667788;
+}
+
+.training-join-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.training-join-actions .btn-secondary {
+    background-color: #6c757d;
+}
+
+.training-join-actions .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* —— Prácticas de Puja: monitor admin —— */
+.training-admin-live-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.training-estado-badge {
+    display: inline-block;
+    margin: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #e8f1fb;
+    color: #1f4e79;
+    font-weight: 700;
+    text-transform: lowercase;
+}
+
+.training-estado-badge[data-estado="en_curso"] {
+    background: #e6f6ea;
+    color: #1f7a3d;
+}
+
+.training-estado-badge[data-estado="finalizada"] {
+    background: #eceff3;
+    color: #4a5560;
+}
+
+.training-estado-badge[data-estado="cancelada"] {
+    background: #fdecea;
+    color: #a12622;
+}
+
+.training-live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1f7a3d;
+}
+
+.training-live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #28a745;
+    box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.55);
+    animation: training-live-pulse 1.4s infinite;
+}
+
+@keyframes training-live-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.55); }
+    70% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+}
+
+.training-admin-highlight {
+    background: #eef6ff;
+    border-color: #c5daf5;
+}
+
+.training-best-bidder {
+    display: block;
+    margin-top: 4px;
+    color: #3d5a80;
+    font-size: 12px;
+}
+
+.training-countdown {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2e59d9;
+    min-height: 1.2em;
+}
+
+#inscritos-table tr.is-best-bidder td {
+    background: #f2faf4;
+}
+
+@media (max-width: 700px) {
+    .training-join-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .training-admin-live-head {
+        flex-direction: column;
+    }
+}
