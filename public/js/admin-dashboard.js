@@ -78,6 +78,11 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // También agregar onclick como respaldo
             newLink.onclick = function(e) {
+                const url = this.getAttribute('href');
+                if (isFullPageNav(url, this)) {
+                    window.location.href = url;
+                    return true;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 handleMenuClick.call(this, e);
@@ -86,12 +91,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    function isFullPageNav(url, linkEl) {
+        if (!url) return false;
+        if (linkEl && linkEl.getAttribute('data-full-page') === '1') return true;
+        return url.indexOf('admin_training_') !== -1 || url.indexOf('/training') !== -1;
+    }
+
     function handleMenuClick(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
         const url = this.getAttribute('href');
         console.log('Click en menú:', this.textContent, 'URL:', url);
+
+        // Módulo de prácticas: navegación completa (evita menú/header duplicados)
+        if (isFullPageNav(url, this)) {
+            window.location.href = url;
+            return true;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
         
         // Actualizar clase activa
         document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));

@@ -16,7 +16,7 @@
                 <li><a href="<?php echo url('admin/create-product'); ?>" data-target="create-product">Crear Producto</a></li>
                 <li><a href="<?php echo url('admin/create-user'); ?>" data-target="create-user">Crear Usuario</a></li>
                 <li><a href="<?php echo url('admin/create-cpc'); ?>" data-target="create-cpc">Crear CPC</a></li>
-                <li><a href="<?php echo BASE_URL; ?>index.php?action=admin_training_dashboard">Prácticas de Puja</a></li>
+                <li><a href="<?php echo BASE_URL; ?>index.php?action=admin_training_dashboard" data-full-page="1">Prácticas de Puja</a></li>
             </ul>
         </aside>
         <main class="main-content">
@@ -59,8 +59,8 @@
         </div>
     </div>
 
-    <script src="<?php echo js('url-helper.js'); ?>"></script>
-    <script src="<?php echo js('admin-dashboard.js'); ?>"></script>
+    <script src="<?php echo js('url-helper.js'); ?>?v=20260723a"></script>
+    <script src="<?php echo js('admin-dashboard.js'); ?>?v=20260723a"></script>
     
     <script>
         console.log('=== DASHBOARD HTML SCRIPT ===');

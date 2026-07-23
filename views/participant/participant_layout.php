@@ -15,7 +15,7 @@
                 <li><a href="<?php echo url('participant/dashboard'); ?>">Dashboard</a></li>
                 <li><a href="<?php echo url('participant/profile'); ?>">Mi Perfil</a></li>
                 <li><a href="<?php echo url('participant/search-process'); ?>">Buscar Proceso</a></li>
-                <li><a href="<?php echo BASE_URL; ?>index.php?action=participant_training_list">Prácticas de Puja</a></li>
+                <li><a href="<?php echo BASE_URL; ?>index.php?action=participant_training_list" data-full-page="1">Prácticas de Puja</a></li>
             </ul>
         </aside>
         <main class="main-content">
@@ -32,7 +32,7 @@
         </main>
     </div>
 
-    <script src="<?php echo js('url-helper.js'); ?>"></script>
-    <script src="<?php echo js('participant-dashboard.js'); ?>"></script>
+    <script src="<?php echo js('url-helper.js'); ?>?v=20260723a"></script>
+    <script src="<?php echo js('participant-dashboard.js'); ?>?v=20260723a"></script>
 </body>
 </html>

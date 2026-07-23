@@ -679,8 +679,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.querySelectorAll('.sidebar-menu a').forEach(link => {
         link.addEventListener('click', function(e) {
+            const url = this.getAttribute('href') || '';
+            // Prácticas de Puja: página completa (no JSON AJAX del dashboard)
+            if (
+                this.getAttribute('data-full-page') === '1' ||
+                url.indexOf('participant_training_') !== -1
+            ) {
+                window.location.href = url;
+                return;
+            }
             e.preventDefault();
-            const url = this.getAttribute('href');
             loadContent(url);
             history.pushState(null, '', url);
         });
