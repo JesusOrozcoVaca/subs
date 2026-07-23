@@ -61,7 +61,7 @@
                     <div class="form-group">
                         <label for="duracion_minutos">Duración (minutos)</label>
                         <select name="duracion_minutos" id="duracion_minutos">
-                            <?php foreach ([5, 10, 15] as $d): ?>
+                            <?php foreach ([2, 5, 10, 15] as $d): ?>
                                 <option value="<?php echo $d; ?>" <?php echo ((int)$sala['duracion_minutos'] === $d) ? 'selected' : ''; ?>><?php echo $d; ?></option>
                             <?php endforeach; ?>
                         </select>

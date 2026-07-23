@@ -12,7 +12,8 @@ require_once BASE_PATH . '/services/ReverseAuctionEngine.php';
  * Reutiliza ReverseAuctionEngine; no usa sesiones HTTP.
  */
 class PracticaBotService {
-    const PRICE_FLOOR_RATIO = 0.80;
+    /** Piso absoluto (~70% del presupuesto). Por debajo no pujan. */
+    const PRICE_FLOOR_RATIO = 0.70;
     const POOL_SIZE = 5;
     const TICK_INTERVAL_MS = 1000;
 
@@ -202,17 +203,25 @@ class PracticaBotService {
         $maxMs = 20000;
         $baseChance = 0.35;
 
+        $losing = $bestInfo && (int)$bestInfo['usuario_id'] !== $userId;
+
         switch ($profile) {
             case 'pasivo':
                 $minMs = 25000;
                 $maxMs = 45000;
                 $baseChance = $nearEnd ? 0.55 : 0.12;
+                // Si van perdiendo, reaccionan (antes se quedaban quietos al tocar el piso).
+                if ($losing) {
+                    $minMs = $nearEnd ? 6000 : 14000;
+                    $maxMs = $nearEnd ? 14000 : 28000;
+                    $baseChance = $nearEnd ? 0.75 : 0.40;
+                }
                 break;
             case 'agresivo':
                 $minMs = 3000;
                 $maxMs = 8000;
                 $baseChance = 0.55;
-                if ($bestInfo && (int)$bestInfo['usuario_id'] !== $userId) {
+                if ($losing) {
                     $baseChance = 0.85;
                     $minMs = 2000;
                 }
@@ -222,6 +231,11 @@ class PracticaBotService {
                 $minMs = 8000;
                 $maxMs = 20000;
                 $baseChance = $nearEnd ? 0.50 : 0.35;
+                if ($losing) {
+                    $minMs = $nearEnd ? 4000 : 7000;
+                    $maxMs = $nearEnd ? 10000 : 16000;
+                    $baseChance = $nearEnd ? 0.70 : 0.50;
+                }
                 break;
         }
 
@@ -259,35 +273,37 @@ class PracticaBotService {
         $last = $this->bidModel->getUserLastBid((int)$bot['ronda_id'], $userId);
         $base = $last ? (float)$last['valor'] : $ofertaInicial;
         $isFirstBid = !$last;
+        $losing = $lowestBid !== null
+            && (!$last || (float)$last['valor'] > (float)$lowestBid + 0.00001);
 
-        $maxAllowed = $base - $variationAmount;
+        $maxAllowed = round($base - $variationAmount, 2);
 
         // Debe mejorar el mejor global.
         $ceiling = $maxAllowed;
         if ($lowestBid !== null) {
-            $ceiling = min($ceiling, (float)$lowestBid - 0.01);
+            $ceiling = min($ceiling, round((float)$lowestBid - 0.01, 2));
         }
-
         $ceiling = round($ceiling, 2);
-        if ($ceiling < $floor || $ceiling <= 0) {
+
+        // Sin margen legal o por debajo del piso absoluto → no puede pujar.
+        if ($ceiling <= 0 || $ceiling < $floor || $maxAllowed < $floor) {
             return null;
         }
 
-        // Pasos en múltiplos de la variación mínima (experiencia de puja real).
-        // Antes se usaba % del tramo hasta el floor → caídas enormes en 1–2 pujas.
+        // Pasos en múltiplos de la variación mínima.
         switch ($profile) {
             case 'pasivo':
                 $minSteps = 1.0;
-                $maxSteps = $isFirstBid ? 1.2 : 1.5;
+                $maxSteps = $isFirstBid ? 1.2 : ($losing ? 1.8 : 1.5);
                 break;
             case 'agresivo':
                 $minSteps = $isFirstBid ? 1.2 : 1.5;
-                $maxSteps = $isFirstBid ? 2.0 : 3.5;
+                $maxSteps = $isFirstBid ? 2.0 : ($losing ? 4.0 : 3.5);
                 break;
             case 'equilibrado':
             default:
                 $minSteps = 1.0;
-                $maxSteps = $isFirstBid ? 1.5 : 2.5;
+                $maxSteps = $isFirstBid ? 1.5 : ($losing ? 2.8 : 2.5);
                 break;
         }
 
@@ -295,26 +311,28 @@ class PracticaBotService {
         $drop = round($variationAmount * $steps, 2);
         $valor = round($base - $drop, 2);
 
-        // Si hay un mejor global, hay que quedar por debajo; no hace falta desplomarse.
-        if ($lowestBid !== null && $valor >= (float)$lowestBid) {
-            $valor = round((float)$lowestBid - max(0.01, round($variationAmount * 0.25, 2)), 2);
+        // Si van perdiendo, priorizar quedar apenas por debajo del mejor (sin desplome).
+        if ($losing) {
+            $undercut = max(0.01, round($variationAmount * ($profile === 'pasivo' ? 0.15 : 0.35), 2));
+            $valor = round((float)$lowestBid - $undercut, 2);
+            // Aun así debe respetar variación mínima desde su base.
+            if ($valor > $maxAllowed) {
+                $valor = $maxAllowed;
+            }
         }
 
         if ($valor > $ceiling) {
             $valor = $ceiling;
         }
         if ($valor < $floor) {
-            $valor = $floor;
+            // Si el mejor rival ya está bajo el piso, el bot se detiene (límite pedagógico).
+            return null;
         }
 
-        if ($valor <= 0 || $valor < $floor || $valor > $ceiling) {
+        if ($valor <= 0 || $valor > $ceiling || $valor > $maxAllowed) {
             return null;
         }
         if ($lowestBid !== null && $valor >= (float)$lowestBid) {
-            return null;
-        }
-        // Debe cumplir variación mínima respecto a su base.
-        if ($valor > $maxAllowed) {
             return null;
         }
 

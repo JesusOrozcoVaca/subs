@@ -134,8 +134,11 @@ class AdminTrainingController {
         }
 
         $duracion = (int)($_POST['duracion_minutos'] ?? $sala['duracion_minutos']);
-        if (!in_array($duracion, [5, 10, 15], true)) {
+        if (!in_array($duracion, [2, 5, 10, 15], true)) {
             $duracion = (int)$sala['duracion_minutos'];
+            if (!in_array($duracion, [2, 5, 10, 15], true)) {
+                $duracion = 5;
+            }
         }
         $zona = trim($_POST['zona_horaria'] ?? $sala['zona_horaria'] ?: 'America/Guayaquil');
         $inicioLocal = trim($_POST['hora_inicio_local'] ?? '');
@@ -353,8 +356,8 @@ class AdminTrainingController {
         if ($variacion === '' || !is_numeric($variacion) || (float)$variacion < 0) {
             return ['ok' => false, 'message' => 'Variación mínima inválida.'];
         }
-        if (!in_array($duracion, [5, 10, 15], true)) {
-            return ['ok' => false, 'message' => 'Duración debe ser 5, 10 o 15 minutos.'];
+        if (!in_array($duracion, [2, 5, 10, 15], true)) {
+            return ['ok' => false, 'message' => 'Duración debe ser 2, 5, 10 o 15 minutos.'];
         }
 
         $botsEnabled = !empty($input['bots_enabled']) ? 1 : 0;

@@ -1274,7 +1274,8 @@ Módulo **aislado** del simulador completo para entrenamiento de puja inversa el
 - Usuarios con `es_bot=1` (ocultos del listado admin; login bloqueado)
 - Se inscriben al abrir ronda; pujan con las mismas reglas del `ReverseAuctionEngine`
 - Tick en `pujaStatus` / `rondaStatus` (~1s, con throttle por ronda)
-- Piso pedagógico: no bajan de ~80% del presupuesto referencial
+- Piso pedagógico: no bajan de ~70% del presupuesto referencial; si van perdiendo, reaccionan con pasos pequeños
+- Duraciones de ronda: 2, 5, 10 o 15 minutos
 
 ### Deploy checklist
 1. Backup DB
