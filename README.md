@@ -61,6 +61,9 @@ Módulo **separado** del proceso completo para entrenamiento multiusuario en viv
 ```bash
 # En MySQL / phpMyAdmin ejecutar:
 migrations/create_practicas_puja_tables.sql
+
+# Si las tablas de prácticas ya existen, solo bots:
+migrations/add_practicas_bots.sql
 ```
 
 ### Rutas
@@ -73,6 +76,10 @@ migrations/create_practicas_puja_tables.sql
 | Participante | Join + oferta inicial | `/index.php?action=participant_training_join&id=RONDA_ID` |
 | Participante | Ventana puja | `/index.php?action=participant_training_puja&id=RONDA_ID` |
 
+### Bots rivales
+
+En crear/editar sala: activar bots, cantidad (1–5) y perfil. Al abrir ronda se inscriben automáticamente y pujan vía el polling (mismas reglas que humanos). Badge **Bot** en el monitor admin.
+
 ### Checklist smoke test
 
 1. Admin crea sala activa (presupuesto + variación + duración)
@@ -80,6 +87,13 @@ migrations/create_practicas_puja_tables.sql
 3. Dos participantes ingresan con oferta inicial ≤ presupuesto
 4. Compiten en vivo; rechazo si no mejora el mejor valor
 5. Al cerrar: resumen + badge ganador; nueva ronda no mezcla historial
+
+### Checklist QA bots
+
+1. Sala con bots ON (2, equilibrado) → abrir ronda → aparecen Rivales con badge Bot
+2. Humano en ventana: el mejor valor se mueve solo durante `en_curso`
+3. Admin en detalle: pujas/inscritos se actualizan sin recargar
+4. Al finalizar: resumen/ganador coherente; bots no salen en listado de usuarios
 
 ## URLs principales (producción)
 

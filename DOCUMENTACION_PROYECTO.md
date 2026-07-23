@@ -1261,26 +1261,44 @@ Módulo **aislado** del simulador completo para entrenamiento de puja inversa el
 - Rondas con historial; el trainee define oferta inicial al entrar
 
 ### Migración
-Ejecutar `migrations/create_practicas_puja_tables.sql` en cada entorno.
+1. Ejecutar `migrations/create_practicas_puja_tables.sql` (instalación nueva).
+2. En entornos ya existentes: ejecutar `migrations/add_practicas_bots.sql` (bots rivales).
 
-### Controllers
-- `AdminTrainingController` — CRUD salas, abrir/cancelar/cerrar rondas, monitor
+### Controllers / servicios
+- `AdminTrainingController` — CRUD salas, abrir/cancelar/cerrar rondas, monitor live
 - `ParticipantTrainingController` — listado, join, ventana, submit/status, resumen
+- `PracticaBotService` — inscripción de bots + tick de simulación (vía polling, sin cron)
+
+### Bots rivales
+- Config por sala: `bots_enabled`, `bots_count` (1–5), `bots_profile` (`pasivo`/`equilibrado`/`agresivo`)
+- Usuarios con `es_bot=1` (ocultos del listado admin; login bloqueado)
+- Se inscriben al abrir ronda; pujan con las mismas reglas del `ReverseAuctionEngine`
+- Tick en `pujaStatus` / `rondaStatus` (~1s, con throttle por ronda)
+- Piso pedagógico: no bajan de ~80% del presupuesto referencial
 
 ### Deploy checklist
 1. Backup DB
 2. `git pull`
-3. Ejecutar migración SQL
+3. Ejecutar migración SQL pendiente (`add_practicas_bots.sql` si aplica)
 4. Confirmar `index.php` sincronizado con `indexpro.php`
 5. Smoke test: admin crea sala/ronda + 2 participantes concurrentes
+
+### Checklist QA bots (manual)
+1. Admin edita/crea sala con bots habilitados (ej. 2, perfil equilibrado)
+2. Abrir ronda → en detalle aparecen inscritos “Rival Simulado XX” con badge **Bot**
+3. Un humano ingresa y, con la ronda `en_curso`, ve moverse el mejor valor sin acción propia
+4. Admin deja abierta la pantalla de detalle: total de pujas / última puja se actualizan solos
+5. Humano puja bajo las mismas reglas; un bot puede reaccionar (perfil agresivo más notorio)
+6. Al finalizar, resumen/ganador coherente (humano o bot)
+7. Verificar que los bots no aparecen en el listado de usuarios del admin
 
 ---
 
 **Última actualización:** Julio 2026  
-**Versión del documento:** 2.3  
+**Versión del documento:** 2.4  
 **Estado del proyecto:** Funcional en local y producción con:
 - Oferta procesada y resumen bloqueado tras la confirmación del modal
 - Campo `oferta_inicial_user` agregado a `ofertas_detalle`
 - Generación de PDFs de propuestas de ofertas con DomPDF
-- Módulo Prácticas de Puja (entrenamiento separado)
+- Módulo Prácticas de Puja (entrenamiento separado + bots rivales)
 

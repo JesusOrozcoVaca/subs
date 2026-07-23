@@ -35,6 +35,14 @@
             <p><strong>Variación mínima:</strong> <?php echo htmlspecialchars($sala['variacion_minima']); ?>%</p>
             <p><strong>Estado:</strong> <?php echo htmlspecialchars($sala['estado_sala']); ?></p>
             <p><strong>Zona:</strong> <?php echo htmlspecialchars($sala['zona_horaria']); ?></p>
+            <p><strong>Bots rivales:</strong>
+                <?php if (!empty($sala['bots_enabled'])): ?>
+                    Sí — <?php echo (int)($sala['bots_count'] ?? 0); ?> bot(s), perfil
+                    <?php echo htmlspecialchars($sala['bots_profile'] ?? 'equilibrado'); ?>
+                <?php else: ?>
+                    No
+                <?php endif; ?>
+            </p>
             <?php if (!empty($sala['descripcion'])): ?>
                 <p><?php echo nl2br(htmlspecialchars($sala['descripcion'])); ?></p>
             <?php endif; ?>

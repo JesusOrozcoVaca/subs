@@ -74,6 +74,49 @@ $action = $isEdit
                     <?php endforeach; ?>
                 </select>
             </div>
+
+            <fieldset class="training-bots-fieldset">
+                <legend>Bots rivales</legend>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="bots_enabled" value="1"
+                            <?php echo !empty($sala['bots_enabled']) ? 'checked' : ''; ?>>
+                        Incluir bots rivales en las rondas de esta sala
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label for="bots_count">Cantidad de bots (1–5)</label>
+                    <select id="bots_count" name="bots_count">
+                        <?php for ($n = 1; $n <= 5; $n++): ?>
+                            <option value="<?php echo $n; ?>" <?php echo ((int)($sala['bots_count'] ?? 2) === $n) ? 'selected' : ''; ?>>
+                                <?php echo $n; ?>
+                            </option>
+                        <?php endfor; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="bots_profile">Perfil de agresividad</label>
+                    <select id="bots_profile" name="bots_profile">
+                        <?php
+                        $profiles = [
+                            'pasivo' => 'Pasivo (pujan poco, más al final)',
+                            'equilibrado' => 'Equilibrado',
+                            'agresivo' => 'Agresivo (reaccionan rápido)'
+                        ];
+                        $currentProfile = $sala['bots_profile'] ?? 'equilibrado';
+                        foreach ($profiles as $key => $label):
+                        ?>
+                            <option value="<?php echo $key; ?>" <?php echo $currentProfile === $key ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <p class="training-join-help">
+                    Los bots usan las mismas reglas de puja que los participantes. No aparecen en el listado de usuarios del sistema.
+                </p>
+            </fieldset>
+
             <button type="submit" class="btn btn-primary"><?php echo $isEdit ? 'Guardar' : 'Crear sala'; ?></button>
         </form>
     </main>

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ronda #<?php echo (int)$ronda['numero']; ?> - Prácticas</title>
-    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>?v=20260723c">
+    <link rel="stylesheet" href="<?php echo css('styles.css'); ?>?v=20260723d">
 </head>
 <body>
 <div class="dashboard-container">
@@ -111,6 +111,9 @@
                     <tr data-inscripcion-id="<?php echo (int)$ins['id']; ?>" class="<?php echo !empty($ins['es_mejor']) ? 'is-best-bidder' : ''; ?>">
                         <td>
                             <?php echo htmlspecialchars($ins['nombre_completo']); ?>
+                            <?php if (!empty($ins['es_bot'])): ?>
+                                <span class="training-bot-badge">Bot</span>
+                            <?php endif; ?>
                             <?php if (!empty($ins['es_mejor'])): ?>
                                 <span class="puja-winner-badge">Mejor</span>
                             <?php endif; ?>
@@ -181,7 +184,7 @@
         </div>
     </main>
 </div>
-<script src="<?php echo js('url-helper.js'); ?>?v=20260723c"></script>
-<script src="<?php echo js('admin-training.js'); ?>?v=20260723c"></script>
+<script src="<?php echo js('url-helper.js'); ?>?v=20260723d"></script>
+<script src="<?php echo js('admin-training.js'); ?>?v=20260723d"></script>
 </body>
 </html>

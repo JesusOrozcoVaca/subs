@@ -4,6 +4,7 @@ require_once BASE_PATH . '/models/PracticaRonda.php';
 require_once BASE_PATH . '/models/PracticaInscripcion.php';
 require_once BASE_PATH . '/models/PracticaBid.php';
 require_once BASE_PATH . '/services/PracticaRondaService.php';
+require_once BASE_PATH . '/services/PracticaBotService.php';
 require_once BASE_PATH . '/services/ReverseAuctionEngine.php';
 require_once BASE_PATH . '/utils/url_helpers.php';
 
@@ -13,6 +14,7 @@ class ParticipantTrainingController {
     private $inscripcionModel;
     private $bidModel;
     private $rondaService;
+    private $botService;
 
     public function __construct() {
         $this->salaModel = new PracticaSala();
@@ -20,6 +22,7 @@ class ParticipantTrainingController {
         $this->inscripcionModel = new PracticaInscripcion();
         $this->bidModel = new PracticaBid();
         $this->rondaService = new PracticaRondaService();
+        $this->botService = new PracticaBotService();
     }
 
     public function listPractices() {
@@ -246,6 +249,10 @@ class ParticipantTrainingController {
             $this->sendJsonResponse(false, 'No está inscrito en esta práctica.');
             return;
         }
+
+        // Tick de bots mientras el participante observa/puja.
+        $this->botService->maybeTick($rondaId);
+        $ronda = $this->rondaModel->getById($rondaId);
 
         $status = ReverseAuctionEngine::buildStatusData(
             $this->bidModel->getUserLastBid($rondaId, $userId),

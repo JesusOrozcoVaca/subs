@@ -97,13 +97,14 @@
 
         tbody.innerHTML = participants.map((p) => {
             const activo = !!p.activo;
+            const botBadge = p.es_bot ? ' <span class="training-bot-badge">Bot</span>' : '';
             const bestBadge = p.es_mejor ? ' <span class="puja-winner-badge">Mejor</span>' : '';
             const ultima = p.ultima_puja !== null && p.ultima_puja !== undefined
                 ? money(p.ultima_puja)
                 : '—';
             return (
                 '<tr data-inscripcion-id="' + p.inscripcion_id + '" class="' + (p.es_mejor ? 'is-best-bidder' : '') + '">' +
-                    '<td>' + escapeHtml(p.nombre) + bestBadge + '</td>' +
+                    '<td>' + escapeHtml(p.nombre) + botBadge + bestBadge + '</td>' +
                     '<td>' + money(p.oferta_inicial) + '</td>' +
                     '<td class="ins-ultima">' + ultima + '</td>' +
                     '<td class="ins-estado">' + (activo ? 'Activo' : 'Inactivo') + '</td>' +

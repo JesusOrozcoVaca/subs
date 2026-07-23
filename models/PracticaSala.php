@@ -36,10 +36,12 @@ class PracticaSala {
         $stmt = $this->db->prepare(
             "INSERT INTO practicas_salas
              (codigo, titulo, descripcion, presupuesto_referencial, variacion_minima, duracion_minutos,
-              zona_horaria, estado_sala, created_by, created_at, updated_at)
+              zona_horaria, estado_sala, bots_enabled, bots_count, bots_profile,
+              created_by, created_at, updated_at)
              VALUES
              (:codigo, :titulo, :descripcion, :presupuesto_referencial, :variacion_minima, :duracion_minutos,
-              :zona_horaria, :estado_sala, :created_by, :created_at, :updated_at)"
+              :zona_horaria, :estado_sala, :bots_enabled, :bots_count, :bots_profile,
+              :created_by, :created_at, :updated_at)"
         );
         $ok = $stmt->execute([
             'codigo' => $codigo,
@@ -50,6 +52,9 @@ class PracticaSala {
             'duracion_minutos' => $data['duracion_minutos'],
             'zona_horaria' => $data['zona_horaria'] ?? 'America/Guayaquil',
             'estado_sala' => $data['estado_sala'] ?? 'activa',
+            'bots_enabled' => !empty($data['bots_enabled']) ? 1 : 0,
+            'bots_count' => (int)($data['bots_count'] ?? 2),
+            'bots_profile' => $data['bots_profile'] ?? 'equilibrado',
             'created_by' => $data['created_by'],
             'created_at' => $now,
             'updated_at' => $now
@@ -67,6 +72,9 @@ class PracticaSala {
                 duracion_minutos = :duracion_minutos,
                 zona_horaria = :zona_horaria,
                 estado_sala = :estado_sala,
+                bots_enabled = :bots_enabled,
+                bots_count = :bots_count,
+                bots_profile = :bots_profile,
                 updated_at = :updated_at
              WHERE id = :id"
         );
@@ -79,6 +87,9 @@ class PracticaSala {
             'duracion_minutos' => $data['duracion_minutos'],
             'zona_horaria' => $data['zona_horaria'] ?? 'America/Guayaquil',
             'estado_sala' => $data['estado_sala'],
+            'bots_enabled' => !empty($data['bots_enabled']) ? 1 : 0,
+            'bots_count' => (int)($data['bots_count'] ?? 2),
+            'bots_profile' => $data['bots_profile'] ?? 'equilibrado',
             'updated_at' => date('Y-m-d H:i:s')
         ]);
     }

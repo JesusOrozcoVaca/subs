@@ -4,6 +4,7 @@ require_once BASE_PATH . '/models/PracticaRonda.php';
 require_once BASE_PATH . '/models/PracticaInscripcion.php';
 require_once BASE_PATH . '/models/PracticaBid.php';
 require_once BASE_PATH . '/services/PracticaRondaService.php';
+require_once BASE_PATH . '/services/PracticaBotService.php';
 require_once BASE_PATH . '/services/ReverseAuctionEngine.php';
 require_once BASE_PATH . '/utils/url_helpers.php';
 
@@ -13,6 +14,7 @@ class AdminTrainingController {
     private $inscripcionModel;
     private $bidModel;
     private $rondaService;
+    private $botService;
 
     public function __construct() {
         $this->salaModel = new PracticaSala();
@@ -20,6 +22,7 @@ class AdminTrainingController {
         $this->inscripcionModel = new PracticaInscripcion();
         $this->bidModel = new PracticaBid();
         $this->rondaService = new PracticaRondaService();
+        $this->botService = new PracticaBotService();
     }
 
     public function dashboard() {
@@ -170,6 +173,7 @@ class AdminTrainingController {
 
         if ($rondaId) {
             $ronda = $this->rondaModel->getById($rondaId);
+            $this->botService->enrollBotsForRonda($ronda);
             $this->rondaService->syncEstado($ronda);
             $_SESSION['success_message'] = 'Ronda creada.';
             header('Location: ' . $this->url('admin_training_ronda_detail', ['id' => $rondaId]));
@@ -282,6 +286,9 @@ class AdminTrainingController {
 
         $ronda = $this->rondaService->syncEstado($ronda);
         $ronda = $this->rondaModel->getById($id);
+        // Tick de bots mientras el admin observa (sin cron).
+        $this->botService->maybeTick($id);
+        $ronda = $this->rondaModel->getById($id);
         $schedule = $this->rondaService->getSchedule($ronda);
         $best = $this->bidModel->getBestBidInfo($id);
         $lowestBid = $best ? (float)$best['valor'] : null;
@@ -303,7 +310,8 @@ class AdminTrainingController {
                 'oferta_inicial' => (float)$ins['oferta_inicial'],
                 'ultima_puja' => $lastValor,
                 'activo' => (int)$ins['activo'] === 1,
-                'es_mejor' => $isBest
+                'es_mejor' => $isBest,
+                'es_bot' => !empty($ins['es_bot'])
             ];
         }
 
@@ -349,6 +357,16 @@ class AdminTrainingController {
             return ['ok' => false, 'message' => 'Duración debe ser 5, 10 o 15 minutos.'];
         }
 
+        $botsEnabled = !empty($input['bots_enabled']) ? 1 : 0;
+        $botsCount = (int)($input['bots_count'] ?? 2);
+        if ($botsCount < 1 || $botsCount > 5) {
+            return ['ok' => false, 'message' => 'La cantidad de bots debe estar entre 1 y 5.'];
+        }
+        $botsProfile = trim($input['bots_profile'] ?? 'equilibrado');
+        if (!in_array($botsProfile, ['pasivo', 'equilibrado', 'agresivo'], true)) {
+            return ['ok' => false, 'message' => 'Perfil de bots inválido.'];
+        }
+
         return [
             'ok' => true,
             'data' => [
@@ -357,7 +375,10 @@ class AdminTrainingController {
                 'presupuesto_referencial' => $presupuesto,
                 'variacion_minima' => (float)$variacion,
                 'duracion_minutos' => $duracion,
-                'zona_horaria' => $zona
+                'zona_horaria' => $zona,
+                'bots_enabled' => $botsEnabled,
+                'bots_count' => $botsCount,
+                'bots_profile' => $botsProfile
             ]
         ];
     }

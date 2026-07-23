@@ -13,6 +13,7 @@ class PracticaRonda {
             "SELECT r.*, s.titulo AS sala_titulo, s.codigo AS sala_codigo,
                     s.presupuesto_referencial, s.variacion_minima, s.estado_sala,
                     s.descripcion AS sala_descripcion,
+                    s.bots_enabled, s.bots_count, s.bots_profile,
                     ug.nombre_completo AS ganador_nombre
              FROM practicas_rondas r
              INNER JOIN practicas_salas s ON s.id = r.sala_id
@@ -113,5 +114,24 @@ class PracticaRonda {
         $sql = 'UPDATE practicas_rondas SET ' . implode(', ', $fields) . ' WHERE id = :id';
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($params);
+    }
+
+    /**
+     * Adquiere el tick de bots si pasó el intervalo mínimo (anti-storm por polling).
+     */
+    public function tryAcquireBotTick($rondaId, $nowMs, $minIntervalMs = 1000) {
+        $threshold = (int)$nowMs - (int)$minIntervalMs;
+        $stmt = $this->db->prepare(
+            "UPDATE practicas_rondas
+             SET bots_last_tick_ms = :now_ms
+             WHERE id = :id
+               AND (bots_last_tick_ms IS NULL OR bots_last_tick_ms <= :threshold)"
+        );
+        $stmt->execute([
+            'now_ms' => (int)$nowMs,
+            'id' => $rondaId,
+            'threshold' => $threshold
+        ]);
+        return $stmt->rowCount() > 0;
     }
 }

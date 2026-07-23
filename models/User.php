@@ -9,14 +9,21 @@ class User {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getAllUsers() {
+    public function getAllUsers($includeBots = false) {
         $query = "SELECT * FROM usuarios";
+        if (!$includeBots) {
+            $query .= " WHERE COALESCE(es_bot, 0) = 0";
+        }
         $stmt = $this->db->query($query);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getUsersPaginated($limit, $offset) {
-        $query = "SELECT * FROM usuarios ORDER BY id ASC LIMIT :limit OFFSET :offset";
+    public function getUsersPaginated($limit, $offset, $includeBots = false) {
+        $query = "SELECT * FROM usuarios";
+        if (!$includeBots) {
+            $query .= " WHERE COALESCE(es_bot, 0) = 0";
+        }
+        $query .= " ORDER BY id ASC LIMIT :limit OFFSET :offset";
         $stmt = $this->db->prepare($query);
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
@@ -24,10 +31,66 @@ class User {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getUsersCount() {
+    public function getUsersCount($includeBots = false) {
         $query = "SELECT COUNT(*) FROM usuarios";
+        if (!$includeBots) {
+            $query .= " WHERE COALESCE(es_bot, 0) = 0";
+        }
         $stmt = $this->db->query($query);
         return (int)$stmt->fetchColumn();
+    }
+
+    public function listBotUsers($limit = 10) {
+        $stmt = $this->db->prepare(
+            "SELECT * FROM usuarios
+             WHERE COALESCE(es_bot, 0) = 1
+             ORDER BY id ASC
+             LIMIT :limit"
+        );
+        $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function ensureBotUser($index) {
+        $index = max(1, (int)$index);
+        $cedula = sprintf('BOT%07d', $index);
+        $email = sprintf('bot%02d.practica@local.invalid', $index);
+        $existing = $this->getUserByEmail($email);
+        if ($existing) {
+            return $existing;
+        }
+        $stmt = $this->db->prepare(
+            "SELECT * FROM usuarios WHERE cedula = :cedula LIMIT 1"
+        );
+        $stmt->execute(['cedula' => $cedula]);
+        $byCedula = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($byCedula) {
+            return $byCedula;
+        }
+
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO usuarios
+                 (cedula, nombre_completo, correo_electronico, telefono, contrasena, nivel_acceso, es_bot, estado)
+                 VALUES
+                 (:cedula, :nombre_completo, :correo_electronico, :telefono, :contrasena, 3, 1, 'activo')"
+            );
+            $ok = $stmt->execute([
+                'cedula' => $cedula,
+                'nombre_completo' => sprintf('Rival Simulado %02d', $index),
+                'correo_electronico' => $email,
+                'telefono' => sprintf('9%09d', $index),
+                'contrasena' => password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT)
+            ]);
+            if (!$ok) {
+                return null;
+            }
+            return $this->getUserById((int)$this->db->lastInsertId());
+        } catch (PDOException $e) {
+            app_log('User.ensureBotUser failed', ['message' => $e->getMessage(), 'index' => $index]);
+            return null;
+        }
     }
 
     public function getUserById($id) {
@@ -177,6 +240,10 @@ class User {
         $stmt = $this->db->prepare($query);
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && !empty($user['es_bot'])) {
+            return false;
+        }
 
         if ($user && password_verify($password, $user['contrasena'])) {
             return $user;

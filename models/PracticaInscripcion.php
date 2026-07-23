@@ -27,11 +27,12 @@ class PracticaInscripcion {
 
     public function listByRonda($rondaId) {
         $stmt = $this->db->prepare(
-            "SELECT i.*, u.nombre_completo, u.correo_electronico
+            "SELECT i.*, u.nombre_completo, u.correo_electronico,
+                    COALESCE(u.es_bot, 0) AS es_bot
              FROM practicas_inscripciones i
              INNER JOIN usuarios u ON u.id = i.usuario_id
              WHERE i.ronda_id = :ronda_id
-             ORDER BY u.nombre_completo"
+             ORDER BY u.es_bot ASC, u.nombre_completo"
         );
         $stmt->execute(['ronda_id' => $rondaId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -39,11 +40,11 @@ class PracticaInscripcion {
 
     public function listActiveByRonda($rondaId) {
         $stmt = $this->db->prepare(
-            "SELECT i.*, u.nombre_completo
+            "SELECT i.*, u.nombre_completo, COALESCE(u.es_bot, 0) AS es_bot
              FROM practicas_inscripciones i
              INNER JOIN usuarios u ON u.id = i.usuario_id
              WHERE i.ronda_id = :ronda_id AND i.activo = 1
-             ORDER BY u.nombre_completo"
+             ORDER BY u.es_bot ASC, u.nombre_completo"
         );
         $stmt->execute(['ronda_id' => $rondaId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
