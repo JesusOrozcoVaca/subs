@@ -151,7 +151,7 @@ class PracticaBotService {
             if (!$this->shouldBidNow($bot, $profile, $nearEnd, $bestInfo, $nowMs)) {
                 continue;
             }
-            $valor = $this->computeBidValue($ronda, $bot, $lowestBid);
+            $valor = $this->computeBidValue($ronda, $bot, $lowestBid, $profile);
             if ($valor === null) {
                 continue;
             }
@@ -225,9 +225,12 @@ class PracticaBotService {
                 break;
         }
 
-        // Primera puja del bot: sin umbral largo y con alta probabilidad.
+        // Primera puja: pasivo entra tarde; agresivo/equilibrado arrancan antes.
         if ($lastMs === 0) {
-            return (mt_rand(1, 1000) / 1000) <= min(0.95, $baseChance + 0.45);
+            $firstChance = ($profile === 'pasivo')
+                ? ($nearEnd ? 0.45 : 0.18)
+                : min(0.85, $baseChance + 0.30);
+            return (mt_rand(1, 1000) / 1000) <= $firstChance;
         }
 
         $threshold = mt_rand($minMs, $maxMs);
@@ -239,23 +242,25 @@ class PracticaBotService {
     }
 
     /**
-     * Calcula un valor válido bajo el floor pedagógico y las reglas del engine.
+     * Calcula un valor válido con pasos según perfil (no saltos al piso).
+     * El perfil controla frecuencia Y tamaño de bajada.
      */
-    private function computeBidValue(array $ronda, array $bot, $lowestBid) {
+    private function computeBidValue(array $ronda, array $bot, $lowestBid, $profile = 'equilibrado') {
         $presupuesto = (float)$ronda['presupuesto_referencial'];
         $floor = round($presupuesto * self::PRICE_FLOOR_RATIO, 2);
         $variationPercent = (float)$ronda['variacion_minima'];
         $ofertaInicial = (float)$bot['oferta_inicial'];
         $variationAmount = round($ofertaInicial * ($variationPercent / 100), 2);
+        if ($variationAmount <= 0) {
+            $variationAmount = round($presupuesto * 0.01, 2);
+        }
 
         $userId = (int)$bot['usuario_id'];
         $last = $this->bidModel->getUserLastBid((int)$bot['ronda_id'], $userId);
         $base = $last ? (float)$last['valor'] : $ofertaInicial;
+        $isFirstBid = !$last;
 
-        $maxAllowed = $base;
-        if ($base > 0 && $variationAmount > 0) {
-            $maxAllowed = $base - $variationAmount;
-        }
+        $maxAllowed = $base - $variationAmount;
 
         // Debe mejorar el mejor global.
         $ceiling = $maxAllowed;
@@ -264,33 +269,52 @@ class PracticaBotService {
         }
 
         $ceiling = round($ceiling, 2);
-        if ($ceiling < $floor) {
-            return null;
-        }
-        if ($ceiling <= 0) {
+        if ($ceiling < $floor || $ceiling <= 0) {
             return null;
         }
 
-        // No siempre el mínimo: bajar un poco desde ceiling hacia el floor.
-        $span = $ceiling - $floor;
-        $dropRatio = mt_rand(5, 35) / 100; // 5%–35% del tramo disponible
-        $valor = round($ceiling - ($span * $dropRatio), 2);
-        if ($valor < $floor) {
-            $valor = $floor;
+        // Pasos en múltiplos de la variación mínima (experiencia de puja real).
+        // Antes se usaba % del tramo hasta el floor → caídas enormes en 1–2 pujas.
+        switch ($profile) {
+            case 'pasivo':
+                $minSteps = 1.0;
+                $maxSteps = $isFirstBid ? 1.2 : 1.5;
+                break;
+            case 'agresivo':
+                $minSteps = $isFirstBid ? 1.2 : 1.5;
+                $maxSteps = $isFirstBid ? 2.0 : 3.5;
+                break;
+            case 'equilibrado':
+            default:
+                $minSteps = 1.0;
+                $maxSteps = $isFirstBid ? 1.5 : 2.5;
+                break;
         }
+
+        $steps = $minSteps + (mt_rand(0, 1000) / 1000) * ($maxSteps - $minSteps);
+        $drop = round($variationAmount * $steps, 2);
+        $valor = round($base - $drop, 2);
+
+        // Si hay un mejor global, hay que quedar por debajo; no hace falta desplomarse.
+        if ($lowestBid !== null && $valor >= (float)$lowestBid) {
+            $valor = round((float)$lowestBid - max(0.01, round($variationAmount * 0.25, 2)), 2);
+        }
+
         if ($valor > $ceiling) {
             $valor = $ceiling;
         }
-
-        // Garantizar al menos un tick de variación si quedó igual al base.
-        if ($valor >= $base && $variationAmount > 0) {
-            $valor = $ceiling;
+        if ($valor < $floor) {
+            $valor = $floor;
         }
 
         if ($valor <= 0 || $valor < $floor || $valor > $ceiling) {
             return null;
         }
         if ($lowestBid !== null && $valor >= (float)$lowestBid) {
+            return null;
+        }
+        // Debe cumplir variación mínima respecto a su base.
+        if ($valor > $maxAllowed) {
             return null;
         }
 

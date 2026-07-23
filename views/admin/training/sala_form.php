@@ -99,9 +99,9 @@ $action = $isEdit
                     <select id="bots_profile" name="bots_profile">
                         <?php
                         $profiles = [
-                            'pasivo' => 'Pasivo (pujan poco, más al final)',
-                            'equilibrado' => 'Equilibrado',
-                            'agresivo' => 'Agresivo (reaccionan rápido)'
+                            'pasivo' => 'Pasivo (pocas pujas, bajadas mínimas)',
+                            'equilibrado' => 'Equilibrado (ritmo y bajadas moderadas)',
+                            'agresivo' => 'Agresivo (reaccionan rápido y bajan más)'
                         ];
                         $currentProfile = $sala['bots_profile'] ?? 'equilibrado';
                         foreach ($profiles as $key => $label):
