@@ -5,12 +5,40 @@
  */
 class ReverseAuctionEngine {
     /**
-     * Parsea valor tipo "1.234,56" a float.
+     * Parsea valor monetario a float.
+     * Acepta: "1.234,56" (ES), "1234,56", "1234.56" (decimal punto) y enteros.
      */
     public static function parseMoneyValue($valorRaw) {
+        if (is_int($valorRaw) || is_float($valorRaw)) {
+            return (float)$valorRaw;
+        }
+
         $valorRaw = trim((string)$valorRaw);
-        $valorSanitized = str_replace('.', '', $valorRaw);
-        $valorSanitized = str_replace(',', '.', $valorSanitized);
+        if ($valorRaw === '') {
+            return null;
+        }
+
+        $hasComma = strpos($valorRaw, ',') !== false;
+        $hasDot = strpos($valorRaw, '.') !== false;
+
+        if ($hasComma && $hasDot) {
+            // Formato ES: puntos de miles + coma decimal → 1.234,56
+            $valorSanitized = str_replace('.', '', $valorRaw);
+            $valorSanitized = str_replace(',', '.', $valorSanitized);
+        } elseif ($hasComma) {
+            // Solo coma decimal → 1234,56
+            $valorSanitized = str_replace(',', '.', $valorRaw);
+        } elseif ($hasDot) {
+            // Solo puntos: si hay más de uno son miles; si hay uno es decimal PHP/US.
+            if (substr_count($valorRaw, '.') > 1) {
+                $valorSanitized = str_replace('.', '', $valorRaw);
+            } else {
+                $valorSanitized = $valorRaw;
+            }
+        } else {
+            $valorSanitized = $valorRaw;
+        }
+
         if ($valorSanitized === '' || !is_numeric($valorSanitized)) {
             return null;
         }

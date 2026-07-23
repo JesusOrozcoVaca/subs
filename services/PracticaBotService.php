@@ -158,7 +158,9 @@ class PracticaBotService {
 
             $userId = (int)$bot['usuario_id'];
             $bidModel = $this->bidModel;
-            $result = ReverseAuctionEngine::submitBid((string)$valor, [
+            // Formato ES para el parser (evitar que "75430.48" se lea como 7543048).
+            $valorRaw = number_format((float)$valor, 2, ',', '');
+            $result = ReverseAuctionEngine::submitBid($valorRaw, [
                 'presupuesto_referencial' => (float)$ronda['presupuesto_referencial'],
                 'variacion_minima' => (float)$ronda['variacion_minima'],
                 'oferta_inicial' => (float)$bot['oferta_inicial'],
@@ -223,14 +225,14 @@ class PracticaBotService {
                 break;
         }
 
+        // Primera puja del bot: sin umbral largo y con alta probabilidad.
+        if ($lastMs === 0) {
+            return (mt_rand(1, 1000) / 1000) <= min(0.95, $baseChance + 0.45);
+        }
+
         $threshold = mt_rand($minMs, $maxMs);
         if ($elapsed < $threshold) {
             return false;
-        }
-
-        // Primera puja: más probabilidad una vez pasado el mínimo.
-        if ($lastMs === 0) {
-            $baseChance = min(0.9, $baseChance + 0.25);
         }
 
         return (mt_rand(1, 1000) / 1000) <= $baseChance;
